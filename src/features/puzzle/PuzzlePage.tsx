@@ -6,7 +6,7 @@ export default function PuzzlePage() {
       glyph="♝"
       title="Mode Puzzle"
       module="M6"
-      summary="Puzzles tactiques categorises par theme, indices progressifs et series quotidiennes."
+      summary="Puzzles tactiques catégorisés par thème, indices progressifs et séries quotidiennes."
     />
   )
 }

@@ -6,7 +6,7 @@ export default function BattlePage() {
       glyph="♜"
       title="Affrontement contre l'IA"
       module="M5"
-      summary="Cinq niveaux calibres de 800 a 2200 ELO, controle du temps et analyse post-partie."
+      summary="Cinq niveaux calibrés de 800 à 2200 Elo, contrôle du temps et analyse post-partie."
     />
   )
 }

@@ -6,7 +6,7 @@ export default function CoachPage() {
       glyph="♞"
       title="Mode Apprentissage — IA Coach"
       module="M4"
-      summary="Stockfish commente chaque coup : barre d'evaluation, fleche best-move, classification qualitative."
+      summary="Stockfish commente chaque coup : barre d'évaluation, flèche best-move, classification qualitative."
     />
   )
 }

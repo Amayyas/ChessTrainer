@@ -4,9 +4,9 @@ export default function HuntPage() {
   return (
     <ModuleStub
       glyph="♟"
-      title="Chasse aux Pieces"
+      title="Chasse aux Pièces"
       module="M7"
-      summary="Mode arcade : capturez un maximum de pieces en 60 secondes, 3 vies, systeme de combo."
+      summary="Mode arcade : capturez un maximum de pièces en 60 secondes, 3 vies, système de combo."
     />
   )
 }

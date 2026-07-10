@@ -17,11 +17,11 @@ function renderAt(path: string) {
 
 describe('routing', () => {
   it.each([
-    [ROUTES.home, 'Tableau de bord'],
+    [ROUTES.home, /Apprenez les échecs/],
     [ROUTES.coach, /IA Coach/],
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, /Mode Puzzle/],
-    [ROUTES.hunt, /Chasse aux Pieces/],
+    [ROUTES.hunt, /Chasse aux Pièces/],
     [ROUTES.leaderboard, /Classement mondial/],
     [ROUTES.profile, 'Profil'],
   ])('renders the expected page at %s', (path, heading) => {

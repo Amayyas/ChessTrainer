@@ -6,7 +6,7 @@ export default function LeaderboardPage() {
       glyph="♛"
       title="Classement mondial"
       module="M10"
-      summary="Top 10 par piece, mis a jour en temps reel via Supabase Realtime."
+      summary="Top 10 par pièce, mis à jour en temps réel via Supabase Realtime."
     />
   )
 }
