@@ -3,3 +3,6 @@ dist
 coverage
 package-lock.json
 cahier-des-charges.html
+
+# Vendored Stockfish build — never reformat
+public/stockfish
