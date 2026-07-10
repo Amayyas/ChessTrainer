@@ -11,3 +11,6 @@ npm-debug.log*
 coverage
 .lighthouseci
 *.local
+
+# Private specification — kept locally, never committed
+cahier-des-charges.html
