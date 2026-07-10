@@ -1,116 +1,17 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess Trainer</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>Chess Trainer</h1>
-            <p class="subtitle">Entraînez-vous avec des puzzles tactiques</p>
-        </header>
-
-        <div class="game-container">
-            <div class="puzzle-info">
-                <div class="puzzle-header">
-                    <h2 id="puzzleTitle">Puzzle #1</h2>
-                    <div class="difficulty">
-                        <span id="puzzleDifficulty" class="difficulty-badge">Facile</span>
-                    </div>
-                </div>
-                <p id="puzzleDescription" class="puzzle-description">
-                    Trouvez le meilleur coup pour les blancs
-                </p>
-                <div class="puzzle-stats">
-                    <div class="stat">
-                        <span class="stat-label">Tour :</span>
-                        <span id="currentTurn" class="stat-value">Blancs</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Objectif :</span>
-                        <span id="puzzleObjective" class="stat-value">Mat en 2</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="chessboard-container">
-                <div class="coordinates-left">
-                    <div class="coord">8</div>
-                    <div class="coord">7</div>
-                    <div class="coord">6</div>
-                    <div class="coord">5</div>
-                    <div class="coord">4</div>
-                    <div class="coord">3</div>
-                    <div class="coord">2</div>
-                    <div class="coord">1</div>
-                </div>
-                <div class="board-wrapper">
-                    <div id="chessboard" class="chessboard"></div>
-                    <div class="coordinates-bottom">
-                        <div class="coord">a</div>
-                        <div class="coord">b</div>
-                        <div class="coord">c</div>
-                        <div class="coord">d</div>
-                        <div class="coord">e</div>
-                        <div class="coord">f</div>
-                        <div class="coord">g</div>
-                        <div class="coord">h</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="controls-panel">
-                <div class="action-buttons">
-                    <button id="showHint" class="btn btn-hint">
-                        Indice
-                    </button>
-                    <button id="showSolution" class="btn btn-solution">
-                        Solution
-                    </button>
-                    <button id="resetPuzzle" class="btn btn-reset">
-                        Reset
-                    </button>
-                </div>
-
-                <div class="puzzle-controls">
-                    <button id="prevPuzzle" class="btn btn-secondary">
-                        Précédent
-                    </button>
-                    <button id="nextPuzzle" class="btn btn-secondary">
-                        Suivant
-                    </button>
-                </div>
-
-                <div class="solution-panel" id="solutionPanel" style="display: none;">
-                    <h3>Solution :</h3>
-                    <div id="solutionSteps" class="solution-steps"></div>
-                </div>
-
-                <div class="hint-panel" id="hintPanel" style="display: none;">
-                    <h3>Indice :</h3>
-                    <p id="hintText"></p>
-                </div>
-            </div>
-        </div>
-
-        <div class="puzzle-list">
-            <h3>Sélectionner un puzzle :</h3>
-            <div id="puzzleSelector" class="puzzle-grid"></div>
-        </div>
-
-        <div class="status-message" id="statusMessage"></div>
-    </div>
-
-    <script src="puzzles.js"></script>
-    <script src="positions.js"></script>
-    <script src="chess-moves.js"></script>
-    <script src="game-logic.js"></script>
-    <script src="controls.js"></script>
-    <script type="module" src="script.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ChessTrainer AI — Apprenez les echecs avec un coach base sur l'intelligence artificielle."
+    />
+    <title>ChessTrainer AI</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
