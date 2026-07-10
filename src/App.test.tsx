@@ -18,7 +18,7 @@ function renderAt(path: string) {
 describe('routing', () => {
   it.each([
     [ROUTES.home, /Apprenez les échecs/],
-    [ROUTES.coach, /IA Coach/],
+    [ROUTES.coach, 'Coach'],
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, /Mode Puzzle/],
     [ROUTES.hunt, /Chasse aux Pièces/],

@@ -5,6 +5,9 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* Reserve the scrollbar gutter so a growing page can't trigger a
+       horizontal-scroll feedback loop (the board measures a stable width). */
+    scrollbar-gutter: stable;
   }
 
   body {
