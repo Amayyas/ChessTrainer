@@ -7,6 +7,8 @@ export interface MoveHistoryProps {
   moves: string[]
   /** Optional coach classification per move, parallel to `moves`. */
   qualities?: (MoveQuality | null)[]
+  /** Move index to highlight; defaults to the last move. Used during replay. */
+  activeIndex?: number
   className?: string
 }
 
@@ -49,10 +51,15 @@ function MoveCell({
 }
 
 /** Move list in algebraic notation, paired by move number (spec module M3). */
-export default function MoveHistory({ moves, qualities, className }: MoveHistoryProps) {
+export default function MoveHistory({
+  moves,
+  qualities,
+  activeIndex,
+  className,
+}: MoveHistoryProps) {
   const scrollRef = useRef<HTMLOListElement>(null)
   const pairs = toPairs(moves)
-  const lastIndex = moves.length - 1
+  const highlightIndex = activeIndex ?? moves.length - 1
 
   // Keep the latest move in view as the game grows.
   useEffect(() => {
@@ -81,13 +88,13 @@ export default function MoveHistory({ moves, qualities, className }: MoveHistory
             <MoveCell
               san={pair.white}
               quality={qualities?.[whiteIndex]}
-              isLast={whiteIndex === lastIndex}
+              isLast={whiteIndex === highlightIndex}
             />
             {pair.black && (
               <MoveCell
                 san={pair.black}
                 quality={qualities?.[blackIndex]}
-                isLast={blackIndex === lastIndex}
+                isLast={blackIndex === highlightIndex}
               />
             )}
           </li>

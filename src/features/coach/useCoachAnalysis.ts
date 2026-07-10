@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStockfish } from '@/engine/useStockfish'
 import { parseUciMove } from '@/engine/uci'
 import type { UseChessGame } from '@/hooks/useChessGame'
@@ -6,7 +6,9 @@ import type { Color, Square } from '@/utils/chess'
 import {
   centipawnLoss,
   classifyMove,
+  moveAccuracy,
   toWhiteEval,
+  winningChances,
   type MoveQuality,
   type WhiteEval,
 } from '@/utils/evaluation'
@@ -15,6 +17,22 @@ interface PositionAnalysis {
   eval: WhiteEval
   bestMoveUci: string | null
   pv: string[]
+}
+
+export interface PositionInsight {
+  eval: WhiteEval | null
+  bestMove: { from: Square; to: Square } | null
+}
+
+export interface GameSummary {
+  /** Average accuracy in [0, 100] for each colour, or null without enough data. */
+  accuracyWhite: number | null
+  accuracyBlack: number | null
+  inaccuracies: number
+  mistakes: number
+  blunders: number
+  /** Strongest move of the game (biggest jump in the mover's winning chances). */
+  bestMove: { san: string; index: number; color: Color } | null
 }
 
 export interface CoachAnalysis {
@@ -27,6 +45,10 @@ export interface CoachAnalysis {
   bestMoveUci: string | null
   /** Move quality per ply index (parallel to the game's move history). */
   qualities: (MoveQuality | null)[]
+  /** End-of-game report (accuracy, mistake counts, best move). */
+  summary: GameSummary
+  /** Evaluation and best move for any analysed position, e.g. during replay. */
+  analysisAt: (fen: string) => PositionInsight
 }
 
 /** Reads the side to move straight from a FEN string. */
@@ -87,14 +109,13 @@ export function useCoachAnalysis(
 
   const current = cache.get(fen) ?? null
 
-  const bestMove = useMemo(() => {
-    if (!current?.bestMoveUci) return null
-    const parsed = parseUciMove(current.bestMoveUci)
-    return parsed ? { from: parsed.from as Square, to: parsed.to as Square } : null
-  }, [current])
+  const bestMove = useMemo(() => uciToSquares(current?.bestMoveUci ?? null), [current])
 
   const qualities = useMemo(() => {
     return game.history.map((move) => {
+      // A checkmating move is the best possible outcome; the resulting position
+      // is terminal and has no usable engine evaluation to compare against.
+      if (move.san.includes('#')) return 'excellent'
       const before = cache.get(move.before)
       const after = cache.get(move.after)
       if (!before || !after) return null
@@ -103,6 +124,72 @@ export function useCoachAnalysis(
     })
   }, [game.history, cache])
 
+  const summary = useMemo<GameSummary>(() => {
+    const whiteAccuracies: number[] = []
+    const blackAccuracies: number[] = []
+    let inaccuracies = 0
+    let mistakes = 0
+    let blunders = 0
+    let best: GameSummary['bestMove'] = null
+    let bestGain = -Infinity
+
+    game.history.forEach((move, index) => {
+      const isMate = move.san.includes('#')
+      const before = cache.get(move.before)
+      const after = cache.get(move.after)
+      if (!isMate && (!before || !after)) return
+
+      const whiteWinBefore = before ? winningChances(before.eval.cp) : 0.5
+      const whiteWinAfter = after ? winningChances(after.eval.cp) : 0.5
+      const moverBefore = move.color === 'w' ? whiteWinBefore : 1 - whiteWinBefore
+      // A checkmating move settles the game in the mover's favour.
+      const moverAfter = isMate ? 1 : move.color === 'w' ? whiteWinAfter : 1 - whiteWinAfter
+
+      const accuracy = isMate ? 100 : moveAccuracy(moverBefore, moverAfter)
+      ;(move.color === 'w' ? whiteAccuracies : blackAccuracies).push(accuracy)
+
+      const quality =
+        isMate || !before || !after
+          ? 'excellent'
+          : classifyMove(
+              centipawnLoss(before.eval, after.eval, move.color),
+              isMissedMate(before.eval, after.eval, move.color),
+            )
+      if (quality === 'inaccuracy') inaccuracies += 1
+      if (quality === 'mistake') mistakes += 1
+      if (quality === 'blunder') blunders += 1
+
+      const gain = moverAfter - moverBefore
+      if (gain > bestGain) {
+        bestGain = gain
+        best = { san: move.san, index, color: move.color }
+      }
+    })
+
+    const mean = (values: number[]) =>
+      values.length ? Math.round(values.reduce((sum, v) => sum + v, 0) / values.length) : null
+
+    return {
+      accuracyWhite: mean(whiteAccuracies),
+      accuracyBlack: mean(blackAccuracies),
+      inaccuracies,
+      mistakes,
+      blunders,
+      bestMove: best,
+    }
+  }, [game.history, cache])
+
+  const analysisAt = useCallback(
+    (targetFen: string): PositionInsight => {
+      const entry = cache.get(targetFen)
+      return {
+        eval: entry?.eval ?? null,
+        bestMove: uciToSquares(entry?.bestMoveUci ?? null),
+      }
+    },
+    [cache],
+  )
+
   return {
     isReady,
     isAnalyzing,
@@ -110,5 +197,14 @@ export function useCoachAnalysis(
     bestMove,
     bestMoveUci: current?.bestMoveUci ?? null,
     qualities,
+    summary,
+    analysisAt,
   }
+}
+
+/** Converts a UCI move to board squares, or null. */
+function uciToSquares(uci: string | null): { from: Square; to: Square } | null {
+  if (!uci) return null
+  const parsed = parseUciMove(uci)
+  return parsed ? { from: parsed.from as Square, to: parsed.to as Square } : null
 }
