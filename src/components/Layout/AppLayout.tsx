@@ -17,7 +17,7 @@ export default function AppLayout() {
       <BottomBar />
 
       {/* pb-20 clears the mobile bottom bar; md:pl-64 clears the desktop sidebar. */}
-      <main id="contenu" className="min-w-[375px] px-4 pb-20 pt-6 md:pb-8 md:pl-64 md:pr-8">
+      <main id="contenu" className="px-4 pb-20 pt-6 md:pb-8 md:pl-64 md:pr-8">
         <div className="mx-auto max-w-6xl">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
