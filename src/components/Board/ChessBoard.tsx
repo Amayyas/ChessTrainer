@@ -18,6 +18,8 @@ export interface ChessBoardProps {
   interactive?: boolean
   /** Fixed pixel width. Omit to let the board size itself to its container. */
   boardWidth?: number
+  /** Overlay arrows, e.g. the coach best-move suggestion. */
+  arrows?: Array<[Square, Square, string?]>
 }
 
 // Board colours derived from the palette (spec section 4.1): ivory light squares,
@@ -47,6 +49,7 @@ export default function ChessBoard({
   checkSquare,
   interactive = true,
   boardWidth,
+  arrows,
 }: ChessBoardProps) {
   const reduceMotion = useReducedMotion()
   const [selected, setSelected] = useState<Square | null>(null)
@@ -186,6 +189,8 @@ export default function ChessBoard({
           customLightSquareStyle={{ backgroundColor: LIGHT_SQUARE }}
           customDarkSquareStyle={{ backgroundColor: DARK_SQUARE }}
           customSquareStyles={squareStyles}
+          customArrows={arrows}
+          customArrowColor="#C9A84C"
           animationDuration={reduceMotion ? 0 : 200}
           arePremovesAllowed={false}
           id={`board-${turn}`}
