@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
+import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 import { cn } from '@/utils/cn'
 
 export interface MoveHistoryProps {
   /** Moves in algebraic notation, e.g. ['e4', 'e5', 'Nf3']. */
   moves: string[]
+  /** Optional coach classification per move, parallel to `moves`. */
+  qualities?: (MoveQuality | null)[]
   className?: string
 }
 
@@ -21,8 +24,32 @@ function toPairs(moves: string[]): MovePair[] {
   return pairs
 }
 
+/** A single move cell: notation plus optional coach quality symbol. */
+function MoveCell({
+  san,
+  quality,
+  isLast,
+}: {
+  san: string
+  quality: MoveQuality | null | undefined
+  isLast: boolean
+}) {
+  const meta = quality ? MOVE_QUALITY[quality] : null
+  return (
+    <span
+      className={cn(
+        'inline-flex min-w-14 items-center gap-0.5 rounded px-1.5 py-0.5 font-medium text-ebene',
+        isLast && 'bg-or/30',
+      )}
+    >
+      {san}
+      {meta?.symbol && <span className={cn('font-bold', meta.color)}>{meta.symbol}</span>}
+    </span>
+  )
+}
+
 /** Move list in algebraic notation, paired by move number (spec module M3). */
-export default function MoveHistory({ moves, className }: MoveHistoryProps) {
+export default function MoveHistory({ moves, qualities, className }: MoveHistoryProps) {
   const scrollRef = useRef<HTMLOListElement>(null)
   const pairs = toPairs(moves)
   const lastIndex = moves.length - 1
@@ -51,23 +78,17 @@ export default function MoveHistory({ moves, className }: MoveHistoryProps) {
             <span className="w-7 shrink-0 text-right text-xs font-medium text-ardoise">
               {pair.number}.
             </span>
-            <span
-              className={cn(
-                'min-w-14 rounded px-1.5 py-0.5 font-medium text-ebene',
-                whiteIndex === lastIndex && 'bg-or/30',
-              )}
-            >
-              {pair.white}
-            </span>
+            <MoveCell
+              san={pair.white}
+              quality={qualities?.[whiteIndex]}
+              isLast={whiteIndex === lastIndex}
+            />
             {pair.black && (
-              <span
-                className={cn(
-                  'min-w-14 rounded px-1.5 py-0.5 font-medium text-ebene',
-                  blackIndex === lastIndex && 'bg-or/30',
-                )}
-              >
-                {pair.black}
-              </span>
+              <MoveCell
+                san={pair.black}
+                quality={qualities?.[blackIndex]}
+                isLast={blackIndex === lastIndex}
+              />
             )}
           </li>
         )

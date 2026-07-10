@@ -27,7 +27,8 @@ export function useStockfish({
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   useEffect(() => {
-    if (!enabled) return
+    // No Worker in this environment (e.g. jsdom tests): stay gracefully idle.
+    if (!enabled || typeof Worker === 'undefined') return
 
     const engine = new StockfishEngine()
     engineRef.current = engine

@@ -17,7 +17,10 @@ export interface WhiteEval {
 const MATE_CP = 10000
 
 /** Converts an engine analysis (side-to-move relative) to White's perspective. */
-export function toWhiteEval(analysis: Pick<Analysis, 'scoreCp' | 'scoreMate'>, turn: Color): WhiteEval {
+export function toWhiteEval(
+  analysis: Pick<Analysis, 'scoreCp' | 'scoreMate'>,
+  turn: Color,
+): WhiteEval {
   const sign = turn === 'w' ? 1 : -1
 
   if (analysis.scoreMate !== null) {
