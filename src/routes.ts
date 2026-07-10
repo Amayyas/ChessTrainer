@@ -1,6 +1,6 @@
 /**
- * Table des routes de la SPA (cahier des charges, section 4.3).
- * Les routes d'authentification (/login, /register) sont ajoutees au module M10.
+ * SPA route table (specification, section 4.3).
+ * Authentication routes (/login, /register) are added in module M10.
  */
 export const ROUTES = {
   home: '/',

@@ -7,7 +7,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Une PR poussee plusieurs fois d'affilee n'execute que le dernier commit.
+# A PR pushed several times in a row only runs the latest commit.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -17,12 +17,12 @@ permissions:
 
 jobs:
   quality:
-    name: Qualite (Node ${{ matrix.node }})
+    name: Quality (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # 18 est la version de developpement locale, 20 la cible de migration.
+        # 18 is the local development version, 20 the migration target.
         node: [18, 20]
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Formatage
+      - name: Format
         run: npm run format:check
 
       - name: Lint
@@ -44,7 +44,7 @@ jobs:
         run: npm run typecheck
 
   test:
-    name: Tests unitaires
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
       - name: Vitest
         run: npm run test:coverage
 
-      - name: Publier la couverture
+      - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -68,7 +68,7 @@ jobs:
           retention-days: 7
 
   build:
-    name: Build et budget de bundle
+    name: Build & bundle budget
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,13 +80,13 @@ jobs:
 
       - run: npm ci
 
-      - name: Build de production
+      - name: Production build
         run: npm run build
 
-      - name: Budget de taille de bundle
+      - name: Bundle size budget
         run: npm run size
 
-      - name: Publier le build
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -107,16 +107,16 @@ jobs:
 
       - run: npm ci
 
-      - name: Recuperer le build
+      - name: Download build
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
 
-      - name: Audit performance et accessibilite
+      - name: Performance & accessibility audit
         run: npx lhci autorun
 
-      - name: Publier le rapport
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:

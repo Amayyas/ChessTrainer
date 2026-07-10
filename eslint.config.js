@@ -25,7 +25,7 @@ export default tseslint.config(
     },
   },
   {
-    // Fichiers de configuration et scripts Node : pas de JSX, pas de DOM.
+    // Node config files and scripts: no JSX, no DOM.
     files: ['**/*.{js,mjs}'],
     extends: [js.configs.recommended, prettier],
     languageOptions: {

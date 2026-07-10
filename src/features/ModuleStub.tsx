@@ -1,19 +1,19 @@
 interface ModuleStubProps {
   glyph: string
   title: string
-  /** Numero du module du cahier des charges qui implementera cet ecran. */
+  /** Specification module number that will implement this screen. */
   module: string
   summary: string
 }
 
 /**
- * Ecran d'attente pose au module M1 pour valider le routing.
- * Chaque page est remplacee par sa vraie implementation a son module.
+ * Placeholder screen added in module M1 to validate routing.
+ * Each page is replaced by its real implementation in its own module.
  */
 export default function ModuleStub({ glyph, title, module, summary }: ModuleStubProps) {
   return (
     <section className="mx-auto max-w-2xl py-12 text-center">
-      {/* Medaillon ebene : l'or sur ivoire ne fait que 2:1, insuffisant (section 4.2, WCAG AA). */}
+      {/* Ebony medallion: gold on ivory is only 2:1, too low (spec section 4.2, WCAG AA). */}
       <span
         aria-hidden="true"
         className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-ebene text-4xl text-or"

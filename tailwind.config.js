@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Palette du cahier des charges, section 4.1 — Identite visuelle
+        // Palette from the specification, section 4.1 — visual identity
         ebene: '#1A1A2E',
         or: '#C9A84C',
         ivoire: '#F5F0E8',

@@ -10,7 +10,7 @@ export default function AppLayout() {
       <Sidebar />
       <BottomBar />
 
-      {/* pb-20 degage la bottom bar mobile ; md:pl-60 degage la sidebar desktop. */}
+      {/* pb-20 clears the mobile bottom bar; md:pl-64 clears the desktop sidebar. */}
       <main id="contenu" className="min-w-[375px] px-4 pb-20 pt-6 md:pb-8 md:pl-64 md:pr-8">
         <Outlet />
       </main>

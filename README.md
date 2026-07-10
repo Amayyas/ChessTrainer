@@ -1,151 +1,154 @@
 # ChessTrainer AI
 
-Application web de formation aux échecs, articulée autour de l'intelligence artificielle comme
-moteur d'apprentissage personnalisé. Réécriture complète (v2.0) de la version scolaire initiale.
+A web app for chess training, built around artificial intelligence as its personalized
+learning engine. Complete rewrite (v2.0) of the initial school-project version.
 
-Le développement suit le [cahier des charges](./cahier-des-charges.html), module par module.
+Development follows the project specification, one module at a time. The user interface is in
+French, since the app targets French-speaking learners; the codebase itself is English.
 
 ## Stack
 
-| Domaine     | Choix                                |
-| ----------- | ------------------------------------ |
-| UI          | React 18 + TypeScript 5              |
-| Build       | Vite 5                               |
-| Styling     | Tailwind CSS 3                       |
-| Navigation  | React Router 6                       |
-| Logique jeu | chess.js _(M3)_                      |
-| Plateau     | react-chessboard _(M3)_              |
-| IA          | Stockfish.js en Web Worker _(M4)_    |
-| État global | Zustand _(M4)_                       |
-| Animations  | Framer Motion _(M2)_                 |
-| Backend     | Supabase — Auth + PostgreSQL _(M10)_ |
+| Area         | Choice                               |
+| ------------ | ------------------------------------ |
+| UI           | React 18 + TypeScript 5              |
+| Build        | Vite 5                               |
+| Styling      | Tailwind CSS 3                       |
+| Routing      | React Router 6                       |
+| Game logic   | chess.js _(M3)_                      |
+| Board        | react-chessboard _(M3)_              |
+| AI           | Stockfish.js in a Web Worker _(M4)_  |
+| Global state | Zustand _(M4)_                       |
+| Animations   | Framer Motion _(M2)_                 |
+| Backend      | Supabase — Auth + PostgreSQL _(M10)_ |
 
-Les dépendances annotées d'un module sont ajoutées à ce module, pas avant.
+Dependencies annotated with a module are added in that module, not before.
 
-## Prérequis
+## Requirements
 
-Node.js 18 ou supérieur, et npm.
+Node.js 18 or later, and npm.
 
-## Installation et lancement
+## Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-L'application est servie sur http://localhost:5173.
+The app is served on http://localhost:5173.
 
 ## Scripts
 
-| Script                  | Rôle                                              |
-| ----------------------- | ------------------------------------------------- |
-| `npm run dev`           | Serveur de développement avec HMR                 |
-| `npm run build`         | Vérification des types puis build de production   |
-| `npm run preview`       | Sert le build de production localement            |
-| `npm run lint`          | ESLint                                            |
-| `npm run format`        | Applique Prettier                                 |
-| `npm run typecheck`     | `tsc --noEmit`                                    |
-| `npm test`              | Tests unitaires Vitest                            |
-| `npm run test:watch`    | Vitest en mode watch                              |
-| `npm run test:coverage` | Vitest avec rapport de couverture                 |
-| `npm run size`          | Vérifie le budget de taille de bundle sur `dist/` |
-| `npm run ci`            | Reproduit la CI en local, dans l'ordre            |
+| Script                  | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `npm run dev`           | Development server with HMR                  |
+| `npm run build`         | Type check, then production build            |
+| `npm run preview`       | Serve the production build locally           |
+| `npm run lint`          | ESLint                                       |
+| `npm run format`        | Apply Prettier                               |
+| `npm run typecheck`     | `tsc --noEmit`                               |
+| `npm test`              | Vitest unit tests                            |
+| `npm run test:watch`    | Vitest in watch mode                         |
+| `npm run test:coverage` | Vitest with a coverage report                |
+| `npm run size`          | Check the bundle size budget against `dist/` |
+| `npm run ci`            | Reproduce the CI pipeline locally, in order  |
 
-Lancez `npm run ci` avant chaque commit : c'est la même séquence que la CI distante.
+Run `npm run ci` before every commit: it is the same sequence as the remote CI.
 
-## Intégration continue
+## Continuous integration
 
-Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sur chaque pull
-request et sur chaque push vers `main`. La branche `main` est protégée : elle n'accepte que des
-merges de PR dont la CI est verte.
+The workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and
+on every push to `main`. The `main` branch is protected: it only accepts merges from PRs whose CI
+is green.
 
-| Job                       | Contenu                                                         |
-| ------------------------- | --------------------------------------------------------------- |
-| Qualité (Node 18 et 20)   | `format:check`, `lint`, `typecheck`                             |
-| Tests unitaires           | Vitest + couverture, publiée en artefact                        |
-| Build et budget de bundle | Build de production, puis vérification des budgets de taille    |
-| Lighthouse                | Audit performance et accessibilité, 3 runs, rapport en artefact |
+| Job                      | Contents                                                   |
+| ------------------------ | ---------------------------------------------------------- |
+| Quality (Node 18 and 20) | `format:check`, `lint`, `typecheck`                        |
+| Unit tests               | Vitest + coverage, published as an artifact                |
+| Build & bundle budget    | Production build, then size-budget check                   |
+| Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
 
-### Budgets de taille
+### Size budgets
 
-Définis dans [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs), exprimés en gzip.
-Le cahier des charges classe « taille du bundle Stockfish > 5 Mo » comme un risque de probabilité
-haute (section 06) ; ce garde-fou rend une régression visible dès la PR qui l'introduit.
+Defined in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs), expressed in gzip.
+The specification rates "Stockfish bundle above 5 MB" as a highly probable risk (section 06); this
+guard makes a regression visible on the PR that introduces it.
 
-| Catégorie                       | Budget |
-| ------------------------------- | ------ |
-| JavaScript initial              | 200 kB |
-| CSS                             | 50 kB  |
-| Stockfish (chargé à la demande) | 5 Mo   |
+| Category                     | Budget |
+| ---------------------------- | ------ |
+| Initial JavaScript           | 200 kB |
+| CSS                          | 50 kB  |
+| Stockfish (loaded on demand) | 5 MB   |
 
-### Seuils Lighthouse
+### Lighthouse thresholds
 
-Configurés dans [`lighthouserc.json`](lighthouserc.json). Performance, accessibilité et bonnes
-pratiques sont bloquants ; le SEO est simplement signalé. Ces seuils servent le critère de réussite
-n°6 du cahier des charges (« l'application se charge en moins de 5 secondes ») et l'exigence
-d'accessibilité WCAG AA de la section 4.2.
+Configured in [`lighthouserc.json`](lighthouserc.json). Performance, accessibility and best
+practices are blocking; SEO only warns. These thresholds serve success criterion 6 of the
+specification ("the app loads in under 5 seconds") and the WCAG AA accessibility requirement of
+section 4.2.
 
-| Catégorie        | Seuil | Bloquant |
-| ---------------- | ----- | -------- |
-| Performance      | 90    | Oui      |
-| Accessibilité    | 95    | Oui      |
-| Bonnes pratiques | 90    | Oui      |
-| SEO              | 90    | Non      |
+| Category       | Threshold | Blocking |
+| -------------- | --------- | -------- |
+| Performance    | 90        | Yes      |
+| Accessibility  | 95        | Yes      |
+| Best practices | 90        | Yes      |
+| SEO            | 90        | No       |
 
 ## Architecture
 
-Structure conforme à la section 3.2 du cahier des charges.
+Structure mirrors section 3.2 of the specification.
 
 ```
 src/
 ├── components/
-│   ├── Board/       # Plateau, pièces, flèches, surlignage
-│   ├── UI/          # Boutons, cartes, barres, badges
-│   └── Layout/      # Navigation, en-tête, conteneurs
-├── features/        # Modules fonctionnels
-│   ├── coach/       # Mode IA Coach
-│   ├── battle/      # Affrontement IA
-│   ├── puzzle/      # Mode Puzzle
-│   ├── hunt/        # Mode Chasse aux Pièces
-│   ├── home/        # Tableau de bord
-│   ├── profile/     # Profil utilisateur
-│   └── leaderboard/ # Classement mondial
-├── engine/          # Wrapper Stockfish (Web Worker)
-├── store/           # État global Zustand
-├── hooks/           # Hooks React custom
-├── types/           # Types partagés
-└── utils/           # Helpers chess, formatters
+│   ├── Board/       # Board, pieces, arrows, highlighting
+│   ├── UI/          # Buttons, cards, bars, badges
+│   └── Layout/      # Navigation, header, containers
+├── features/        # Functional modules
+│   ├── coach/       # AI Coach mode
+│   ├── battle/      # AI battle mode
+│   ├── puzzle/      # Puzzle mode
+│   ├── hunt/        # Piece Hunt arcade mode
+│   ├── home/        # Dashboard
+│   ├── profile/     # User profile
+│   └── leaderboard/ # Global leaderboard
+├── engine/          # Stockfish wrapper (Web Worker)
+├── store/           # Zustand global state
+├── hooks/           # Custom React hooks
+├── types/           # Shared types
+└── utils/           # Chess helpers, formatters
 ```
 
-`home/`, `profile/` et `leaderboard/` étendent la convention `features/` du cahier des charges,
-qui ne nommait explicitement que les 4 modes de jeu.
+`home/`, `profile/` and `leaderboard/` extend the `features/` convention of the specification,
+which only named the 4 game modes explicitly.
 
-L'alias `@/` pointe vers `src/`.
+The `@/` alias points to `src/`.
 
 ## Palette
 
-Définie à la section 4.1 du cahier des charges et exposée en classes Tailwind.
+Defined in section 4.1 of the specification and exposed as Tailwind classes.
 
-| Nom          | Hex       | Classe Tailwind | Usage                       |
-| ------------ | --------- | --------------- | --------------------------- |
-| Ébène        | `#1A1A2E` | `ebene`         | Fonds, éléments d'autorité  |
-| Or           | `#C9A84C` | `or`            | Accent, CTA, récompenses    |
-| Ivoire       | `#F5F0E8` | `ivoire`        | Fond principal des contenus |
-| Gris ardoise | `#4A4A5A` | `ardoise`       | Texte secondaire            |
+| Name  | Hex       | Tailwind class | Usage                   |
+| ----- | --------- | -------------- | ----------------------- |
+| Ebony | `#1A1A2E` | `ebene`        | Backgrounds, authority  |
+| Gold  | `#C9A84C` | `or`           | Accent, CTA, rewards    |
+| Ivory | `#F5F0E8` | `ivoire`       | Main content background |
+| Slate | `#4A4A5A` | `ardoise`      | Secondary text          |
 
-## Avancement
+Tailwind color keys keep their French names to match the specification wording.
 
-| Module | Intitulé                   | Statut  |
-| ------ | -------------------------- | ------- |
-| M1     | Setup & Architecture       | ✅ Fait |
-| M2     | Design système & UI        | À faire |
-| M3     | Core Chess Engine          | À faire |
-| M4     | Mode IA Coach              | À faire |
-| M5     | Mode Affrontement IA       | À faire |
-| M6     | Mode Puzzle                | À faire |
-| M7     | Mode Chasse aux Pièces     | À faire |
-| M8     | Système de progression     | À faire |
-| M10    | Auth, Backend & Classement | À faire |
-| M9     | Tests & Optimisation       | À faire |
+## Progress
 
-M10 précède M9, conformément à la phase 4 du planning (section 5.1).
+| Module | Title                       | Status      |
+| ------ | --------------------------- | ----------- |
+| M1     | Setup & Architecture        | ✅ Done     |
+| M2     | Design system & UI          | In progress |
+| M3     | Core Chess Engine           | To do       |
+| M4     | AI Coach mode               | To do       |
+| M5     | AI Battle mode              | To do       |
+| M6     | Puzzle mode                 | To do       |
+| M7     | Piece Hunt mode             | To do       |
+| M8     | Progression system          | To do       |
+| M10    | Auth, Backend & Leaderboard | To do       |
+| M9     | Tests & Optimization        | To do       |
+
+M10 precedes M9, per phase 4 of the plan (section 5.1).

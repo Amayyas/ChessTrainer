@@ -3,16 +3,16 @@ import { ROUTES, type RoutePath } from '@/routes'
 export interface NavItem {
   path: RoutePath
   label: string
-  /** Glyphe Unicode d'une piece d'echecs — evite une dependance d'icones. */
+  /** Unicode chess-piece glyph — avoids pulling in an icon dependency. */
   glyph: string
-  /** Lu par les lecteurs d'ecran a la place du glyphe (section 4.2, accessibilite). */
+  /** Read by screen readers in place of the glyph (spec section 4.2, accessibility). */
   description: string
   /**
-   * La bottom bar mobile n'expose que les 4 modes et le profil (section 4.3).
-   * Accueil et Classement restent atteignables depuis le tableau de bord.
+   * The mobile bottom bar only exposes the 4 game modes and the profile (spec section 4.3).
+   * Home and Leaderboard stay reachable from the dashboard.
    */
   inBottomBar: boolean
-  /** Repli pour la bottom bar : a 375px, une entree ne dispose que de ~75px. */
+  /** Fallback for the bottom bar: at 375px an item only gets about 75px. */
   shortLabel?: string
 }
 
