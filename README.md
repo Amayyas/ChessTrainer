@@ -1,336 +1,151 @@
-# ♟️ Chess Trainer
+# ChessTrainer AI
 
-Un entraîneur interactif de puzzles d'échecs avec solutions détaillées, conçu pour améliorer vos compétences tactiques aux échecs.
+Application web de formation aux échecs, articulée autour de l'intelligence artificielle comme
+moteur d'apprentissage personnalisé. Réécriture complète (v2.0) de la version scolaire initiale.
 
-![Chess Trainer](https://img.shields.io/badge/Version-1.0.0-blue.svg)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)
-![CSS3](https://img.shields.io/badge/CSS3-Responsive-green.svg)
-![HTML5](https://img.shields.io/badge/HTML5-Semantic-orange.svg)
+Le développement suit le [cahier des charges](./cahier-des-charges.html), module par module.
 
-## 📋 Table des Matières
+## Stack
 
-- [Aperçu](#aperçu)
-- [Fonctionnalités](#fonctionnalités)
-- [Installation](#installation)
-- [Utilisation](#utilisation)
-- [Structure du Projet](#structure-du-projet)
-- [Puzzles Inclus](#puzzles-inclus)
-- [Raccourcis Clavier](#raccourcis-clavier)
-- [Technologies Utilisées](#technologies-utilisées)
-- [Personnalisation](#personnalisation)
+| Domaine     | Choix                                |
+| ----------- | ------------------------------------ |
+| UI          | React 18 + TypeScript 5              |
+| Build       | Vite 5                               |
+| Styling     | Tailwind CSS 3                       |
+| Navigation  | React Router 6                       |
+| Logique jeu | chess.js _(M3)_                      |
+| Plateau     | react-chessboard _(M3)_              |
+| IA          | Stockfish.js en Web Worker _(M4)_    |
+| État global | Zustand _(M4)_                       |
+| Animations  | Framer Motion _(M2)_                 |
+| Backend     | Supabase — Auth + PostgreSQL _(M10)_ |
 
-## 🎯 Aperçu
+Les dépendances annotées d'un module sont ajoutées à ce module, pas avant.
 
-Chess Trainer est une application web interactive qui présente une collection de puzzles tactiques d'échecs de différents niveaux de difficulté. Chaque puzzle est accompagné d'indices progressifs et de solutions détaillées pour aider les joueurs à comprendre les concepts tactiques.
+## Prérequis
 
-### Capture d'écran
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ♟️ Chess Trainer                         │
-│         Résolvez des puzzles tactiques et améliorez         │
-│                      votre jeu                              │
-├─────────────────────────────────────────────────────────────┤
-│  Puzzle Info     │    Échiquier Interactif   │   Contrôles  │
-│  ┌─────────────┐ │    ┌─────────────────┐    │  ┌─────────┐ │
-│  │ Mat du      │ │  8 │ ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ │    |  | Indice  │ │
-│  │ Couloir     │ │  7 │ ♟ ♟ ♟ ♟   ♟ ♟ ♟ │    |  | Solution│ │
-│  │ Facile      │ │  6 │       ♞         │    |  | Reset   │ │
-│  │             │ │  5 │         ♟       │    |  │ ← →     │ │
-│  │ Tour: Blanc │ │  4 │     ♗   ♙       │    |  └─────────┘ │
-│  │ Mat en 2    │ │  3 │                 │    │              │
-│  └─────────────┘ │  2 │ ♙ ♙ ♙ ♙   ♙ ♙ ♙ │    │              │
-│                  │  1 │ ♖ ♘ ♗ ♕ ♔   ♘ ♖ │    │              │
-│                  |    └─────────────────┘    │              │
-│                  │    a b c d e f g h        │              │
-└─────────────────────────────────────────────────────────────┘
-```
+Node.js 18 ou supérieur, et npm.
 
-## ✨ Fonctionnalités
-
-### 🎮 Interface Utilisateur
-- **Design moderne et responsive** : Interface élégante qui s'adapte à tous les écrans
-- **Échiquier interactif** : Clic pour sélectionner et déplacer les pièces
-- **Coordonnées visuelles** : Affichage des lettres et chiffres pour faciliter la navigation
-- **Surbrillance intelligente** : Mise en évidence des coups possibles et du dernier coup joué
-
-### 🧩 Système de Puzzles
-- **6 puzzles variés** : De facile à difficile, couvrant différentes tactiques
-- **Catégories tactiques** :
-  - Mat du couloir
-  - Attaque à la découverte
-  - Sacrifice de dame
-  - Attaque double
-  - Clouage décisif
-  - Mat de l'escalier
-
-### 💡 Aide et Solutions
-- **Système d'indices à 3 niveaux** : Aide progressive sans révéler la solution
-- **Solutions complètes** : Affichage détaillé de tous les coups gagnants
-- **Validation des coups** : Feedback immédiat sur les mouvements
-
-### 🎯 Navigation et Contrôles
-- **Navigation intuitive** : Boutons précédent/suivant entre les puzzles
-- **Sélecteur de puzzle** : Grille visuelle pour choisir rapidement un puzzle
-- **Reset instantané** : Retour à la position initiale en un clic
-- **Raccourcis clavier** : Contrôle rapide par le clavier
-
-## 🚀 Installation
-
-### Prérequis
-- Un navigateur web moderne (Chrome, Firefox, Safari, Edge)
-- Connexion internet pour les icônes Font Awesome et Google Fonts
-
-### Installation Simple
-1. **Cloner ou télécharger** le projet :
-```bash
-git clone git.github.com/Amayyas/chess-trainer.git
-cd chess-trainer
-```
-
-2. **Ouvrir le fichier** `index.html` dans votre navigateur :
-```bash
-# Linux/Mac
-open index.html
-
-# Windows
-start index.html
-
-# Ou double-cliquer sur le fichier dans l'explorateur
-```
-
-### Installation avec Serveur Local (Recommandé)
-Pour une meilleure expérience, utilisez un serveur local :
+## Installation et lancement
 
 ```bash
-# Avec Python 3
-python -m http.server 8000
-
-# Avec Node.js (npx)
-npx serve .
-
-# Avec PHP
-php -S localhost:8000
+npm install
+npm run dev
 ```
 
-Puis ouvrez `http://localhost:8000` dans votre navigateur.
+L'application est servie sur http://localhost:5173.
 
-## 🎯 Utilisation
+## Scripts
 
-### 🎮 Interface Principale
+| Script                  | Rôle                                              |
+| ----------------------- | ------------------------------------------------- |
+| `npm run dev`           | Serveur de développement avec HMR                 |
+| `npm run build`         | Vérification des types puis build de production   |
+| `npm run preview`       | Sert le build de production localement            |
+| `npm run lint`          | ESLint                                            |
+| `npm run format`        | Applique Prettier                                 |
+| `npm run typecheck`     | `tsc --noEmit`                                    |
+| `npm test`              | Tests unitaires Vitest                            |
+| `npm run test:watch`    | Vitest en mode watch                              |
+| `npm run test:coverage` | Vitest avec rapport de couverture                 |
+| `npm run size`          | Vérifie le budget de taille de bundle sur `dist/` |
+| `npm run ci`            | Reproduit la CI en local, dans l'ordre            |
 
-#### Zone d'Information (Gauche)
-- **Titre du puzzle** : Nom et numéro du puzzle actuel
-- **Badge de difficulté** : Niveau coloré (Facile/Moyen/Difficile)
-- **Description** : Objectif et contexte du puzzle
-- **Statistiques** : Tour actuel et objectif à atteindre
+Lancez `npm run ci` avant chaque commit : c'est la même séquence que la CI distante.
 
-#### Échiquier Central
-- **Clic simple** : Sélectionner une pièce
-- **Clic sur destination** : Déplacer la pièce sélectionnée
-- **Surbrillance verte** : Coups possibles
-- **Surbrillance jaune** : Dernier coup joué
-- **Surbrillance bleue** : Pièce sélectionnée
+## Intégration continue
 
-#### Panneau de Contrôle (Droite)
-- **Navigation** : Boutons ← → pour changer de puzzle
-- **Indice** : Révèle progressivement des conseils
-- **Solution** : Affiche la séquence complète de coups
-- **Reset** : Remet le puzzle à sa position initiale
+Le workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) s'exécute sur chaque pull
+request et sur chaque push vers `main`. La branche `main` est protégée : elle n'accepte que des
+merges de PR dont la CI est verte.
 
-### 📝 Guide Étape par Étape
+| Job                       | Contenu                                                         |
+| ------------------------- | --------------------------------------------------------------- |
+| Qualité (Node 18 et 20)   | `format:check`, `lint`, `typecheck`                             |
+| Tests unitaires           | Vitest + couverture, publiée en artefact                        |
+| Build et budget de bundle | Build de production, puis vérification des budgets de taille    |
+| Lighthouse                | Audit performance et accessibilité, 3 runs, rapport en artefact |
 
-1. **Choisir un puzzle** :
-   - Utilisez la grille en bas pour sélectionner
-   - Ou naviguez avec les flèches ← →
+### Budgets de taille
 
-2. **Analyser la position** :
-   - Lisez la description du puzzle
-   - Identifiez les pièces et leur placement
-   - Cherchez les faiblesses de l'adversaire
+Définis dans [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs), exprimés en gzip.
+Le cahier des charges classe « taille du bundle Stockfish > 5 Mo » comme un risque de probabilité
+haute (section 06) ; ce garde-fou rend une régression visible dès la PR qui l'introduit.
 
-3. **Jouer votre coup** :
-   - Cliquez sur la pièce à déplacer
-   - Cliquez sur la case de destination
-   - Observez le feedback
+| Catégorie                       | Budget |
+| ------------------------------- | ------ |
+| JavaScript initial              | 200 kB |
+| CSS                             | 50 kB  |
+| Stockfish (chargé à la demande) | 5 Mo   |
 
-4. **Utiliser l'aide si nécessaire** :
-   - Bouton "Indice" pour des conseils
-   - Bouton "Solution" pour voir tous les coups
+### Seuils Lighthouse
 
-5. **Passer au puzzle suivant** :
-   - Automatique après résolution
-   - Ou manuellement avec les boutons
+Configurés dans [`lighthouserc.json`](lighthouserc.json). Performance, accessibilité et bonnes
+pratiques sont bloquants ; le SEO est simplement signalé. Ces seuils servent le critère de réussite
+n°6 du cahier des charges (« l'application se charge en moins de 5 secondes ») et l'exigence
+d'accessibilité WCAG AA de la section 4.2.
 
-## 📁 Structure du Projet
+| Catégorie        | Seuil | Bloquant |
+| ---------------- | ----- | -------- |
+| Performance      | 90    | Oui      |
+| Accessibilité    | 95    | Oui      |
+| Bonnes pratiques | 90    | Oui      |
+| SEO              | 90    | Non      |
+
+## Architecture
+
+Structure conforme à la section 3.2 du cahier des charges.
 
 ```
-chess-trainer/
-├── 📄 index.html          # Structure HTML principale
-├── 🎨 styles.css          # Styles CSS et design responsive
-├── ⚡ script.js           # Logique JavaScript et gestion des puzzles
-└── 📖 README.md           # Documentation du projet
+src/
+├── components/
+│   ├── Board/       # Plateau, pièces, flèches, surlignage
+│   ├── UI/          # Boutons, cartes, barres, badges
+│   └── Layout/      # Navigation, en-tête, conteneurs
+├── features/        # Modules fonctionnels
+│   ├── coach/       # Mode IA Coach
+│   ├── battle/      # Affrontement IA
+│   ├── puzzle/      # Mode Puzzle
+│   ├── hunt/        # Mode Chasse aux Pièces
+│   ├── home/        # Tableau de bord
+│   ├── profile/     # Profil utilisateur
+│   └── leaderboard/ # Classement mondial
+├── engine/          # Wrapper Stockfish (Web Worker)
+├── store/           # État global Zustand
+├── hooks/           # Hooks React custom
+├── types/           # Types partagés
+└── utils/           # Helpers chess, formatters
 ```
 
-### Détail des Fichiers
+`home/`, `profile/` et `leaderboard/` étendent la convention `features/` du cahier des charges,
+qui ne nommait explicitement que les 4 modes de jeu.
 
-#### `index.html`
-- Structure sémantique HTML5
-- Intégration des bibliothèques externes
-- Définition des zones d'interface
-- Éléments interactifs (boutons, panneau)
+L'alias `@/` pointe vers `src/`.
 
-#### `styles.css`
-- Design moderne avec gradients
-- Système de grille CSS Grid
-- Animations et transitions fluides
-- Responsive design pour mobile/tablette
-- Variables CSS pour la cohérence
+## Palette
 
-#### `script.js`
-- Classe `ChessPuzzleGenerator` principale
-- Gestion de l'état du jeu
-- Logique de validation des coups
-- Système d'indices et solutions
-- Base de données des puzzles
+Définie à la section 4.1 du cahier des charges et exposée en classes Tailwind.
 
-## 🧩 Puzzles Inclus
+| Nom          | Hex       | Classe Tailwind | Usage                       |
+| ------------ | --------- | --------------- | --------------------------- |
+| Ébène        | `#1A1A2E` | `ebene`         | Fonds, éléments d'autorité  |
+| Or           | `#C9A84C` | `or`            | Accent, CTA, récompenses    |
+| Ivoire       | `#F5F0E8` | `ivoire`        | Fond principal des contenus |
+| Gris ardoise | `#4A4A5A` | `ardoise`       | Texte secondaire            |
 
-### 1. 🟢 Mat du Couloir (Facile)
-- **Objectif** : Mat en 2 coups
-- **Concept** : Attaque directe sur le roi
-- **Solution** : `Qh5+ g6 Qxf7#`
+## Avancement
 
-### 2. 🟡 Attaque à la Découverte (Moyen)
-- **Objectif** : Gagner du matériel
-- **Concept** : Attaque découverte avec le pion
-- **Solution** : `Nxe5 Nxe5 d4`
+| Module | Intitulé                   | Statut  |
+| ------ | -------------------------- | ------- |
+| M1     | Setup & Architecture       | ✅ Fait |
+| M2     | Design système & UI        | À faire |
+| M3     | Core Chess Engine          | À faire |
+| M4     | Mode IA Coach              | À faire |
+| M5     | Mode Affrontement IA       | À faire |
+| M6     | Mode Puzzle                | À faire |
+| M7     | Mode Chasse aux Pièces     | À faire |
+| M8     | Système de progression     | À faire |
+| M10    | Auth, Backend & Classement | À faire |
+| M9     | Tests & Optimisation       | À faire |
 
-### 3. 🔴 Sacrifice de Dame (Difficile)
-- **Objectif** : Mat en 3 coups
-- **Concept** : Sacrifice spectaculaire
-- **Solution** : `Qxe5+ Be7 Qxg7 Rf8 Qxf8#`
-
-### 4. 🟡 Attaque Double (Moyen)
-- **Objectif** : Gagner la qualité
-- **Concept** : Menaces multiples
-- **Solution** : `Ng5 Bxg5 Qh5`
-
-### 5. 🟢 Clouage Décisif (Facile)
-- **Objectif** : Gagner une pièce
-- **Concept** : Utilisation du clouage
-- **Solution** : `Bxc6+ bxc6 Nf3`
-
-### 6. 🔴 Mat de l'Escalier (Difficile)
-- **Objectif** : Mat en 4 coups
-- **Concept** : Coordination des tours
-- **Solution** : `Ra8+ Kh7 Rh8+ Kg6 Ra6+ Kf5 Ra5#`
-
-## ⌨️ Raccourcis Clavier
-
-| Touche | Action |
-|--------|--------|
-| `←` | Puzzle précédent |
-| `→` | Puzzle suivant |
-| `H` | Afficher un indice |
-| `S` | Afficher la solution |
-| `R` | Reset du puzzle |
-| `Esc` | Désélectionner |
-
-## 💻 Technologies Utilisées
-
-### Frontend
-- **HTML5** : Structure sémantique moderne
-- **CSS3** : 
-  - CSS Grid et Flexbox pour la mise en page
-  - Variables CSS pour la cohérence
-  - Animations et transitions
-  - Media queries pour le responsive
-- **JavaScript ES6+** :
-  - Classes et modules
-  - Arrow functions
-  - Template literals
-  - Async/await pour les animations
-
-### Bibliothèques Externes
-- **Font Awesome 6.0** : Icônes modernes
-- **Google Fonts (Inter)** : Typographie élégante
-
-### Caractéristiques Techniques
-- **100% Vanilla JavaScript** : Aucune dépendance framework
-- **Responsive Design** : Compatible mobile, tablette, desktop
-- **Progressive Enhancement** : Fonctionne même sans JavaScript
-- **Semantic HTML** : Accessible et SEO-friendly
-
-## 🔧 Personnalisation
-
-### Ajouter de Nouveaux Puzzles
-
-Pour ajouter un puzzle, modifiez le tableau `puzzles` dans `script.js` :
-
-```javascript
-{
-    id: 7,
-    title: "Votre Nouveau Puzzle",
-    difficulty: "moyen", // facile, moyen, difficile
-    description: "Description du puzzle",
-    objective: "Mat en X", // ou "Gagner matériel"
-    turn: "white", // white ou black
-    position: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", // Position FEN
-    solution: ["e4", "e5", "Nf3"], // Notation algébrique
-    hints: [
-        "Premier indice",
-        "Deuxième indice", 
-        "Troisième indice"
-    ]
-}
-```
-
-### Modifier l'Apparence
-
-#### Couleurs Principales
-Dans `styles.css`, modifiez les variables CSS :
-
-```css
-:root {
-    --primary-color: #667eea;
-    --secondary-color: #764ba2;
-    --light-square: #f0d9b5;
-    --dark-square: #b58863;
-}
-```
-
-#### Taille de l'Échiquier
-Modifiez les dimensions dans `.chessboard` :
-
-```css
-.chessboard {
-    grid-template-columns: repeat(8, 70px); /* Au lieu de 60px */
-    grid-template-rows: repeat(8, 70px);
-}
-```
-
-### Configuration Avancée
-
-#### Vitesse des Animations
-Dans `script.js`, modifiez les délais pour les animations restantes :
-
-```javascript
-// Exemple pour d'autres animations si nécessaire
-setTimeout(() => someFunction(), 1000);
-```
-
-#### Symboles des Pièces
-Personnalisez les symboles Unicode :
-
-```javascript
-this.pieces = {
-    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
-};
-```
-
----
-
-**Développé avec ❤️ pour la communauté des échecs**
-
-*Amusez-vous bien et que les tactiques soient avec vous ! ♟️*
+M10 précède M9, conformément à la phase 4 du planning (section 5.1).

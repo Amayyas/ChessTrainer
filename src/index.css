@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ivoire font-sans text-ebene antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+
+  /* Accessibilite : anneau de focus visible au clavier (WCAG AA, section 4.2). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-or ring-offset-2 ring-offset-ivoire;
+  }
+}

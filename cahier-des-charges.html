@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cahier des Charges — ChessTrainer AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --ivory: #F5F0E8;
+    --ebony: #1A1A2E;
+    --gold: #C9A84C;
+    --gold-light: #E8CC7A;
+    --cream: #FAF7F2;
+    --dark-wood: #2D1B0E;
+    --mid-gray: #4A4A5A;
+    --light-gray: #E8E4DC;
+    --accent: #8B6914;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { background: var(--cream); }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ebony);
+    line-height: 1.7;
+    font-size: 10.5pt;
+  }
+
+  /* COVER PAGE */
+  .cover {
+    height: 100vh;
+    min-height: 900px;
+    background: var(--ebony);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 60px,
+      rgba(201,168,76,0.04) 60px,
+      rgba(201,168,76,0.04) 120px
+    );
+  }
+
+  .cover-inner {
+    position: relative;
+    text-align: center;
+    max-width: 700px;
+    padding: 60px 40px;
+  }
+
+  .cover-badge {
+    display: inline-block;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 8pt;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 6px 20px;
+    margin-bottom: 48px;
+  }
+
+  .cover h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 52pt;
+    font-weight: 900;
+    color: var(--ivory);
+    line-height: 1.1;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  .cover h1 span {
+    color: var(--gold);
+  }
+
+  .cover-subtitle {
+    font-size: 14pt;
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 60px;
+    margin-top: 12px;
+  }
+
+  .cover-divider {
+    width: 80px;
+    height: 1px;
+    background: var(--gold);
+    margin: 0 auto 60px;
+  }
+
+  .cover-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+    text-align: left;
+  }
+
+  .cover-meta-item label {
+    display: block;
+    font-size: 7pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .cover-meta-item p {
+    font-size: 10pt;
+    color: var(--ivory);
+    font-weight: 500;
+  }
+
+  .cover-chess-icon {
+    font-size: 80pt;
+    margin-bottom: 24px;
+    filter: drop-shadow(0 0 30px rgba(201,168,76,0.3));
+  }
+
+  /* CONTENT */
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 60px;
+  }
+
+  /* TABLE OF CONTENTS */
+  .toc {
+    page-break-after: always;
+    padding: 60px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .toc-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28pt;
+    color: var(--ebony);
+    margin-bottom: 8px;
+  }
+
+  .toc-subtitle {
+    font-size: 9pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 40px;
+  }
+
+  .toc-line {
+    width: 60px;
+    height: 3px;
+    background: var(--gold);
+    margin-bottom: 40px;
+  }
+
+  .toc-section {
+    margin-bottom: 8px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--light-gray);
+  }
+
+  .toc-num {
+    font-size: 8pt;
+    font-weight: 600;
+    color: var(--gold);
+    min-width: 40px;
+    letter-spacing: 1px;
+  }
+
+  .toc-label {
+    flex: 1;
+    font-size: 10pt;
+    color: var(--ebony);
+    font-weight: 500;
+  }
+
+  .toc-sub {
+    padding: 3px 0 3px 40px;
+    border-bottom: none;
+  }
+
+  .toc-sub .toc-label {
+    font-size: 9.5pt;
+    font-weight: 400;
+    color: var(--mid-gray);
+  }
+
+  /* SECTIONS */
+  .section {
+    page-break-before: always;
+    padding-top: 20px;
+  }
+
+  .section-header {
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--light-gray);
+  }
+
+  .section-num {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--ebony);
+    line-height: 1.2;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 15pt;
+    font-weight: 700;
+    color: var(--ebony);
+    margin: 36px 0 14px;
+    padding-left: 14px;
+    border-left: 3px solid var(--gold);
+  }
+
+  h4 {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: var(--dark-wood);
+    margin: 24px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  p { margin-bottom: 14px; color: var(--mid-gray); }
+
+  strong { color: var(--ebony); font-weight: 600; }
+
+  /* CALLOUT BOXES */
+  .callout {
+    background: var(--ivory);
+    border-left: 4px solid var(--gold);
+    padding: 18px 22px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .callout.dark {
+    background: var(--ebony);
+    color: var(--ivory);
+  }
+
+  .callout.dark p { color: rgba(245,240,232,0.8); }
+  .callout.dark strong { color: var(--gold-light); }
+
+  .callout-title {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  /* CARDS */
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .card {
+    background: white;
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  .card-icon {
+    font-size: 22pt;
+    margin-bottom: 10px;
+  }
+
+  .card h4 {
+    margin-top: 0;
+    font-size: 10.5pt;
+    color: var(--ebony);
+    margin-bottom: 8px;
+  }
+
+  .card p {
+    font-size: 9.5pt;
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* FEATURE LIST */
+  .feature-list {
+    list-style: none;
+    margin: 12px 0 20px;
+  }
+
+  .feature-list li {
+    padding: 7px 0 7px 28px;
+    position: relative;
+    font-size: 9.5pt;
+    color: var(--mid-gray);
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  .feature-list li:last-child { border-bottom: none; }
+
+  .feature-list li::before {
+    content: '♟';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 9pt;
+    top: 8px;
+  }
+
+  /* TECH STACK */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .tech-item {
+    background: var(--ivory);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--light-gray);
+  }
+
+  .tech-item .tech-name {
+    font-weight: 700;
+    font-size: 10pt;
+    color: var(--ebony);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .tech-item .tech-role {
+    font-size: 8.5pt;
+    color: var(--mid-gray);
+  }
+
+  /* PLANNING TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 9.5pt;
+  }
+
+  thead {
+    background: var(--ebony);
+    color: var(--ivory);
+  }
+
+  thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  thead th:first-child { border-radius: 6px 0 0 0; }
+  thead th:last-child { border-radius: 0 6px 0 0; }
+
+  tbody tr:nth-child(even) { background: var(--ivory); }
+  tbody tr:nth-child(odd) { background: white; }
+
+  tbody td {
+    padding: 10px 14px;
+    color: var(--mid-gray);
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  tbody td:first-child { font-weight: 600; color: var(--ebony); }
+
+  .hours-badge {
+    display: inline-block;
+    background: var(--gold);
+    color: white;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 8.5pt;
+    font-weight: 700;
+  }
+
+  .total-row td {
+    background: var(--ebony) !important;
+    color: var(--ivory) !important;
+    font-weight: 700;
+    font-size: 10pt;
+  }
+
+  .total-row td:first-child { color: var(--gold-light) !important; }
+
+  /* PHASE BLOCKS */
+  .phases {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 24px 0;
+  }
+
+  .phase {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .phase-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .phase-dot {
+    width: 14px;
+    height: 14px;
+    background: var(--gold);
+    border-radius: 50%;
+    border: 2px solid var(--cream);
+    box-shadow: 0 0 0 2px var(--gold);
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .phase-line {
+    width: 2px;
+    background: var(--gold);
+    flex: 1;
+    opacity: 0.3;
+  }
+
+  .phase:last-child .phase-line { display: none; }
+
+  .phase-content {
+    flex: 1;
+    padding: 4px 0 28px 16px;
+  }
+
+  .phase-content h4 {
+    margin: 0 0 6px;
+    color: var(--ebony);
+  }
+
+  .phase-content p {
+    margin: 0;
+    font-size: 9.5pt;
+  }
+
+  /* PERSONA */
+  .persona {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .persona-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid var(--light-gray);
+    text-align: center;
+  }
+
+  .persona-avatar {
+    font-size: 32pt;
+    margin-bottom: 10px;
+  }
+
+  .persona-name {
+    font-weight: 700;
+    font-size: 10.5pt;
+    color: var(--ebony);
+    margin-bottom: 4px;
+  }
+
+  .persona-desc {
+    font-size: 8.5pt;
+    color: var(--mid-gray);
+    line-height: 1.5;
+  }
+
+  /* FOOTER */
+  @page { margin: 0; }
+
+  .page-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: var(--ebony);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 60px;
+    font-size: 7.5pt;
+    color: rgba(245,240,232,0.4);
+  }
+
+  .page-footer span { letter-spacing: 2px; }
+
+  /* RISK TABLE */
+  .risk-level {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 8pt;
+    font-weight: 600;
+  }
+
+  .risk-high { background: #FEE2E2; color: #991B1B; }
+  .risk-med { background: #FEF3C7; color: #92400E; }
+  .risk-low { background: #D1FAE5; color: #065F46; }
+
+  /* LIVRABLE */
+  .deliverables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 20px 0;
+  }
+
+  .deliverable {
+    background: white;
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .deliverable-num {
+    background: var(--ebony);
+    color: var(--gold);
+    font-size: 9pt;
+    font-weight: 700;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .deliverable-title {
+    font-weight: 600;
+    font-size: 9.5pt;
+    color: var(--ebony);
+    margin-bottom: 3px;
+  }
+
+  .deliverable-desc {
+    font-size: 8.5pt;
+    color: var(--mid-gray);
+    line-height: 1.5;
+  }
+
+  /* AI HIGHLIGHT */
+  .ai-box {
+    background: linear-gradient(135deg, var(--ebony) 0%, #16213E 100%);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin: 24px 0;
+    border: 1px solid rgba(201,168,76,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-box::before {
+    content: '♛';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 80pt;
+    color: rgba(201,168,76,0.07);
+  }
+
+  .ai-box h4 { color: var(--gold-light); text-transform: none; letter-spacing: 0; margin-top: 0; }
+  .ai-box p { color: rgba(245,240,232,0.7); }
+  .ai-box ul { color: rgba(245,240,232,0.7); padding-left: 20px; }
+  .ai-box ul li { margin-bottom: 6px; font-size: 9.5pt; }
+
+  /* STOCKFISH LEVELS */
+  .levels {
+    display: flex;
+    gap: 6px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+
+  .level-badge {
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .level-1 { background: #D1FAE5; color: #065F46; }
+  .level-2 { background: #DBEAFE; color: #1E40AF; }
+  .level-3 { background: #FEF3C7; color: #92400E; }
+  .level-4 { background: #FEE2E2; color: #991B1B; }
+  .level-5 { background: var(--ebony); color: var(--gold-light); }
+
+  /* Fix strong text visibility in dark boxes */
+  .ai-box strong { color: var(--gold-light); font-weight: 700; }
+  .callout.dark strong { color: var(--gold-light); font-weight: 700; }
+
+  /* Prevent cut-off on page breaks */
+  .card { page-break-inside: avoid; break-inside: avoid; }
+  .callout { page-break-inside: avoid; break-inside: avoid; }
+  .ai-box { page-break-inside: avoid; break-inside: avoid; }
+  .deliverable { page-break-inside: avoid; break-inside: avoid; }
+  .phase { page-break-inside: avoid; break-inside: avoid; }
+  .persona-card { page-break-inside: avoid; break-inside: avoid; }
+  .tech-item { page-break-inside: avoid; break-inside: avoid; }
+  .level-badge { page-break-inside: avoid; break-inside: avoid; }
+  .toc-section { page-break-inside: avoid; break-inside: avoid; }
+
+  /* PAGE MARGINS — first page (cover) has no margin, all others get breathing room */
+  @page { margin: 16mm 0; }
+  @page :first { margin: 0; }
+
+  /* Section padding increased so content never starts flush against the page edge */
+  .section { padding-top: 50px; padding-bottom: 30px; }
+  .toc { padding-top: 50px; }
+
+  /* Planning table: force it onto its own fresh page so all rows fit together */
+  .planning-table { page-break-before: always; break-before: always; }
+
+  /* PRINT */
+  @media print {
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .ai-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead { -webkit-print-color-adjust: exact; print-color-adjust: exact; display: table-row-group; }
+    .total-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .callout.dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    .cards { page-break-inside: avoid; break-inside: avoid; }
+    .deliverables { page-break-inside: avoid; break-inside: avoid; }
+    .persona { page-break-inside: avoid; break-inside: avoid; }
+    .tech-grid { page-break-inside: avoid; break-inside: avoid; }
+    h3 { page-break-after: avoid; break-after: avoid; }
+    h4 { page-break-after: avoid; break-after: avoid; }
+    .planning-table { page-break-before: always; break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">Free Project · 2025–2026</div>
+    <div class="cover-chess-icon">♟</div>
+    <h1>Chess<span>Trainer</span></h1>
+    <div class="cover-subtitle">Intelligence Artificielle</div>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <label>Type de document</label>
+        <p>Cahier des charges</p>
+      </div>
+      <div class="cover-meta-item">
+        <label>Charge estimée</label>
+        <p>78 heures</p>
+      </div>
+      <div class="cover-meta-item">
+        <label>Version</label>
+        <p>2.0 — Mai 2026</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TABLE OF CONTENTS ===== -->
+<div class="toc">
+  <div class="toc-subtitle">Sommaire</div>
+  <h2 class="toc-title">Table des matières</h2>
+  <div class="toc-line"></div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">01</span>
+      <span class="toc-label">Présentation du projet & contexte</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">1.1</span>
+      <span class="toc-label">Contexte et problématique</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">1.2</span>
+      <span class="toc-label">Objectifs du projet</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">1.3</span>
+      <span class="toc-label">Personas utilisateurs</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">02</span>
+      <span class="toc-label">Spécifications fonctionnelles</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.1</span>
+      <span class="toc-label">Mode Apprentissage — IA Coach</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.2</span>
+      <span class="toc-label">Mode Affrontement contre l'IA</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.3</span>
+      <span class="toc-label">Mode Puzzle</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.4</span>
+      <span class="toc-label">Mode Chasse aux Pièces</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.5</span>
+      <span class="toc-label">Système de progression</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.6</span>
+      <span class="toc-label">Comptes utilisateurs, Auth & Classement global</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">03</span>
+      <span class="toc-label">Stack technologique & architecture</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.1</span>
+      <span class="toc-label">Choix technologiques</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.2</span>
+      <span class="toc-label">Architecture applicative</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.3</span>
+      <span class="toc-label">Intégration de l'IA</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">04</span>
+      <span class="toc-label">Design & Expérience Utilisateur</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">05</span>
+      <span class="toc-label">Planning & répartition des 78 heures</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">06</span>
+      <span class="toc-label">Analyse des risques</span>
+    </div>
+  </div>
+
+  <div class="toc-section">
+    <div class="toc-item">
+      <span class="toc-num">07</span>
+      <span class="toc-label">Livrables attendus</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 1 ===== -->
+<div class="content">
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 01</span>
+    <h2>Présentation du projet & contexte</h2>
+  </div>
+
+  <h3>1.1 Contexte et problématique</h3>
+
+  <p>
+    ChessTrainer est une application web de formation aux échecs, dont une première version a été développée
+    dans le cadre d'un projet scolaire. Si cette version initiale a permis de poser les bases —
+    navigation entre des niveaux prédéfinis, système d'indices statiques, plateau de jeu interactif —
+    elle souffre de plusieurs limitations majeures qui en réduisent la valeur pédagogique réelle.
+  </p>
+
+  <div class="callout">
+    <div class="callout-title">Problèmes identifiés dans la version actuelle</div>
+    <ul class="feature-list">
+      <li>Contenu <strong>entièrement hardcodé</strong> : puzzles et positions fixes, sans généricité ni évolutivité</li>
+      <li>Absence totale d'<strong>intelligence artificielle</strong> : l'application ne joue pas, n'analyse pas, n'enseigne pas</li>
+      <li>Stack technique basique (HTML/CSS/JS vanilla) sans architecture modulaire</li>
+      <li>Design générique, sans identité visuelle forte liée au monde des échecs</li>
+      <li>Aucun système de <strong>progression utilisateur</strong> : pas de mémorisation, pas de statistiques</li>
+      <li>Un seul mode de jeu, sans diversité pédagogique</li>
+    </ul>
+  </div>
+
+  <p>
+    Ce cahier des charges définit la refonte complète de l'application ChessTrainer, autour d'un pilier central :
+    <strong>l'intelligence artificielle comme moteur d'apprentissage personnalisé</strong>. L'ambition est de créer
+    une plateforme web à la fois ludique et sérieuse, qui accompagne l'utilisateur dans sa progression aux échecs,
+    du débutant absolu au joueur intermédiaire.
+  </p>
+
+  <h3>1.2 Objectifs du projet</h3>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h4>Intégrer une IA fonctionnelle</h4>
+      <p>Utiliser Stockfish.js (WebAssembly) pour analyser les parties en temps réel et proposer un adversaire de difficulté variable.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h4>Personnaliser l'apprentissage</h4>
+      <p>Fournir des retours analytiques sur chaque coup joué : évaluation, meilleur coup alternatif, explication pédagogique.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎮</div>
+      <h4>Diversifier les modes de jeu</h4>
+      <p>Proposer 4 modes distincts : coaching, affrontement IA, puzzles tactiques, et un mode arcade style Duolingo.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎨</div>
+      <h4>Refondre le design</h4>
+      <p>Créer une identité visuelle forte inspirée du monde des échecs (ivoire, ébène, or) tout en gardant une modernité web.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <h4>Moderniser la stack</h4>
+      <p>Migrer vers React 18 + TypeScript pour une architecture composant robuste, maintenable et scalable.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🏆</div>
+      <h4>Gamifier la progression</h4>
+      <p>Mettre en place un système de points, niveaux, badges et statistiques persistants pour fidéliser l'utilisateur.</p>
+    </div>
+  </div>
+
+  <h3>1.3 Personas utilisateurs</h3>
+
+  <div class="persona">
+    <div class="persona-card">
+      <div class="persona-avatar">🧑‍🎓</div>
+      <div class="persona-name">Lucas, 16 ans</div>
+      <div class="persona-desc">Débutant total, a appris les règles récemment. Cherche à s'améliorer de façon ludique sans se décourager.</div>
+    </div>
+    <div class="persona-card">
+      <div class="persona-avatar">👩‍💼</div>
+      <div class="persona-name">Camille, 28 ans</div>
+      <div class="persona-desc">Joueuse occasionnelle de niveau intermédiaire. Veut comprendre ses erreurs et progresser sur les ouvertures.</div>
+    </div>
+    <div class="persona-card">
+      <div class="persona-avatar">👨‍🏫</div>
+      <div class="persona-name">Marc, 45 ans</div>
+      <div class="persona-desc">Joueur de club, cherche à s'entraîner sur les tactiques et à challenger son niveau contre une IA performante.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 2 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 02</span>
+    <h2>Spécifications fonctionnelles</h2>
+  </div>
+
+  <h3>2.1 Mode Apprentissage — IA Coach</h3>
+
+  <p>
+    Il s'agit du mode central et différenciant de l'application. L'utilisateur joue une partie complète
+    contre lui-même ou en mode analyse libre, et l'IA commente chaque coup en temps réel. Ce mode
+    s'inspire de la fonctionnalité "Analysis board" de Lichess.org, mais dans une interface
+    simplifiée et pédagogique.
+  </p>
+
+  <div class="ai-box">
+    <h4>⚙ Fonctionnement du moteur d'analyse</h4>
+    <p>Stockfish.js analyse la position après chaque coup à une profondeur configurable (depth 12–18). Le score retourné en centipions (cp) est converti en évaluation qualitative :</p>
+    <ul>
+      <li><strong>Excellent coup</strong> (≥ –10 cp vs meilleur coup) — maintien optimal de l'avantage</li>
+      <li><strong>Bon coup</strong> (–10 à –30 cp) — légère perte d'avantage, acceptable</li>
+      <li><strong>Imprécision</strong> (–30 à –80 cp) — coup sous-optimal, explication fournie</li>
+      <li><strong>Erreur</strong> (–80 à –200 cp) — coup mauvais, meilleure alternative affichée</li>
+      <li><strong>Gaffe</strong> (> –200 cp ou mat manqué) — coup critique, leçon associée</li>
+    </ul>
+  </div>
+
+  <h4>Fonctionnalités détaillées</h4>
+  <ul class="feature-list">
+    <li>Indicateur visuel de l'évaluation de position en temps réel (barre d'avantage dynamique)</li>
+    <li>Flèche affichée sur le plateau indiquant le <strong>meilleur coup suggéré</strong> (activable/désactivable)</li>
+    <li>Panneau de notation avec classification de chaque coup de la partie (symboles !, !!, ?, ??, !?)</li>
+    <li>Mode "Rejouer" : revoir la partie coup par coup avec les annotations de l'IA</li>
+    <li>Résumé en fin de partie : précision globale, nb d'erreurs, nb de gaffes, meilleur coup de la partie</li>
+    <li>Système d'<strong>indices progressifs</strong> (3 niveaux : hint général → coup suggéré → explication complète)</li>
+  </ul>
+
+  <h3>2.2 Mode Affrontement contre l'IA</h3>
+
+  <p>
+    L'utilisateur affronte Stockfish.js à différents niveaux de difficulté. La difficulté est calibrée
+    non pas en limitant la profondeur de calcul, mais en combinant plusieurs paramètres Stockfish
+    pour obtenir un comportement humain réaliste à chaque niveau.
+  </p>
+
+  <div class="levels">
+    <span class="level-badge level-1">Niveau 1 — Novice<br><small>~800 ELO</small></span>
+    <span class="level-badge level-2">Niveau 2 — Débutant<br><small>~1000 ELO</small></span>
+    <span class="level-badge level-3">Niveau 3 — Intermédiaire<br><small>~1300 ELO</small></span>
+    <span class="level-badge level-4">Niveau 4 — Avancé<br><small>~1700 ELO</small></span>
+    <span class="level-badge level-5">Niveau 5 — Maître<br><small>~2200 ELO</small></span>
+  </div>
+
+  <ul class="feature-list">
+    <li>Sélection de la couleur jouée (Blancs / Noirs / Aléatoire)</li>
+    <li>Contrôle du temps optionnel : Bullet (1+0), Blitz (5+0), Rapide (10+5), Sans limite</li>
+    <li>Animation des coups de l'IA avec délai simulé (crédibilité humaine)</li>
+    <li>Détection automatique des fins de partie : mat, pat, nulle, abandon</li>
+    <li>Accès au mode Coach post-partie pour analyser la partie jouée</li>
+  </ul>
+
+  <h3>2.3 Mode Puzzle</h3>
+
+  <p>
+    Des positions tactiques prédéfinies à résoudre : trouver le ou les meilleurs coups dans une
+    position donnée. Les puzzles sont importés au format PGN depuis Lichess Open Database
+    (plus de 3 millions de puzzles libres de droits) et catégorisés par thème tactique.
+  </p>
+
+  <ul class="feature-list">
+    <li>Catégories : fourchette, clouage, enfilage, mat en N coups, déviation, surcharge, zugzwang…</li>
+    <li>Difficulté affichée : débutant (< 1200), intermédiaire (1200–1800), avancé (> 1800)</li>
+    <li>Validation en temps réel : coup correct → animation verte, coup incorrect → animation rouge + retry</li>
+    <li>Système d'indices à 3 niveaux (–10 pts par indice consommé)</li>
+    <li>Évaluation à la fin : temps mis, nb d'erreurs, score obtenu</li>
+    <li>Séries de puzzles quotidiennes (5 puzzles/jour) pour créer une habitude d'apprentissage</li>
+    <li>Compteur de série (streak) : puzzles résolus X jours consécutifs</li>
+  </ul>
+
+  <h3>2.4 Mode Chasse aux Pièces</h3>
+
+  <p>
+    Mode arcade inspiré de Duolingo Chess, conçu pour travailler le mouvement des pièces de façon
+    intuitive et engageante. L'objectif est de capturer un maximum de pièces ennemies en 60 secondes
+    avec une seule pièce, sans se faire capturer à son tour.
+  </p>
+
+  <div class="callout dark">
+    <div class="callout-title">Règles du mode</div>
+    <p>Le joueur choisit sa pièce championne (Dame, Tour, Fou, Cavalier, Roi). Des pièces adverses apparaissent sur l'échiquier à des positions aléatoires valides. Le joueur doit les capturer le plus rapidement possible. <strong>Si une pièce adverse peut capturer la pièce du joueur</strong>, elle est mise en surbrillance rouge — le joueur doit se mettre hors de danger ou être capturé (respawn avec –1 vie). 3 vies total, chrono de 60 secondes.</p>
+  </div>
+
+  <h4>Méchaniques de jeu détaillées</h4>
+  <ul class="feature-list">
+    <li>Sélection de la pièce championne avant chaque manche, avec description de ses mouvements</li>
+    <li>Génération procédurale des pièces ennemies (positions légales uniquement, sans embuscade immédiate au spawn)</li>
+    <li>Système de <strong>combo</strong> : captures consécutives rapides multiplient les points (×2, ×3, ×4)</li>
+    <li>Respawn de la pièce du joueur sur une case sûre après capture (–1 vie, –5 secondes)</li>
+    <li>Nouvelles pièces ennemies générées au fil du temps pour maintenir la pression</li>
+    <li>Affichage du score en direct, nombre de captures, vies restantes, timer</li>
+    <li>Tableau des scores local (top 5 par pièce) persisté en localStorage</li>
+    <li>Fin de partie : score total, captures réalisées, record personnel, encouragement</li>
+  </ul>
+
+  <h3>2.5 Système de progression</h3>
+
+  <ul class="feature-list">
+    <li>Points d'expérience (XP) gagnés dans tous les modes, avec paliers de niveau (1–30)</li>
+    <li>Statistiques globales : parties jouées, précision moyenne, puzzles résolus, meilleur score Chasse</li>
+    <li>Badges déverrouillables : "Premier mat", "Série de 7 jours", "100 puzzles", "Score parfait"…</li>
+    <li>Tableau de bord principal affichant la progression, les activités récentes et les challenges du jour</li>
+    <li>Données persistées en Supabase (synchronisées entre appareils pour les utilisateurs connectés)</li>
+  </ul>
+
+  <h3>2.6 Comptes utilisateurs, Auth & Classement global</h3>
+
+  <p>
+    Pour donner une dimension sociale et compétitive au Mode Chasse aux Pièces, l'application intègre
+    un système d'authentification et une base de données partagée. Contrairement aux autres modes
+    (données locales suffisantes), le classement mondial nécessite un backend centralisé.
+  </p>
+
+  <div class="ai-box">
+    <h4>🔐 Système d'authentification — Supabase Auth</h4>
+    <ul>
+      <li><strong>Inscription</strong> par email + mot de passe, ou via <strong>Google OAuth</strong> (bouton "Continuer avec Google")</li>
+      <li><strong>Connexion / déconnexion</strong> persistée via JWT token (auto-refresh côté client)</li>
+      <li><strong>Profil utilisateur</strong> : pseudo, avatar (parmi 6 symboles de pièces), date d'inscription</li>
+      <li><strong>Mode invité</strong> autorisé pour tous les modes sauf l'accès au classement global</li>
+      <li>Protection des routes sensibles via React Router guards</li>
+    </ul>
+  </div>
+
+  <h4>Classement global — Chasse aux Pièces</h4>
+  <ul class="feature-list">
+    <li>Table <code>scores</code> en PostgreSQL (Supabase) : user_id, pièce jouée, score, captures, date</li>
+    <li>Classement mis à jour en <strong>temps réel</strong> via Supabase Realtime (subscription PostgreSQL)</li>
+    <li>Vue par pièce : top 10 mondial pour la Dame, la Tour, le Cavalier, le Fou, le Roi</li>
+    <li>Vue globale toutes pièces confondues (meilleur score absolu)</li>
+    <li>Mise en surbrillance de la position du joueur connecté dans le classement</li>
+    <li>Filtre par période : aujourd'hui / cette semaine / tous les temps</li>
+    <li>Après chaque partie, soumission automatique du score si l'utilisateur est connecté</li>
+    <li>Invitation à créer un compte si le joueur anonyme réalise un score classant</li>
+  </ul>
+
+  <h4>Modèle de données (PostgreSQL Supabase)</h4>
+  <div class="callout">
+    <div class="callout-title">Schéma simplifié</div>
+    <p style="font-family: monospace; font-size: 9pt; line-height: 1.9; white-space: pre; color: #2D1B0E;">
+profiles        → id (UUID), username, avatar_piece, created_at, xp, level
+scores          → id, user_id (FK), piece, score, captures, played_at
+puzzle_progress → user_id (FK), puzzle_id, solved, attempts, solved_at
+achievements    → user_id (FK), badge_id, unlocked_at</p>
+  </div>
+</div>
+
+<!-- ===== SECTION 3 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 03</span>
+    <h2>Stack technologique & architecture</h2>
+  </div>
+
+  <h3>3.1 Choix technologiques</h3>
+
+  <p>
+    La refonte abandonne le vanilla JS/HTML/CSS de la v1 au profit d'une stack moderne,
+    typée et maintenable. Les choix ci-dessous privilégient la maturité des bibliothèques,
+    la richesse de l'écosystème chess-web, et la faisabilité dans les 70 heures imparties.
+  </p>
+
+  <div class="tech-grid">
+    <div class="tech-item">
+      <span class="tech-name">React 18</span>
+      <span class="tech-role">Framework UI</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">TypeScript 5</span>
+      <span class="tech-role">Typage statique</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Vite</span>
+      <span class="tech-role">Build & Dev server</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Tailwind CSS</span>
+      <span class="tech-role">Styling utility-first</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">chess.js</span>
+      <span class="tech-role">Logique de jeu</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">react-chessboard</span>
+      <span class="tech-role">Rendu du plateau</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Stockfish.js</span>
+      <span class="tech-role">Moteur IA (WASM)</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Zustand</span>
+      <span class="tech-role">Gestion d'état global</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Framer Motion</span>
+      <span class="tech-role">Animations UI</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Supabase</span>
+      <span class="tech-role">BaaS — Auth + PostgreSQL</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">Supabase Realtime</span>
+      <span class="tech-role">Classement en direct</span>
+    </div>
+    <div class="tech-item">
+      <span class="tech-name">React Router 6</span>
+      <span class="tech-role">Navigation SPA</span>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Pourquoi cette stack ?</div>
+    <p>
+      <strong>React + TypeScript</strong> est le standard industriel pour les SPA modernes, avec un écosystème
+      chess très riche (react-chessboard, chess.js). <strong>Stockfish.js</strong> compile le moteur d'IA en WebAssembly,
+      permettant une analyse performante directement dans le navigateur, sans serveur dédié.
+      <strong>Supabase</strong> agit comme Backend-as-a-Service : authentification clé en main (email + Google OAuth),
+      base PostgreSQL hébergée et subscriptions temps réel pour le classement global — le tout sans écrire
+      une seule ligne de code serveur. <strong>Vite</strong> offre un dev server HMR ultra-rapide.
+      <strong>Tailwind</strong> permet de prototyper le design rapidement tout en restant cohérent.
+    </p>
+  </div>
+
+  <h3>3.2 Architecture applicative</h3>
+
+  <p>L'application est une Single Page Application (SPA) organisée en modules fonctionnels :</p>
+
+  <div class="callout">
+    <div class="callout-title">Structure des dossiers</div>
+    <p style="font-family: monospace; font-size: 9pt; line-height: 2; white-space: pre; color: #2D1B0E;">
+src/
+├── components/        # Composants UI réutilisables
+│   ├── Board/         # Plateau, pièces, flèches, surlignage
+│   ├── UI/            # Boutons, cartes, barres, badges
+│   └── Layout/        # Navigation, en-tête, conteneurs
+├── features/          # Modules fonctionnels
+│   ├── coach/         # Mode IA Coach
+│   ├── battle/        # Affrontement IA
+│   ├── puzzle/        # Mode Puzzle
+│   └── hunt/          # Mode Chasse aux Pièces
+├── engine/            # Wrapper Stockfish (Web Worker)
+├── store/             # État global Zustand
+├── hooks/             # Hooks React custom
+└── utils/             # Helpers chess, formatters</p>
+  </div>
+
+  <h3>3.3 Intégration de l'IA — Stockfish</h3>
+
+  <p>
+    Stockfish tourne dans un <strong>Web Worker</strong> dédié pour ne pas bloquer le thread principal (UI).
+    La communication est asynchrone via un système de messages UCI (Universal Chess Interface).
+  </p>
+
+  <div class="ai-box">
+    <h4>🔄 Flux de communication avec Stockfish</h4>
+    <ul>
+      <li><strong>Coup joué →</strong> position FEN envoyée au worker</li>
+      <li><strong>Stockfish analyse →</strong> renvoie <code>info depth score cp bestmove</code></li>
+      <li><strong>Conversion →</strong> score cp → label qualitatif + meilleur coup UCI → notation algébrique</li>
+      <li><strong>Rendu →</strong> flèche sur plateau + badge dans l'historique + mise à jour barre</li>
+    </ul>
+    <p>Pour le mode Affrontement, le niveau est calibré via les paramètres <strong>UCI_LimitStrength</strong>, <strong>UCI_Elo</strong> et <strong>Skill Level</strong> de Stockfish, permettant une simulation ELO précise de 800 à 2200+.</p>
+  </div>
+</div>
+
+<!-- ===== SECTION 4 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 04</span>
+    <h2>Design & Expérience Utilisateur</h2>
+  </div>
+
+  <h3>4.1 Identité visuelle</h3>
+
+  <p>
+    Le design s'inspire des valeurs du monde des échecs : <strong>élégance, rigueur, tradition et intelligence</strong>.
+    La palette de couleurs s'articule autour de trois axes chromatiques forts, combinant l'héritage
+    historique du jeu avec une touche de modernité tech.
+  </p>
+
+  <div class="cards">
+    <div class="card">
+      <h4 style="color: #1A1A2E;">■ Ébène — #1A1A2E</h4>
+      <p>Couleur principale, fonds et éléments d'autorité. Évoque les cases noires du plateau, la profondeur, la rigueur.</p>
+    </div>
+    <div class="card">
+      <h4 style="color: #A07830;">◆ Or — #C9A84C</h4>
+      <p>Couleur d'accent, CTA et récompenses. Évoque le prestige, les trophées, les tournois et les pièces sculptées.</p>
+    </div>
+    <div class="card">
+      <h4 style="color: #8A6A3A;">▢ Ivoire — #F5F0E8</h4>
+      <p>Fond principal des contenus, cases blanches. Chaleur et lisibilité, rappelle l'ivoire des pièces traditionnelles.</p>
+    </div>
+    <div class="card">
+      <h4 style="color: #4A4A5A;">○ Gris ardoise — #4A4A5A</h4>
+      <p>Texte secondaire et éléments discrets. Neutralité et hiérarchie visuelle, respire la sophistication.</p>
+    </div>
+  </div>
+
+  <h3>4.2 Principes UX</h3>
+
+  <ul class="feature-list">
+    <li><strong>Progressive disclosure :</strong> l'analyse IA est discrète par défaut, l'utilisateur active les couches d'information à la demande</li>
+    <li><strong>Feedback immédiat :</strong> chaque action (coup joué, hint demandé, puzzle résolu) déclenche un retour visuel et sonore optionnel</li>
+    <li><strong>Mobile-first :</strong> le plateau et les contrôles sont optimisés pour écrans tactiles (min 375px)</li>
+    <li><strong>Accessibilité :</strong> contraste WCAG AA, navigation clavier sur les modes textuels, alt text sur les pièces</li>
+    <li><strong>Typographie :</strong> Playfair Display (titres — noblesse et tradition) + Inter (corps — lisibilité moderne)</li>
+  </ul>
+
+  <h3>4.3 Navigation</h3>
+
+  <p>
+    Une barre de navigation latérale fixe (desktop) ou un bottom bar (mobile) donne accès aux
+    4 modes et au profil. L'écran d'accueil présente les challenges du jour et les statistiques
+    rapides. Pas de compte utilisateur — toutes les données sont persistées en localStorage.
+  </p>
+</div>
+
+<!-- ===== SECTION 5 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 05</span>
+    <h2>Planning & répartition des 78 heures</h2>
+  </div>
+
+  <p>
+    Le projet est découpé en <strong>10 modules</strong> de développement, répartis sur environ
+    4 semaines à un rythme de 20 heures par semaine. La progression suit une logique
+    d'intégration continue : chaque module s'appuie sur les précédents.
+  </p>
+
+  <table class="planning-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Module</th>
+        <th>Description des tâches</th>
+        <th>Heures</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>M1</td>
+        <td>Setup & Architecture</td>
+        <td>Init Vite + React + TypeScript, Tailwind, ESLint/Prettier, structure des dossiers, routing React Router, CI local</td>
+        <td><span class="hours-badge">4h</span></td>
+      </tr>
+      <tr>
+        <td>M2</td>
+        <td>Design système & UI</td>
+        <td>Charte graphique, composants de base (boutons, cartes, modals, badges), navigation, layout responsive desktop/mobile, animations Framer Motion</td>
+        <td><span class="hours-badge">10h</span></td>
+      </tr>
+      <tr>
+        <td>M3</td>
+        <td>Core Chess Engine</td>
+        <td>Intégration chess.js, composant plateau react-chessboard personnalisé (couleurs, pièces SVG), drag & drop, validation des coups, historique notation algébrique</td>
+        <td><span class="hours-badge">6h</span></td>
+      </tr>
+      <tr>
+        <td>M4</td>
+        <td>Mode IA Coach</td>
+        <td>Web Worker Stockfish, analyse coup par coup, barre d'évaluation, flèches best-move, classification qualitative, résumé de partie, mode replay avec annotations</td>
+        <td><span class="hours-badge">16h</span></td>
+      </tr>
+      <tr>
+        <td>M5</td>
+        <td>Mode Affrontement IA</td>
+        <td>Calibration ELO Stockfish (5 niveaux), animation coups IA, gestion du temps (timer), gestion fins de partie, transition vers le mode Coach post-partie</td>
+        <td><span class="hours-badge">8h</span></td>
+      </tr>
+      <tr>
+        <td>M6</td>
+        <td>Mode Puzzle</td>
+        <td>Import et parsing PGN Lichess, interface puzzle, validation coups, système d'indices, catégorisation thématique, séries quotidiennes, streak counter</td>
+        <td><span class="hours-badge">8h</span></td>
+      </tr>
+      <tr>
+        <td>M7</td>
+        <td>Mode Chasse aux Pièces</td>
+        <td>Sélection pièce, génération procédurale ennemis, timer 60s, système de vies, calcul captures légales en temps réel, détection danger, combo multiplicateur, soumission score vers Supabase</td>
+        <td><span class="hours-badge">10h</span></td>
+      </tr>
+      <tr>
+        <td>M8</td>
+        <td>Système de progression</td>
+        <td>XP multi-modes, niveaux (1–30), badges achievements, tableau de bord avec statistiques globales, challenges quotidiens, synchronisation Supabase pour utilisateurs connectés</td>
+        <td><span class="hours-badge">5h</span></td>
+      </tr>
+      <tr>
+        <td>M9</td>
+        <td>Tests & Optimisation</td>
+        <td>Tests unitaires hooks chess, optimisation chargement Stockfish (lazy), corrections bugs, audit Lighthouse performance/accessibilité, polish UI final</td>
+        <td><span class="hours-badge">3h</span></td>
+      </tr>
+      <tr>
+        <td>M10</td>
+        <td>Auth, Backend & Classement</td>
+        <td>Configuration Supabase (projet, tables, RLS policies), intégration Supabase Auth (email + Google OAuth), pages inscription/connexion, profil utilisateur, classement global temps réel, guards de routes</td>
+        <td><span class="hours-badge">8h</span></td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="3">TOTAL</td>
+        <td><span class="hours-badge">78h</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.1 Phases de développement</h3>
+
+  <div class="phases">
+    <div class="phase">
+      <div class="phase-connector">
+        <div class="phase-dot"></div>
+        <div class="phase-line"></div>
+      </div>
+      <div class="phase-content">
+        <h4>Phase 1 — Fondations (sem. 1) · 20h</h4>
+        <p>M1 Setup + M2 Design système + M3 Core Chess. À l'issue : plateau jouable, charte graphique appliquée, navigation entre écrans. Jalonne toute la suite du projet.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-connector">
+        <div class="phase-dot"></div>
+        <div class="phase-line"></div>
+      </div>
+      <div class="phase-content">
+        <h4>Phase 2 — IA & Modes principaux (sem. 2) · 32h</h4>
+        <p>M4 Coach + M5 Affrontement + M6 Puzzle. C'est le cœur fonctionnel. Stockfish intégré et calibré, deux modes jouables et testables.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-connector">
+        <div class="phase-dot"></div>
+        <div class="phase-line"></div>
+      </div>
+      <div class="phase-content">
+        <h4>Phase 3 — Mode Arcade & Gamification (sem. 3) · 15h</h4>
+        <p>M7 Chasse aux Pièces + M8 Progression. Ajout du mode ludique et du système de rétention (XP, badges, stats). Prépare l'intégration Supabase en phase 4.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <div class="phase-connector">
+        <div class="phase-dot"></div>
+        <div class="phase-line"></div>
+      </div>
+      <div class="phase-content">
+        <h4>Phase 4 — Backend, Auth & Finalisation (sem. 4) · 11h</h4>
+        <p>M10 Supabase + Auth (8h) puis M9 Tests & Optimisation (3h). Configuration Supabase, authentification email/Google, classement global temps réel, audit Lighthouse et polish final.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SECTION 6 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 06</span>
+    <h2>Analyse des risques</h2>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Risque</th>
+        <th>Probabilité</th>
+        <th>Impact</th>
+        <th>Mitigation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Stockfish.js trop lent / freeze UI</td>
+        <td><span class="risk-level risk-med">Moyenne</span></td>
+        <td><span class="risk-level risk-high">Élevé</span></td>
+        <td>Isolation en Web Worker, limitation profondeur d'analyse, spinner pendant calcul</td>
+      </tr>
+      <tr>
+        <td>Taille bundle Stockfish (> 5 Mo)</td>
+        <td><span class="risk-level risk-high">Haute</span></td>
+        <td><span class="risk-level risk-med">Moyen</span></td>
+        <td>Lazy loading du worker uniquement au lancement d'un mode IA, CDN pour le fichier WASM</td>
+      </tr>
+      <tr>
+        <td>Complexité génération Chasse aux Pièces</td>
+        <td><span class="risk-level risk-med">Moyenne</span></td>
+        <td><span class="risk-level risk-med">Moyen</span></td>
+        <td>Utiliser chess.js pour valider chaque position générée, tests unitaires sur la logique</td>
+      </tr>
+      <tr>
+        <td>Dépassement des 78 heures</td>
+        <td><span class="risk-level risk-low">Faible</span></td>
+        <td><span class="risk-level risk-med">Moyen</span></td>
+        <td>M9 est sacrificiel si besoin ; le mode Puzzle peut être simplifié (puzzles hardcodés ×30 si import PGN trop long)</td>
+      </tr>
+      <tr>
+        <td>Compatibilité mobile (WebAssembly)</td>
+        <td><span class="risk-level risk-low">Faible</span></td>
+        <td><span class="risk-level risk-med">Moyen</span></td>
+        <td>WASM supporté par 97%+ des navigateurs récents. Tests sur Safari iOS en priorité.</td>
+      </tr>
+      <tr>
+        <td>Configuration Supabase RLS (Row Level Security)</td>
+        <td><span class="risk-level risk-med">Moyenne</span></td>
+        <td><span class="risk-level risk-high">Élevé</span></td>
+        <td>Policies RLS mal configurées → exposition de données. Prévoir une session dédiée à la sécurisation des tables, tests avec comptes différents.</td>
+      </tr>
+      <tr>
+        <td>Limite tier gratuit Supabase</td>
+        <td><span class="risk-level risk-low">Faible</span></td>
+        <td><span class="risk-level risk-low">Faible</span></td>
+        <td>Tier gratuit : 500 Mo DB, 50 000 auth users, 2 Go bandwidth — largement suffisant pour un projet scolaire avec trafic limité.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== SECTION 7 ===== -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">Section 07</span>
+    <h2>Livrables attendus</h2>
+  </div>
+
+  <div class="deliverables">
+    <div class="deliverable">
+      <div class="deliverable-num">1</div>
+      <div>
+        <div class="deliverable-title">Code source complet</div>
+        <div class="deliverable-desc">Repository Git structuré, README détaillé avec instructions d'installation et de lancement (npm install + npm run dev).</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">2</div>
+      <div>
+        <div class="deliverable-title">Application déployée</div>
+        <div class="deliverable-desc">Version live accessible via URL publique (Vercel ou Netlify), sans installation requise côté utilisateur.</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">3</div>
+      <div>
+        <div class="deliverable-title">4 modes fonctionnels</div>
+        <div class="deliverable-desc">Coach IA, Affrontement, Puzzle et Chasse aux Pièces, tous jouables et testables dans leur intégralité.</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">4</div>
+      <div>
+        <div class="deliverable-title">Système Auth & Classement</div>
+        <div class="deliverable-desc">Inscription/connexion fonctionnelle (email + Google), classement global en temps réel alimenté par Supabase, profils utilisateurs persistés.</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">5</div>
+      <div>
+        <div class="deliverable-title">Système de progression</div>
+        <div class="deliverable-desc">XP, niveaux, badges et statistiques synchronisés via Supabase pour les utilisateurs connectés, accessibles depuis le tableau de bord.</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">6</div>
+      <div>
+        <div class="deliverable-title">Design system cohérent</div>
+        <div class="deliverable-desc">Palette ivoire/ébène/or appliquée uniformément, responsive mobile et desktop, animations fluides.</div>
+      </div>
+    </div>
+    <div class="deliverable">
+      <div class="deliverable-num">7</div>
+      <div>
+        <div class="deliverable-title">Présentation/démo</div>
+        <div class="deliverable-desc">Support de présentation (5–10 min) illustrant les fonctionnalités IA, l'architecture Supabase, les choix tech et les difficultés rencontrées.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 40px;">
+    <div class="callout-title">Critères de réussite</div>
+    <p>
+      Le projet sera considéré réussi si : <strong>(1)</strong> l'IA analyse correctement les coups et classe chaque mouvement,
+      <strong>(2)</strong> l'adversaire IA joue à des niveaux visiblement distincts, <strong>(3)</strong> le Mode Chasse aux Pièces
+      est jouable et engageant (test avec 3 utilisateurs non-développeurs), <strong>(4)</strong> l'inscription/connexion fonctionne
+      et le classement se met à jour en temps réel depuis deux navigateurs simultanément, <strong>(5)</strong> la progression utilisateur
+      persiste entre les sessions et appareils pour les utilisateurs connectés, <strong>(6)</strong> l'application se charge en moins
+      de 5 secondes sur une connexion standard.
+    </p>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+</body>
+</html>
