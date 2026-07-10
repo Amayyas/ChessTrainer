@@ -1,4 +1,4 @@
-/** Lien d'evitement clavier — section 4.2, navigation clavier. */
+/** Keyboard skip link — spec section 4.2, keyboard navigation. */
 export default function SkipLink() {
   return (
     <a

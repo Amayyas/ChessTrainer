@@ -1,13 +1,13 @@
 /**
- * Garde-fou de taille de bundle.
+ * Bundle size guard.
  *
- * Le cahier des charges classe "Taille bundle Stockfish > 5 Mo" comme un risque de
- * probabilite HAUTE (section 06), avec pour mitigation le lazy loading du worker.
- * Ce script echoue si le bundle initial depasse son budget : la regression devient
- * visible sur la PR qui l'introduit, et non a la livraison.
+ * The specification rates "Stockfish bundle above 5 MB" as a highly probable risk
+ * (section 06), with lazy loading of the worker as the mitigation. This script fails
+ * if the initial bundle exceeds its budget, so a regression shows up on the PR that
+ * introduces it rather than at delivery time.
  *
- * Les fichiers Stockfish (worker + wasm) sont exclus du budget initial : ils sont
- * charges a la demande et suivis par leur propre budget.
+ * Stockfish files (worker + wasm) are excluded from the initial budget: they are
+ * loaded on demand and tracked by their own budget.
  */
 import { gzipSync } from 'node:zlib'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -17,15 +17,15 @@ import { fileURLToPath } from 'node:url'
 const DIST = fileURLToPath(new URL('../dist', import.meta.url))
 const KB = 1024
 
-/** Un fichier ne peut compter que dans le premier budget qui l'accepte. */
+/** A file can only count toward the first budget that accepts it. */
 const BUDGETS = [
   {
-    label: 'Stockfish (charge a la demande)',
+    label: 'Stockfish (loaded on demand)',
     match: (path) => /stockfish/i.test(path),
     maxGzipKb: 5 * KB,
   },
   {
-    label: 'JavaScript initial',
+    label: 'Initial JavaScript',
     match: (path) => path.endsWith('.js'),
     maxGzipKb: 200,
   },
@@ -47,7 +47,7 @@ let files
 try {
   files = walk(DIST)
 } catch {
-  console.error(`Aucun build trouve dans ${DIST}. Lancez "npm run build" d'abord.`)
+  console.error(`No build found in ${DIST}. Run "npm run build" first.`)
   process.exit(1)
 }
 
@@ -64,7 +64,7 @@ for (const file of files) {
 }
 
 let failed = false
-console.log('\nBudget de taille de bundle (tailles gzippees)\n')
+console.log('\nBundle size budget (gzipped sizes)\n')
 
 for (const { budget, gzipBytes, files: count } of totals.values()) {
   if (count === 0) continue
@@ -74,16 +74,16 @@ for (const { budget, gzipBytes, files: count } of totals.values()) {
   const over = usedKb > budget.maxGzipKb
   failed ||= over
 
-  const status = over ? 'DEPASSE' : 'OK'
+  const status = over ? 'OVER' : 'OK'
   console.log(
-    `  ${status.padEnd(8)} ${budget.label.padEnd(34)} ` +
+    `  ${status.padEnd(6)} ${budget.label.padEnd(30)} ` +
       `${usedKb.toFixed(1).padStart(7)} kB / ${String(budget.maxGzipKb).padStart(5)} kB  (${pct}%)`,
   )
 }
 
 if (failed) {
-  console.error('\nBudget depasse. Reduisez le bundle, ou ajustez le budget en le justifiant.\n')
+  console.error('\nBudget exceeded. Trim the bundle, or raise the budget with a justification.\n')
   process.exit(1)
 }
 
-console.log('\nTous les budgets sont respectes.\n')
+console.log('\nAll budgets are within limits.\n')

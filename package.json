@@ -19,6 +19,9 @@
     "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && vite build && npm run size"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/playfair-display": "^5.2.8",
+    "framer-motion": "^11.18.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0"

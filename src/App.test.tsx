@@ -17,24 +17,24 @@ function renderAt(path: string) {
 
 describe('routing', () => {
   it.each([
-    [ROUTES.home, 'Tableau de bord'],
+    [ROUTES.home, /Apprenez les échecs/],
     [ROUTES.coach, /IA Coach/],
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, /Mode Puzzle/],
-    [ROUTES.hunt, /Chasse aux Pieces/],
+    [ROUTES.hunt, /Chasse aux Pièces/],
     [ROUTES.leaderboard, /Classement mondial/],
     [ROUTES.profile, 'Profil'],
-  ])('rend la page attendue sur %s', (path, heading) => {
+  ])('renders the expected page at %s', (path, heading) => {
     renderAt(path)
     expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
-  it('rend la page 404 sur une route inconnue', () => {
+  it('renders the 404 page on an unknown route', () => {
     renderAt('/route-inexistante')
     expect(screen.getByRole('heading', { level: 1, name: /Page introuvable/ })).toBeInTheDocument()
   })
 
-  it('rend la navigation principale dans le layout', () => {
+  it('renders the main navigation inside the layout', () => {
     renderAt(ROUTES.home)
     expect(screen.getAllByRole('navigation', { name: 'Navigation principale' })).toHaveLength(2)
   })
