@@ -5,7 +5,7 @@ import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
-import { describeStatus, type Square } from '@/utils/chess'
+import { createGame, describeStatus, type Square } from '@/utils/chess'
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pion',
@@ -30,8 +30,33 @@ export default function CoachPage() {
   // Best-move arrow is off by default (play your own move first) but available
   // on demand, as the specification requires it to be toggleable (section 2.1).
   const [showArrow, setShowArrow] = useState(false)
+  // "Partie" plays from the start; "Analyse libre" starts from a pasted FEN
+  // (spec section 2.1: play a full game against yourself, or free analysis).
+  const [mode, setMode] = useState<'game' | 'analysis'>('game')
+  const [fenInput, setFenInput] = useState('')
+  const [fenError, setFenError] = useState<string | null>(null)
 
   useEffect(() => setHintLevel(0), [game.fen])
+
+  const selectMode = (next: 'game' | 'analysis') => {
+    if (next === mode) return
+    setReplayPly(null)
+    setFenError(null)
+    if (next === 'game') game.reset()
+    else setFenInput(game.fen)
+    setMode(next)
+  }
+
+  const loadFen = () => {
+    const trimmed = fenInput.trim()
+    if (!createGame(trimmed)) {
+      setFenError('FEN invalide.')
+      return
+    }
+    setFenError(null)
+    setReplayPly(null)
+    game.reset(trimmed)
+  }
 
   // FEN of each position from the start (index 0) to the latest move.
   const plyFens = useMemo(() => {
@@ -135,6 +160,54 @@ export default function CoachPage() {
           )}
 
           <Card className="flex h-fit flex-col gap-5">
+            {!inReplay && (
+              <div>
+                <div
+                  role="group"
+                  aria-label="Mode du coach"
+                  className="inline-flex rounded-lg bg-ebene/5 p-1"
+                >
+                  {(['game', 'analysis'] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => selectMode(value)}
+                      aria-pressed={mode === value}
+                      className={
+                        mode === value
+                          ? 'rounded-md bg-white px-3 py-1 text-sm font-semibold text-ebene shadow-sm'
+                          : 'rounded-md px-3 py-1 text-sm font-medium text-ardoise hover:text-ebene'
+                      }
+                    >
+                      {value === 'game' ? 'Partie' : 'Analyse libre'}
+                    </button>
+                  ))}
+                </div>
+
+                {mode === 'analysis' && (
+                  <div className="mt-3">
+                    <label htmlFor="fen-input" className="text-xs font-medium text-ardoise">
+                      Position de départ (FEN)
+                    </label>
+                    <div className="mt-1 flex gap-2">
+                      <input
+                        id="fen-input"
+                        value={fenInput}
+                        onChange={(event) => setFenInput(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && loadFen()}
+                        placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                        className="min-w-0 flex-1 rounded-lg border border-ebene/20 px-2 py-1.5 text-sm"
+                      />
+                      <Button size="sm" onClick={loadFen}>
+                        Charger
+                      </Button>
+                    </div>
+                    {fenError && <p className="mt-1 text-xs text-red-600">{fenError}</p>}
+                  </div>
+                )}
+              </div>
+            )}
+
             {!game.status.isOver && (
               <div>
                 <h2 className="mb-2 font-display text-lg font-bold text-ebene">
