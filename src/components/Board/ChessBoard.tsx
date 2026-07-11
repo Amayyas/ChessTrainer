@@ -190,7 +190,9 @@ export default function ChessBoard({
           customLightSquareStyle={{ backgroundColor: LIGHT_SQUARE }}
           customDarkSquareStyle={{ backgroundColor: DARK_SQUARE }}
           customSquareStyles={squareStyles}
-          customArrows={arrows}
+          // Pass an empty array (not undefined) to clear: react-chessboard keeps
+          // the previous arrows when customArrows becomes undefined.
+          customArrows={arrows ?? []}
           customArrowColor="#C9A84C"
           animationDuration={reduceMotion ? 0 : 200}
           arePremovesAllowed={false}
