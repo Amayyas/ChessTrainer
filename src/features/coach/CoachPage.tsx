@@ -5,7 +5,7 @@ import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
-import { describeStatus } from '@/utils/chess'
+import { describeStatus, type Square } from '@/utils/chess'
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pion',
@@ -27,6 +27,9 @@ export default function CoachPage() {
   const [orientation, setOrientation] = useState<'white' | 'black'>('white')
   const [hintLevel, setHintLevel] = useState(0)
   const [replayPly, setReplayPly] = useState<number | null>(null)
+  // Best-move arrow is off by default (play your own move first) but available
+  // on demand, as the specification requires it to be toggleable (section 2.1).
+  const [showArrow, setShowArrow] = useState(false)
 
   useEffect(() => setHintLevel(0), [game.fen])
 
@@ -51,6 +54,11 @@ export default function CoachPage() {
 
   const statusLabel = describeStatus(game.status, game.turn)
   const statusVariant = game.status.isOver ? 'gold' : game.status.isCheck ? 'danger' : 'neutral'
+
+  const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
+  const arrows = showBestArrow
+    ? ([[insight.bestMove!.from, insight.bestMove!.to, '#C9A84C']] as [Square, Square, string][])
+    : undefined
 
   const hint = useMemo(() => {
     if (!analysis.bestMove) return null
@@ -116,6 +124,7 @@ export default function CoachPage() {
               isPromotion={game.isPromotion}
               lastMove={viewLastMove}
               checkSquare={inReplay ? null : game.checkSquare}
+              arrows={arrows}
             />
           </div>
         </div>
@@ -136,7 +145,17 @@ export default function CoachPage() {
             )}
 
             <div>
-              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Coups joués</h2>
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="font-display text-lg font-bold text-ebene">Coups joués</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowArrow((v) => !v)}
+                  className="text-xs font-semibold text-ardoise underline-offset-2 hover:text-ebene hover:underline"
+                  aria-pressed={showArrow}
+                >
+                  {showArrow ? 'Masquer la flèche' : 'Afficher la flèche'}
+                </button>
+              </div>
               <MoveHistory
                 moves={game.sanHistory}
                 qualities={analysis.qualities}
