@@ -171,7 +171,8 @@ export default function ChessBoard({
   return (
     <div
       ref={containerRef}
-      className="aspect-square w-full overflow-hidden rounded-2xl shadow-card"
+      // No overflow-hidden/rounding: it clipped the edge rank/file coordinates.
+      className="aspect-square w-full rounded-md shadow-card"
     >
       {effectiveWidth ? (
         <Chessboard
