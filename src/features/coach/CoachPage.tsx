@@ -101,7 +101,9 @@ export default function CoachPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="mx-auto flex w-full max-w-[560px] gap-3">
+        {/* self-start keeps the eval bar tied to the board height instead of
+            stretching to the (taller) side panel as the move list grows. */}
+        <div className="mx-auto flex w-full max-w-[560px] gap-3 self-start">
           <EvalBar evaluation={insight.eval} orientation={orientation} />
           <div className="min-w-0 flex-1">
             <ChessBoard
