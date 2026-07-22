@@ -1,5 +1,6 @@
 import { Chess } from 'chess.js'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
@@ -37,6 +38,20 @@ export default function CoachPage() {
   const [fenError, setFenError] = useState<string | null>(null)
 
   useEffect(() => setHintLevel(0), [game.fen])
+
+  // A game handed over from the battle mode (spec section 2.2) opens straight
+  // into replay, so it can be reviewed move by move with the annotations.
+  const location = useLocation()
+  const handedOverPgn = (location.state as { pgn?: string } | null)?.pgn
+  const loadedPgn = useRef<string | null>(null)
+  useEffect(() => {
+    if (!handedOverPgn || loadedPgn.current === handedOverPgn) return
+    loadedPgn.current = handedOverPgn
+    if (game.loadPgn(handedOverPgn)) {
+      setMode('game')
+      setReplayPly(0)
+    }
+  }, [handedOverPgn, game])
 
   const selectMode = (next: 'game' | 'analysis') => {
     if (next === mode) return

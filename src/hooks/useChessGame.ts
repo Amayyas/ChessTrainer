@@ -28,6 +28,10 @@ export interface UseChessGame {
   undo: () => void
   /** Resets to the start position, or to `fen` when provided and valid. */
   reset: (fen?: string) => void
+  /** The game so far in PGN, for handing it to another mode. */
+  pgn: string
+  /** Replays a PGN into the game. Returns false if it could not be parsed. */
+  loadPgn: (pgn: string) => boolean
 }
 
 /**
@@ -83,6 +87,21 @@ export function useChessGame(initialFen?: string): UseChessGame {
     [bump],
   )
 
+  const loadPgn = useCallback(
+    (pgn: string): boolean => {
+      try {
+        const next = new Chess()
+        next.loadPgn(pgn)
+        gameRef.current = next
+        bump()
+        return true
+      } catch {
+        return false
+      }
+    },
+    [bump],
+  )
+
   // Every derived value recomputes once per mutation (version is the only dep).
   return useMemo(() => {
     void version
@@ -105,6 +124,8 @@ export function useChessGame(initialFen?: string): UseChessGame {
       isPromotion,
       undo,
       reset,
+      pgn: game.pgn(),
+      loadPgn,
     }
-  }, [version, move, getLegalTargets, isPromotion, undo, reset])
+  }, [version, move, getLegalTargets, isPromotion, undo, reset, loadPgn])
 }

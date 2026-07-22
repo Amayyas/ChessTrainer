@@ -17,7 +17,7 @@ French, since the app targets French-speaking learners; the codebase itself is E
 | Game logic   | chess.js _(M3)_                      |
 | Board        | react-chessboard _(M3)_              |
 | AI           | Stockfish.js in a Web Worker _(M4)_  |
-| Global state | Zustand _(M4)_                       |
+| Global state | Zustand _(M8)_                       |
 | Animations   | Framer Motion _(M2)_                 |
 | Backend      | Supabase — Auth + PostgreSQL _(M10)_ |
 
@@ -138,17 +138,17 @@ Tailwind color keys keep their French names to match the specification wording.
 
 ## Progress
 
-| Module | Title                       | Status      |
-| ------ | --------------------------- | ----------- |
-| M1     | Setup & Architecture        | ✅ Done     |
-| M2     | Design system & UI          | In progress |
-| M3     | Core Chess Engine           | To do       |
-| M4     | AI Coach mode               | To do       |
-| M5     | AI Battle mode              | To do       |
-| M6     | Puzzle mode                 | To do       |
-| M7     | Piece Hunt mode             | To do       |
-| M8     | Progression system          | To do       |
-| M10    | Auth, Backend & Leaderboard | To do       |
-| M9     | Tests & Optimization        | To do       |
+| Module | Title                       | Status  |
+| ------ | --------------------------- | ------- |
+| M1     | Setup & Architecture        | ✅ Done |
+| M2     | Design system & UI          | ✅ Done |
+| M3     | Core Chess Engine           | ✅ Done |
+| M4     | AI Coach mode               | ✅ Done |
+| M5     | AI Battle mode              | ✅ Done |
+| M6     | Puzzle mode                 | To do   |
+| M7     | Piece Hunt mode             | To do   |
+| M8     | Progression system          | To do   |
+| M10    | Auth, Backend & Leaderboard | To do   |
+| M9     | Tests & Optimization        | To do   |
 
 M10 precedes M9, per phase 4 of the plan (section 5.1).

@@ -1,8 +1,10 @@
+import { useNavigate } from 'react-router-dom'
 import { ChessBoard, MoveHistory } from '@/components/Board'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
+import { ROUTES } from '@/routes'
 import { describeStatus } from '@/utils/chess'
 
 /**
@@ -11,6 +13,7 @@ import { describeStatus } from '@/utils/chess'
  */
 export default function BattlePage() {
   const battle = useBattleGame()
+  const navigate = useNavigate()
   const { game, clock, level, playerColor, phase, result } = battle
 
   const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
@@ -83,9 +86,18 @@ export default function BattlePage() {
                     ? 'Défaite'
                     : 'Nulle'}
               </Badge>
-              <Button variant="outline" size="sm" onClick={battle.backToSetup}>
-                Nouvelle partie
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  disabled={game.sanHistory.length === 0}
+                  onClick={() => navigate(ROUTES.coach, { state: { pgn: game.pgn } })}
+                >
+                  Analyser dans le Coach
+                </Button>
+                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                  Nouvelle partie
+                </Button>
+              </div>
             </Card>
           )}
 
