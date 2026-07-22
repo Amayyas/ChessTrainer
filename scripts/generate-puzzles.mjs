@@ -33,7 +33,7 @@ const PIECE_VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 }
 
 const browser = await puppeteer.launch({
   executablePath: CHROME,
-  headless: 'new',
+  headless: true,
   args: ['--no-sandbox', '--disable-gpu'],
 })
 const page = await browser.newPage()

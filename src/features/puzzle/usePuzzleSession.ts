@@ -79,7 +79,11 @@ const PIECE_NAMES: Record<string, string> = {
  * score, and keeps the daily streak.
  */
 export function usePuzzleSession(): UsePuzzleSession {
-  const today = dayKey()
+  // The day is locked when the session starts. Recomputing it per render would
+  // swap the whole series out from under a puzzle in progress at midnight — the
+  // elapsed-time timer re-renders constantly — leaving `index` and `ply`
+  // pointing into a different puzzle.
+  const [today] = useState(() => dayKey())
   const puzzles = useMemo(() => dailyPuzzles(today), [today])
 
   const [index, setIndex] = useState(0)
