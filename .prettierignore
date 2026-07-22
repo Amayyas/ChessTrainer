@@ -6,3 +6,7 @@ cahier-des-charges.html
 
 # Vendored Stockfish build — never reformat
 public/stockfish
+
+# Supabase CLI local artefacts
+supabase/.temp
+supabase/.branches
