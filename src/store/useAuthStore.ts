@@ -58,12 +58,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         set({ profile: null })
         return
       }
-      const { data } = await client
+      // Straight after sign-in the request can outrun the token attachment and
+      // be rejected; awaiting the session first makes sure it is in place.
+      await client.auth.getSession()
+      const { data, error } = await client
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle()
       if (request !== latestRequest) return
+      // Keep any existing profile on a failed fetch rather than blanking it.
+      if (error) return
       set({ profile: (data as Profile | null) ?? null })
     }
 

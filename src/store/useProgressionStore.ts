@@ -53,6 +53,18 @@ export interface BattleOutcomeInput {
   levelLabel: string
 }
 
+/**
+ * The part of the progression that follows a signed-in account across devices
+ * (specification deliverable 5). The daily counters reset each day and the
+ * activity feed and pending-badge animations are local, so none of them belong
+ * to the synced snapshot.
+ */
+export interface ProgressionSnapshot {
+  xp: number
+  stats: ProgressionStats
+  unlockedBadges: string[]
+}
+
 interface ProgressionState {
   xp: number
   stats: ProgressionStats
@@ -68,6 +80,8 @@ interface ProgressionState {
   recordCoachAnalysis: (input: { accuracy: number | null }) => void
   unlockBadges: (ids: string[]) => void
   acknowledgeBadges: () => void
+  /** Replaces the synced fields with an account's server copy on sign-in. */
+  hydrate: (snapshot: ProgressionSnapshot) => void
   reset: () => void
 }
 
@@ -82,8 +96,9 @@ function activityId(): string {
  * persistent state in the app — XP is fed by all four modes and read by the
  * dashboard — which is what Zustand is listed for in the stack.
  *
- * Persistence is local for now; syncing it to Supabase for signed-in users is
- * module M10.
+ * Persistence is local; for a signed-in account the synced fields are mirrored
+ * to Supabase by useProgressionSync, so progression follows the player across
+ * devices (specification deliverable 5).
  */
 export const useProgressionStore = create<ProgressionState>()(
   persist(
@@ -221,6 +236,18 @@ export const useProgressionStore = create<ProgressionState>()(
           }),
 
         acknowledgeBadges: () => set({ pendingBadges: [] }),
+
+        hydrate: ({ xp, stats, unlockedBadges }) =>
+          // The server copy replaces the synced fields outright, rather than
+          // being summed in, so signing in on a second device shows the account
+          // as it is and never double counts. Badges arriving this way are
+          // already known to the player, so they skip the pending queue that
+          // drives the unlock animation.
+          set({
+            xp,
+            stats: { ...EMPTY_STATS, ...stats },
+            unlockedBadges,
+          }),
 
         reset: () =>
           set({

@@ -39,8 +39,6 @@ export interface Profile {
   id: string
   username: string
   avatar_piece: AvatarPiece
-  xp: number
-  level: number
   created_at: string
 }
 
@@ -51,4 +49,17 @@ export interface ScoreRow {
   score: number
   captures: number
   played_at: string
+}
+
+/**
+ * The account's copy of the progression store, so XP, badges and statistics
+ * follow the player across devices (specification deliverable 5). `stats` holds
+ * the whole ProgressionStats object as one JSON document.
+ */
+export interface ProgressionRow {
+  user_id: string
+  xp: number
+  stats: unknown
+  unlocked_badges: string[]
+  updated_at: string
 }
