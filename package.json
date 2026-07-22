@@ -21,6 +21,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@fontsource/playfair-display": "^5.2.8",
+    "@supabase/supabase-js": "^2.110.8",
     "chess.js": "^1.4.0",
     "framer-motion": "^11.18.2",
     "react": "^18.3.1",

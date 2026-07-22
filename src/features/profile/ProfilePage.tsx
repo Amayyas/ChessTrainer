@@ -1,7 +1,16 @@
-import { Badge, Card, PageHeader } from '@/components/UI'
+import { Link } from 'react-router-dom'
+import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
 import { levelFromXp } from '@/features/progression/levels'
+import {
+  AVATAR_GLYPHS,
+  AVATAR_PIECES,
+  isSupabaseConfigured,
+  type AvatarPiece,
+} from '@/lib/supabase'
+import { ROUTES } from '@/routes'
+import { useAuthStore } from '@/store/useAuthStore'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
@@ -14,6 +23,10 @@ export default function ProfilePage() {
   const xp = useProgressionStore((state) => state.xp)
   const stats = useProgressionStore((state) => state.stats)
   const unlocked = useProgressionStore((state) => state.unlockedBadges)
+  const session = useAuthStore((state) => state.session)
+  const authProfile = useAuthStore((state) => state.profile)
+  const updateProfile = useAuthStore((state) => state.updateProfile)
+  const signOut = useAuthStore((state) => state.signOut)
 
   const progress = levelFromXp(xp)
   const winRate =
@@ -41,6 +54,80 @@ export default function ProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-4">
+          <Card className="flex flex-col gap-3">
+            <h2 className="font-display text-lg font-bold text-ebene">Compte</h2>
+            {!isSupabaseConfigured ? (
+              <p className="text-sm text-ardoise">
+                Aucun serveur n'est configuré : vous jouez en invité et votre progression reste sur
+                cet appareil.
+              </p>
+            ) : session && authProfile ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-ebene text-2xl text-or"
+                  >
+                    {AVATAR_GLYPHS[authProfile.avatar_piece]}
+                  </span>
+                  <span>
+                    <span className="block font-semibold text-ebene">{authProfile.username}</span>
+                    <span className="block text-xs text-ardoise">
+                      Inscrit le {new Date(authProfile.created_at).toLocaleDateString('fr-FR')}
+                    </span>
+                  </span>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-xs font-medium text-ardoise">Avatar</p>
+                  <div role="group" aria-label="Choisir un avatar" className="flex flex-wrap gap-1">
+                    {AVATAR_PIECES.map((piece: AvatarPiece) => (
+                      <button
+                        key={piece}
+                        type="button"
+                        aria-pressed={authProfile.avatar_piece === piece}
+                        onClick={() => void updateProfile({ avatar_piece: piece })}
+                        className={cn(
+                          'flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-colors',
+                          authProfile.avatar_piece === piece
+                            ? 'bg-or/25 text-ebene'
+                            : 'bg-ebene/5 text-ardoise hover:text-ebene',
+                        )}
+                      >
+                        {AVATAR_GLYPHS[piece]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <Button variant="outline" size="sm" onClick={() => void signOut()}>
+                  Se déconnecter
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-ardoise">
+                  Vous jouez en invité. Un compte vous ouvre le classement mondial et retrouve vos
+                  progrès sur tous vos appareils.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to={ROUTES.register}
+                    className="inline-flex h-10 items-center rounded-xl bg-or px-4 text-sm font-semibold text-ebene"
+                  >
+                    Créer un compte
+                  </Link>
+                  <Link
+                    to={ROUTES.login}
+                    className="inline-flex h-10 items-center rounded-xl border border-ebene/20 px-4 text-sm font-semibold text-ebene"
+                  >
+                    Se connecter
+                  </Link>
+                </div>
+              </>
+            )}
+          </Card>
+
           <Card>
             <LevelBar progress={progress} />
             <p className="mt-2 text-sm text-ardoise">{xp} XP au total</p>

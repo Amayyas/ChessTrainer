@@ -1,7 +1,4 @@
-/**
- * SPA route table (specification, section 4.3).
- * Authentication routes (/login, /register) are added in module M10.
- */
+/** SPA route table (specification, sections 4.3 and 2.6). */
 export const ROUTES = {
   home: '/',
   coach: '/coach',
@@ -10,6 +7,8 @@ export const ROUTES = {
   hunt: '/hunt',
   leaderboard: '/leaderboard',
   profile: '/profile',
+  login: '/login',
+  register: '/register',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]

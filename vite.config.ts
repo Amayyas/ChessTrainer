@@ -15,6 +15,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Tests always run as if no backend were configured: that is what CI sees
+    // (it holds no secrets) and it keeps them off the network entirely.
+    env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {

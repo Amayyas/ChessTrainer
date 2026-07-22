@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
@@ -11,6 +12,9 @@ import {
 } from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { supabase } from '@/lib/supabase'
+import { ROUTES } from '@/routes'
+import { useAuthStore } from '@/store/useAuthStore'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
@@ -34,6 +38,7 @@ export default function HuntPage() {
   const game = useHuntGame()
   const [scoreboard, setScoreboard] = useLocalStorage<Scoreboard>('chesstrainer.hunt.scores', {})
   const recordHunt = useProgressionStore((state) => state.recordHunt)
+  const session = useAuthStore((state) => state.session)
 
   // Record the round once, when it ends.
   const recorded = useRef(false)
@@ -54,6 +59,16 @@ export default function HuntPage() {
       captures: game.captures,
       championLabel: CHAMPION_LABELS[game.champion],
     })
+
+    // Signed-in players are entered in the worldwide table automatically.
+    if (supabase && session && game.score > 0) {
+      void supabase.from('scores').insert({
+        user_id: session.user.id,
+        piece: game.champion,
+        score: game.score,
+        captures: game.captures,
+      })
+    }
     setScoreboard((board) =>
       addScore(board, {
         champion: game.champion!,
@@ -62,7 +77,16 @@ export default function HuntPage() {
         playedAt: new Date().toISOString(),
       }),
     )
-  }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard, recordHunt])
+  }, [
+    game.phase,
+    game.champion,
+    game.score,
+    game.captures,
+    scoreboard,
+    setScoreboard,
+    recordHunt,
+    session,
+  ])
 
   if (game.phase === 'setup') {
     return (
@@ -125,6 +149,16 @@ export default function HuntPage() {
           <p className="text-sm text-ardoise">
             {encouragement(game.score, previousBest, game.captures)}
           </p>
+
+          {!session && game.score > 0 && (
+            <p className="rounded-xl bg-or/15 px-3 py-2 text-sm text-ebene">
+              Ce score pourrait figurer au classement mondial —{' '}
+              <Link to={ROUTES.register} className="font-semibold underline">
+                créez un compte
+              </Link>{' '}
+              pour l'y inscrire.
+            </p>
+          )}
 
           <div>
             <h2 className="mb-2 font-display text-lg font-bold text-ebene">
