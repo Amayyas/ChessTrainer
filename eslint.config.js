@@ -34,4 +34,10 @@ export default tseslint.config(
       globals: globals.node,
     },
   },
+  {
+    // Dev scripts also hold code passed to page.evaluate(), which runs in the
+    // browser, so browser globals are legitimate there.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
 )
