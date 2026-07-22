@@ -27,8 +27,6 @@ const MIN_ENEMIES = 3
 const MAX_ENEMIES = 7
 /** A new enemy appears on this cadence, on top of the minimum. */
 const SPAWN_INTERVAL_MS = 3_500
-/** One enemy moves on this cadence, so the board closes in on the champion. */
-const ENEMY_MOVE_INTERVAL_MS = 1_400
 const TICK_MS = 100
 
 interface HuntInternals {
@@ -46,7 +44,6 @@ interface HuntInternals {
   /** While set, the champion has been eaten and is waiting to reappear. */
   respawnAt: number | null
   nextSpawnAt: number
-  nextEnemyMoveAt: number
   lastTick: number
   /**
    * Bumped on every change to `enemies`. The map is mutated in place, so its
@@ -90,7 +87,6 @@ function emptyInternals(): HuntInternals {
     dangerSince: null,
     respawnAt: null,
     nextSpawnAt: 0,
-    nextEnemyMoveAt: 0,
     lastTick: 0,
     enemiesVersion: 0,
   }
@@ -118,7 +114,10 @@ function ensureMinimumEnemies(state: HuntInternals): void {
   }
 }
 
-/** Moves a single enemy, which is what turns a static board into a hunt. */
+/**
+ * Moves a single enemy. Enemies only ever move in reply to the champion, one
+ * step per champion move: on a timer of their own the board felt relentless.
+ */
 function moveOneEnemy(state: HuntInternals): void {
   const squares = [...state.enemies.keys()]
   if (squares.length === 0) return
@@ -166,7 +165,6 @@ export function useHuntGame(): HuntGame {
       fresh.championSquare = 'd4'
       fresh.lastTick = now
       fresh.nextSpawnAt = now + SPAWN_INTERVAL_MS
-      fresh.nextEnemyMoveAt = now + ENEMY_MOVE_INTERVAL_MS
       ensureMinimumEnemies(fresh)
       state.current = fresh
       enterPhase('playing')
@@ -232,7 +230,11 @@ export function useHuntGame(): HuntGame {
       }
 
       current.championSquare = square
-      // Moving out of danger clears the countdown; moving into it restarts one.
+
+      // The enemies get exactly one reply to the champion's move.
+      moveOneEnemy(current)
+
+      // Danger is judged on the position that reply leaves behind.
       current.dangerSince = isInDanger(square, current.enemies) ? now : null
       render()
       return true
@@ -255,10 +257,6 @@ export function useHuntGame(): HuntGame {
       if (now >= current.nextSpawnAt) {
         spawnEnemy(current)
         current.nextSpawnAt = now + SPAWN_INTERVAL_MS
-      }
-      if (now >= current.nextEnemyMoveAt) {
-        moveOneEnemy(current)
-        current.nextEnemyMoveAt = now + ENEMY_MOVE_INTERVAL_MS
       }
       ensureMinimumEnemies(current)
 

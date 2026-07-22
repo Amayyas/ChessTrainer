@@ -98,15 +98,31 @@ describe('useHuntGame', () => {
     expect(result.current.captures).toBe(1)
   })
 
-  it('moves the enemies around over time', () => {
+  it('leaves the enemies alone while the champion stands still', () => {
     const { result } = renderHook(() => useHuntGame())
     act(() => result.current.start('n'))
     const before = [...result.current.enemies.keys()].sort().join(',')
 
-    act(() => vi.advanceTimersByTime(5_000))
+    act(() => vi.advanceTimersByTime(3_000))
+
+    // Only the periodic spawn may add a piece; nothing should have relocated.
+    const after = [...result.current.enemies.keys()]
+    expect(before.split(',').every((square) => after.includes(square))).toBe(true)
+  })
+
+  it('gives the enemies exactly one reply to each champion move', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+    const before = [...result.current.enemies.keys()].sort().join(',')
+
+    const target = result.current.moves.find((square) => !result.current.enemies.has(square))!
+    act(() => {
+      result.current.moveTo(target)
+    })
 
     const after = [...result.current.enemies.keys()].sort().join(',')
     expect(after).not.toBe(before)
+    expect(result.current.enemies.size).toBeGreaterThanOrEqual(3)
   })
 
   it('adds enemies over time to keep the pressure up', () => {
