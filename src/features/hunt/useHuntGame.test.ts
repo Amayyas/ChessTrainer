@@ -70,13 +70,15 @@ describe('useHuntGame', () => {
     const target = result.current.moves.find((square) => result.current.enemies.has(square))
     if (!target) return // no enemy reachable on this deal
 
-    const enemiesBefore = result.current.enemies.size
     act(() => {
       result.current.moveTo(target)
     })
 
     expect(result.current.championSquare).toBe(target)
-    expect(result.current.enemies.size).toBe(enemiesBefore - 1)
+    // The captured enemy is gone from that square - the champion stands there -
+    // but the board refills, so the count stays at the floor rather than drop.
+    expect(result.current.enemies.has(target)).toBe(false)
+    expect(result.current.enemies.size).toBeGreaterThanOrEqual(3)
     expect(result.current.captures).toBe(1)
     expect(result.current.score).toBeGreaterThan(0)
     expect(result.current.combo).toBe(1)
