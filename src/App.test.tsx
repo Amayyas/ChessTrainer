@@ -20,7 +20,7 @@ describe('routing', () => {
     [ROUTES.home, /Apprenez les échecs/],
     [ROUTES.coach, 'Coach'],
     [ROUTES.battle, /Affrontement/],
-    [ROUTES.puzzle, /Mode Puzzle/],
+    [ROUTES.puzzle, 'Puzzles'],
     [ROUTES.hunt, /Chasse aux Pièces/],
     [ROUTES.leaderboard, /Classement mondial/],
     [ROUTES.profile, 'Profil'],
