@@ -31,6 +31,8 @@ create policy "a user creates only their own profile"
   to authenticated
   with check (auth.uid() = id);
 
+-- Ownership only; which columns may change is enforced by the column grants
+-- below, because a policy cannot restrict columns.
 drop policy if exists "a user edits only their own profile" on public.profiles;
 create policy "a user edits only their own profile"
   on public.profiles for update
@@ -134,7 +136,10 @@ grant usage on schema public to anon, authenticated;
 -- Readable by everyone, including guests browsing the leaderboard.
 grant select on public.profiles, public.scores, public.achievements to anon, authenticated;
 
-grant insert, update on public.profiles to authenticated;
+-- Column-level, deliberately: RLS filters rows, not columns. Granting update on
+-- the whole row would let a player set their own xp and level to anything.
+grant insert (id, username, avatar_piece) on public.profiles to authenticated;
+grant update (username, avatar_piece) on public.profiles to authenticated;
 -- Insert only: a submitted score is final, so no update or delete is granted.
 grant insert on public.scores to authenticated;
 grant insert on public.achievements to authenticated;
@@ -155,23 +160,36 @@ as $$
 declare
   requested text := coalesce(new.raw_user_meta_data ->> 'username', split_part(new.email, '@', 1));
   candidate text := left(regexp_replace(requested, '[^A-Za-z0-9_-]', '', 'g'), 24);
+  avatar    text := coalesce(new.raw_user_meta_data ->> 'avatar_piece', 'n');
+  attempts  integer := 0;
 begin
   if char_length(candidate) < 3 then
     candidate := 'joueur' || left(replace(new.id::text, '-', ''), 6);
   end if;
 
-  -- Usernames are unique; fall back to a suffixed one rather than fail signup.
-  if exists (select 1 from public.profiles where lower(username) = lower(candidate)) then
-    candidate := left(candidate, 17) || left(replace(new.id::text, '-', ''), 6);
+  -- Metadata comes from the client and could hold anything; an unexpected value
+  -- would violate the check constraint and abort the whole signup.
+  if avatar not in ('k', 'q', 'r', 'b', 'n', 'p') then
+    avatar := 'n';
   end if;
 
-  insert into public.profiles (id, username, avatar_piece)
-  values (
-    new.id,
-    candidate,
-    coalesce(new.raw_user_meta_data ->> 'avatar_piece', 'n')
-  );
-  return new;
+  -- Retry on collision rather than check-then-insert: two signups racing on the
+  -- same fallback name would both pass a prior existence check and one would
+  -- fail, taking that signup down with it.
+  loop
+    begin
+      insert into public.profiles (id, username, avatar_piece)
+      values (new.id, candidate, avatar);
+      return new;
+    exception
+      when unique_violation then
+        attempts := attempts + 1;
+        if attempts > 5 then
+          raise exception 'could not allocate a username for %', new.id;
+        end if;
+        candidate := left(candidate, 16) || left(replace(gen_random_uuid()::text, '-', ''), 8);
+    end;
+  end loop;
 end;
 $$;
 
