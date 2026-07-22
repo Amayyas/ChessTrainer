@@ -27,7 +27,8 @@ export function getTimeControl(id: TimeControlId): TimeControl {
 /** mm:ss, switching to tenths of a second under ten seconds. */
 export function formatClock(ms: number): string {
   const safe = Math.max(0, ms)
-  if (safe < 10_000) return (safe / 1000).toFixed(1)
+  // Truncate rather than round, so 9 999 ms reads 9.9 and never 10.0.
+  if (safe < 10_000) return (Math.floor(safe / 100) / 10).toFixed(1)
   const totalSeconds = Math.ceil(safe / 1000)
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
@@ -63,6 +64,14 @@ export function useChessClock(control: TimeControl): UseChessClock {
   const [active, setActive] = useState<Color | null>(null)
   const [flagged, setFlagged] = useState<Color | null>(null)
   const lastTick = useRef(0)
+
+  // Latest values mirrored into refs so `press` can settle the clock without
+  // depending on the times. A `press` that changed identity on every tick would
+  // restart its consumers' effects ten times a second.
+  const latest = useRef({ whiteMs, blackMs, active })
+  useEffect(() => {
+    latest.current = { whiteMs, blackMs, active }
+  }, [whiteMs, blackMs, active])
 
   // Reset during render (not in an effect) when the time control changes.
   // An effect would leave one render where `enabled` is already true but the
@@ -125,11 +134,27 @@ export function useChessClock(control: TimeControl): UseChessClock {
   const press = useCallback(
     (mover: Color) => {
       if (!enabled) return
-      if (control.incrementMs > 0) {
-        const add = (ms: number) => ms + control.incrementMs
-        if (mover === 'w') setWhiteMs(add)
-        else setBlackMs(add)
+
+      // Settle the mover's clock at the moment of the move: the interval only
+      // ticks every 100 ms, so deduct the time since the last tick before
+      // crediting the increment. Otherwise a fast move gives back free time.
+      const now = Date.now()
+      const { whiteMs: white, blackMs: black, active: running } = latest.current
+      const elapsed = running === mover ? Math.max(0, now - lastTick.current) : 0
+      lastTick.current = now
+
+      const settled = Math.max(0, (mover === 'w' ? white : black) - elapsed)
+      const setMoverMs = mover === 'w' ? setWhiteMs : setBlackMs
+
+      // Running out while moving flags immediately — no increment, no handover.
+      if (settled <= 0) {
+        setMoverMs(0)
+        setFlagged(mover)
+        setActive(null)
+        return
       }
+
+      setMoverMs(settled + control.incrementMs)
       setActive(mover === 'w' ? 'b' : 'w')
     },
     [enabled, control.incrementMs],

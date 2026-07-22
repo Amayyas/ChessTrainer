@@ -25,6 +25,11 @@ describe('formatClock', () => {
     expect(formatClock(9_400)).toBe('9.4')
   })
 
+  it('truncates instead of rounding, so it never shows 10.0', () => {
+    expect(formatClock(9_999)).toBe('9.9')
+    expect(formatClock(10_000)).toBe('0:10')
+  })
+
   it('never goes negative', () => {
     expect(formatClock(-500)).toBe('0.0')
   })
@@ -61,6 +66,29 @@ describe('useChessClock', () => {
     // 10:00 minus ~2s plus the 5s increment.
     expect(result.current.whiteMs).toBeGreaterThan(602_000)
     expect(result.current.active).toBe('b')
+  })
+
+  it('deducts the time elapsed since the last tick when the clock is pressed', () => {
+    const { result } = renderHook(() => useChessClock(getTimeControl('rapid')))
+    act(() => result.current.start('w'))
+    // 2 350 ms is not a multiple of the 100 ms tick: the trailing 50 ms would be
+    // lost if press credited the increment from stale state.
+    act(() => vi.advanceTimersByTime(2_350))
+    act(() => result.current.press('w'))
+
+    // 600 000 - 2 350 + 5 000 increment.
+    expect(result.current.whiteMs).toBe(602_650)
+  })
+
+  it('flags a player who runs out of time while making their move', () => {
+    const { result } = renderHook(() => useChessClock(getTimeControl('bullet')))
+    act(() => result.current.start('w'))
+    act(() => vi.advanceTimersByTime(59_950))
+    act(() => vi.advanceTimersByTime(100))
+    act(() => result.current.press('w'))
+
+    expect(result.current.flagged).toBe('w')
+    expect(result.current.whiteMs).toBe(0)
   })
 
   it('flags the side that runs out of time', () => {
