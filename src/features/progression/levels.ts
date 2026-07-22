@@ -68,13 +68,20 @@ export const XP_REWARDS = {
   puzzleSolved: 20,
   /** Solving one without a hint or a wrong move. */
   puzzleFlawless: 10,
-  /** Every ten points scored in the hunt. */
-  huntPerTenPoints: 1,
+  /** Every hundred points scored in the hunt. */
+  huntPerHundredPoints: 1,
+  /**
+   * The most a single hunt round can be worth. A round takes a minute and can
+   * be replayed at once, so it is capped near a battle win rather than letting
+   * one lucky round outweigh every other mode — which a per-point reward did.
+   */
+  huntXpCap: 60,
   /** Reviewing a finished game in the coach. */
   coachGameAnalysed: 25,
 } as const
 
 /** XP for a hunt round, from its score. */
 export function huntXp(score: number): number {
-  return Math.floor(Math.max(0, score) / 10) * XP_REWARDS.huntPerTenPoints
+  const raw = Math.floor(Math.max(0, score) / 100) * XP_REWARDS.huntPerHundredPoints
+  return Math.min(raw, XP_REWARDS.huntXpCap)
 }

@@ -52,10 +52,15 @@ describe('levelFromXp', () => {
 })
 
 describe('huntXp', () => {
-  it('gives a point per ten scored', () => {
+  it('gives a point per hundred scored', () => {
     expect(huntXp(0)).toBe(0)
-    expect(huntXp(95)).toBe(9)
-    expect(huntXp(300)).toBe(30)
+    expect(huntXp(95)).toBe(0)
+    expect(huntXp(300)).toBe(3)
+    expect(huntXp(4370)).toBe(43)
+  })
+
+  it('caps an exceptional round so it cannot dwarf the other modes', () => {
+    expect(huntXp(999_999)).toBe(60)
   })
 
   it('never goes negative', () => {
