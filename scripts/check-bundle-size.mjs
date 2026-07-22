@@ -27,7 +27,11 @@ const BUDGETS = [
   {
     label: 'Initial JavaScript',
     match: (path) => path.endsWith('.js'),
-    maxGzipKb: 200,
+    // Raised from 200 kB for M10: the Supabase client is about 65 kB gzipped
+    // and is a hard requirement of the accounts and leaderboard of section 2.6.
+    // M9 should bring this back down with route-level lazy loading, which the
+    // specification assigns to it; until then the guard still catches growth.
+    maxGzipKb: 230,
   },
   {
     label: 'CSS',

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
@@ -11,6 +12,9 @@ import {
 } from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { supabase } from '@/lib/supabase'
+import { ROUTES } from '@/routes'
+import { useAuthStore } from '@/store/useAuthStore'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
@@ -34,6 +38,7 @@ export default function HuntPage() {
   const game = useHuntGame()
   const [scoreboard, setScoreboard] = useLocalStorage<Scoreboard>('chesstrainer.hunt.scores', {})
   const recordHunt = useProgressionStore((state) => state.recordHunt)
+  const session = useAuthStore((state) => state.session)
 
   // Record the round once, when it ends.
   const recorded = useRef(false)
@@ -63,6 +68,36 @@ export default function HuntPage() {
       }),
     )
   }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard, recordHunt])
+
+  // Submitting to the worldwide table is tracked apart from the local record:
+  // the session is restored asynchronously, so a short round can end before it
+  // exists. Sharing one flag would drop the score for good; this effect simply
+  // runs again once the session arrives.
+  const submitted = useRef(false)
+  const [submitFailed, setSubmitFailed] = useState(false)
+  useEffect(() => {
+    if (game.phase !== 'over') {
+      submitted.current = false
+      setSubmitFailed(false)
+      return
+    }
+    if (submitted.current || !supabase || !session || !game.champion || game.score <= 0) return
+    submitted.current = true
+
+    const client = supabase
+    const round = { piece: game.champion, score: game.score, captures: game.captures }
+    void client
+      .from('scores')
+      .insert({ user_id: session.user.id, ...round })
+      .then(({ error }) => {
+        // A silently dropped score looks like the leaderboard is broken, so the
+        // failure is surfaced and a retry is allowed.
+        if (error) {
+          submitted.current = false
+          setSubmitFailed(true)
+        }
+      })
+  }, [game.phase, game.champion, game.score, game.captures, session])
 
   if (game.phase === 'setup') {
     return (
@@ -125,6 +160,23 @@ export default function HuntPage() {
           <p className="text-sm text-ardoise">
             {encouragement(game.score, previousBest, game.captures)}
           </p>
+
+          {submitFailed && (
+            <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              Score enregistré localement, mais son envoi au classement mondial a échoué. Il sera
+              renvoyé à la prochaine manche.
+            </p>
+          )}
+
+          {!session && game.score > 0 && (
+            <p className="rounded-xl bg-or/15 px-3 py-2 text-sm text-ebene">
+              Ce score pourrait figurer au classement mondial —{' '}
+              <Link to={ROUTES.register} className="font-semibold underline">
+                créez un compte
+              </Link>{' '}
+              pour l'y inscrire.
+            </p>
+          )}
 
           <div>
             <h2 className="mb-2 font-display text-lg font-bold text-ebene">

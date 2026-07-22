@@ -3,10 +3,12 @@ import { BOTTOM_BAR_ITEMS, NAV_ITEMS } from '@/components/Layout/navigation'
 import { ROUTES } from '@/routes'
 
 describe('navigation', () => {
-  it('exposes one entry per SPA route', () => {
-    const navPaths = NAV_ITEMS.map((item) => item.path).sort()
-    const routePaths = Object.values(ROUTES).sort()
-    expect(navPaths).toEqual(routePaths)
+  it('exposes one entry per navigable route', () => {
+    // The auth screens are reached from a guard or a link, never from the menu.
+    const navigable = Object.values(ROUTES).filter(
+      (route) => route !== ROUTES.login && route !== ROUTES.register,
+    )
+    expect(NAV_ITEMS.map((item) => item.path).sort()).toEqual(navigable.sort())
   })
 
   it('contains no duplicate route', () => {

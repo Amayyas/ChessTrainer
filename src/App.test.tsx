@@ -22,7 +22,9 @@ describe('routing', () => {
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, 'Puzzles'],
     [ROUTES.hunt, /Chasse aux Pièces/],
-    [ROUTES.leaderboard, /Classement mondial/],
+    // Tests run with no backend configured, so the guard explains the
+    // leaderboard is unavailable rather than rendering it.
+    [ROUTES.leaderboard, /Classement indisponible/],
     [ROUTES.profile, 'Profil'],
   ])('renders the expected page at %s', (path, heading) => {
     renderAt(path)

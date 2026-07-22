@@ -14,3 +14,7 @@ coverage
 
 # Private specification — kept locally, never committed
 cahier-des-charges.html
+
+# Supabase CLI local artefacts
+supabase/.temp
+supabase/.branches
