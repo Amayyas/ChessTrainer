@@ -36,6 +36,94 @@ npm run dev
 
 The app is served on http://localhost:5173.
 
+## Backend setup (optional)
+
+Every mode is playable without a backend: the app detects that no Supabase
+project is configured and runs in guest mode, keeping progress in
+`localStorage`. Only accounts and the worldwide leaderboard need the steps
+below.
+
+### 1. Create the project
+
+1. Sign in on [supabase.com](https://supabase.com) and create a new project.
+   Note the database password somewhere safe; it is shown only once.
+2. Open **Project Settings > API** and copy **Project URL** and the **anon
+   public** key.
+3. Copy `.env.example` to `.env.local` and paste both values:
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   The anon key is meant to be public — it is shipped in the browser bundle,
+   and Row Level Security is what actually protects the data. Never put the
+   `service_role` key in this file.
+
+### 2. Create the tables
+
+`supabase/migrations/` holds the whole schema: tables, Row Level Security
+policies, privileges, the trigger that creates a profile on sign-up, and the
+realtime publication the leaderboard subscribes to.
+
+The quickest way is the dashboard: open **SQL Editor**, paste the contents of
+`supabase/migrations/20260711000000_init.sql`, and run it. The script is
+idempotent, so running it twice is harmless.
+
+With the [Supabase CLI](https://supabase.com/docs/guides/cli) instead:
+
+```bash
+npx supabase link --project-ref <your-project-ref>
+npx supabase db push
+```
+
+Check it worked under **Table Editor**: `profiles`, `scores`,
+`puzzle_progress` and `achievements` should be listed, each marked _RLS
+enabled_.
+
+### 3. Set the URLs
+
+Under **Authentication > URL Configuration**:
+
+- **Site URL** — `http://localhost:5173` while developing, the deployed
+  address once online.
+- **Redirect URLs** — add `http://localhost:5173/profile` and, once deployed,
+  `https://<your-domain>/profile`. Sign-in sends the player back to `/profile`
+  and this list is matched exactly, so a missing entry fails the sign-in.
+
+Under **Authentication > Providers > Email**, turn **Confirm email** off while
+testing, unless you want to click a confirmation link for every test account.
+
+### 4. Google sign-in (optional)
+
+The button is shown regardless; it only works once this is done.
+
+1. In [Google Cloud Console](https://console.cloud.google.com), create a
+   project, then **APIs & Services > OAuth consent screen**: choose
+   **External**, fill in the app name and your email, and add your own address
+   under **Test users** so you can sign in before the app is published.
+2. **Credentials > Create credentials > OAuth client ID**, type **Web
+   application**. Under **Authorised redirect URIs**, paste the callback shown
+   by Supabase in **Authentication > Providers > Google** — it looks like
+   `https://<project-ref>.supabase.co/auth/v1/callback`.
+3. Copy the generated **Client ID** and **Client secret** into that same
+   Supabase Google provider panel, enable it, and save.
+
+Nothing changes in the app itself: the provider is read from the project.
+
+### Running the backend locally
+
+Docker is required. `supabase/config.toml` is already set up for this app —
+port 5173, and the `/profile` callback in the allow-list.
+
+```bash
+npx supabase start   # applies supabase/migrations automatically
+npx supabase status  # prints the local URL and anon key for .env.local
+```
+
+For local Google sign-in, put the same credentials in `supabase/.env` (git
+ignored, see `supabase/.env.example`). Without it the stack still starts and
+email sign-in works; only the Google button is inert.
+
 ## Scripts
 
 | Script                  | Purpose                                      |
