@@ -17,7 +17,7 @@ French, since the app targets French-speaking learners; the codebase itself is E
 | Game logic   | chess.js _(M3)_                      |
 | Board        | react-chessboard _(M3)_              |
 | AI           | Stockfish.js in a Web Worker _(M4)_  |
-| Global state | Zustand _(M8)_                       |
+| Global state | Zustand                              |
 | Animations   | Framer Motion _(M2)_                 |
 | Backend      | Supabase — Auth + PostgreSQL _(M10)_ |
 
@@ -145,9 +145,9 @@ Tailwind color keys keep their French names to match the specification wording.
 | M3     | Core Chess Engine           | ✅ Done |
 | M4     | AI Coach mode               | ✅ Done |
 | M5     | AI Battle mode              | ✅ Done |
-| M6     | Puzzle mode                 | To do   |
-| M7     | Piece Hunt mode             | To do   |
-| M8     | Progression system          | To do   |
+| M6     | Puzzle mode                 | ✅ Done |
+| M7     | Piece Hunt mode             | ✅ Done |
+| M8     | Progression system          | ✅ Done |
 | M10    | Auth, Backend & Leaderboard | To do   |
 | M9     | Tests & Optimization        | To do   |
 

@@ -2,13 +2,16 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@/components/UI'
 import type { BadgeVariant } from '@/components/UI'
+import LevelBar from '@/features/progression/LevelBar'
+import { challengeProgress } from '@/features/progression/challenges'
+import { levelFromXp } from '@/features/progression/levels'
 import { staggerContainer, staggerItem } from '@/lib/motion'
 import { ROUTES, type RoutePath } from '@/routes'
+import { useProgressionStore } from '@/store/useProgressionStore'
 
 /**
- * Landing / dashboard. This M2 version showcases the design system and links to
- * every mode. The rich dashboard content — daily challenges, quick stats — is
- * added in M8 (progression system), per the specification.
+ * Dashboard (spec section 2.5): progression, the day's challenges, recent
+ * activity, and a way into each mode.
  */
 interface ModeCard {
   to: RoutePath
@@ -54,21 +57,103 @@ const MODES: ModeCard[] = [
   },
 ]
 
+const ACTIVITY_GLYPHS: Record<string, string> = {
+  battle: '♜',
+  puzzle: '♝',
+  hunt: '♟',
+  coach: '♞',
+}
+
 export default function HomePage() {
   const reduceMotion = useReducedMotion()
+  const xp = useProgressionStore((state) => state.xp)
+  const stats = useProgressionStore((state) => state.stats)
+  const daily = useProgressionStore((state) => state.daily)
+  const activities = useProgressionStore((state) => state.activities)
+
+  const progress = levelFromXp(xp)
+  const challenges = challengeProgress(daily)
 
   return (
     <div>
-      <section className="mb-10 rounded-2xl bg-ebene px-6 py-10 text-ivoire sm:px-10 sm:py-14">
-        <p className="mb-3 font-semibold uppercase tracking-[0.2em] text-or">ChessTrainer AI</p>
-        <h1 className="max-w-2xl font-display text-4xl font-bold leading-tight sm:text-5xl">
+      <section className="mb-8 rounded-2xl bg-ebene px-6 py-8 text-ivoire sm:px-10 sm:py-10">
+        <p className="mb-2 font-semibold uppercase tracking-[0.2em] text-or">ChessTrainer AI</p>
+        <h1 className="max-w-2xl font-display text-3xl font-bold leading-tight sm:text-4xl">
           Apprenez les échecs avec un coach intelligent
         </h1>
-        <p className="mt-4 max-w-xl text-ivoire/70">
-          Quatre modes pour progresser : analyse assistée par IA, affrontement calibré, puzzles
-          tactiques et un mode arcade pour maîtriser le déplacement des pièces.
-        </p>
+        <div className="mt-6 max-w-md">
+          <LevelBar progress={progress} onDark />
+          <p className="mt-2 text-sm text-ivoire/70">{xp} XP au total</p>
+        </div>
       </section>
+
+      <div className="mb-8 grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h2 className="mb-3 font-display text-lg font-bold text-ebene">Challenges du jour</h2>
+          <ul className="space-y-3">
+            {challenges.map(({ challenge, progress: done, isComplete }) => (
+              <li key={challenge.id}>
+                <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+                  <span className={isComplete ? 'text-ardoise line-through' : 'text-ebene'}>
+                    {challenge.label}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-ardoise">
+                    {done} / {challenge.target}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-ebene/10">
+                  <div
+                    className={isComplete ? 'h-full bg-emerald-500' : 'h-full bg-or'}
+                    style={{ width: `${Math.round((done / challenge.target) * 100)}%` }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 font-display text-lg font-bold text-ebene">Activités récentes</h2>
+          {activities.length === 0 ? (
+            <p className="text-sm text-ardoise">
+              Rien pour l'instant — lancez un mode et vos progrès s'afficheront ici.
+            </p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {activities.slice(0, 5).map((activity) => (
+                <li key={activity.id} className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span aria-hidden="true" className="text-base text-or">
+                      {ACTIVITY_GLYPHS[activity.kind]}
+                    </span>
+                    <span className="truncate text-ebene">{activity.label}</span>
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-ardoise">
+                    +{activity.xp} XP
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Parties jouées', value: stats.gamesPlayed },
+          { label: 'Puzzles résolus', value: stats.puzzlesSolved },
+          {
+            label: 'Précision moyenne',
+            value: stats.averageAccuracy === null ? '—' : `${stats.averageAccuracy}%`,
+          },
+          { label: 'Record Chasse', value: stats.bestHuntScore },
+        ].map((stat) => (
+          <Card key={stat.label} className="px-4 py-3 text-center">
+            <p className="font-display text-2xl font-bold text-ebene">{stat.value}</p>
+            <p className="text-xs text-ardoise">{stat.label}</p>
+          </Card>
+        ))}
+      </div>
 
       <h2 className="mb-4 font-display text-2xl font-bold text-ebene">Choisissez un mode</h2>
 
