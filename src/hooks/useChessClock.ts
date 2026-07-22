@@ -64,13 +64,18 @@ export function useChessClock(control: TimeControl): UseChessClock {
   const [flagged, setFlagged] = useState<Color | null>(null)
   const lastTick = useRef(0)
 
-  // A new time control restarts the clock.
-  useEffect(() => {
+  // Reset during render (not in an effect) when the time control changes.
+  // An effect would leave one render where `enabled` is already true but the
+  // clocks still hold the previous control's time — long enough for a clock
+  // switched from "no limit" (0 ms) to raise a false flag.
+  const [appliedControl, setAppliedControl] = useState(control)
+  if (appliedControl !== control) {
+    setAppliedControl(control)
     setWhiteMs(control.initialMs)
     setBlackMs(control.initialMs)
     setActive(null)
     setFlagged(null)
-  }, [control])
+  }
 
   useEffect(() => {
     if (!enabled || !active || flagged) return
@@ -88,17 +93,18 @@ export function useChessClock(control: TimeControl): UseChessClock {
     return () => clearInterval(id)
   }, [enabled, active, flagged])
 
-  // Raise the flag as soon as a clock hits zero.
+  // Raise the flag as soon as the *running* clock hits zero. Only the side to
+  // move can lose on time, so a stopped clock never flags.
   useEffect(() => {
-    if (!enabled || flagged) return
-    if (whiteMs <= 0) {
+    if (!enabled || flagged || !active) return
+    if (active === 'w' && whiteMs <= 0) {
       setFlagged('w')
       setActive(null)
-    } else if (blackMs <= 0) {
+    } else if (active === 'b' && blackMs <= 0) {
       setFlagged('b')
       setActive(null)
     }
-  }, [whiteMs, blackMs, enabled, flagged])
+  }, [whiteMs, blackMs, enabled, flagged, active])
 
   const start = useCallback(
     (color: Color) => {
