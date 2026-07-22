@@ -18,3 +18,7 @@ cahier-des-charges.html
 # Supabase CLI local artefacts
 supabase/.temp
 supabase/.branches
+
+# Local secrets — Google OAuth credentials, never committed
+supabase/.env
+client_secret_*.json
