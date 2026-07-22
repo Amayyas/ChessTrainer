@@ -2,7 +2,13 @@ import { useEffect, useRef } from 'react'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
-import { addScore, encouragement, personalBest, type Scoreboard } from '@/features/hunt/scoring'
+import {
+  STARTING_LIVES,
+  addScore,
+  encouragement,
+  personalBest,
+  type Scoreboard,
+} from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { cn } from '@/utils/cn'
@@ -29,6 +35,10 @@ export default function HuntPage() {
 
   // Record the round once, when it ends.
   const recorded = useRef(false)
+  // The best from before this round: `scoreboard` gains the fresh score
+  // asynchronously, so reading it directly would flash a stale record and the
+  // wrong encouragement on the first frame of the results screen.
+  const bestBeforeRound = useRef(0)
   useEffect(() => {
     if (game.phase !== 'over') {
       recorded.current = false
@@ -36,6 +46,7 @@ export default function HuntPage() {
     }
     if (recorded.current || !game.champion) return
     recorded.current = true
+    bestBeforeRound.current = personalBest(scoreboard, game.champion)
     setScoreboard((board) =>
       addScore(board, {
         champion: game.champion!,
@@ -44,7 +55,7 @@ export default function HuntPage() {
         playedAt: new Date().toISOString(),
       }),
     )
-  }, [game.phase, game.champion, game.score, game.captures, setScoreboard])
+  }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard])
 
   if (game.phase === 'setup') {
     return (
@@ -89,10 +100,11 @@ export default function HuntPage() {
   }
 
   const champion = game.champion!
-  const best = personalBest(scoreboard, champion)
 
   if (game.phase === 'over') {
     const rows = scoreboard[champion] ?? []
+    const previousBest = bestBeforeRound.current
+    const displayedBest = Math.max(previousBest, game.score)
     return (
       <div>
         <PageHeader title="Chasse aux Pièces" subtitle="Manche terminée." />
@@ -100,10 +112,12 @@ export default function HuntPage() {
           <div className="grid grid-cols-3 gap-2">
             <Stat label="Score" value={String(game.score)} accent />
             <Stat label="Captures" value={String(game.captures)} />
-            <Stat label="Record" value={String(best)} />
+            <Stat label="Record" value={String(displayedBest)} />
           </div>
 
-          <p className="text-sm text-ardoise">{encouragement(game.score, best, game.captures)}</p>
+          <p className="text-sm text-ardoise">
+            {encouragement(game.score, previousBest, game.captures)}
+          </p>
 
           <div>
             <h2 className="mb-2 font-display text-lg font-bold text-ebene">
@@ -184,7 +198,9 @@ export default function HuntPage() {
               <span className="text-sm text-ardoise">Vies</span>
               <span aria-label={`${game.lives} vies restantes`} className="text-lg">
                 {'♥'.repeat(Math.max(0, game.lives))}
-                <span className="text-ebene/20">{'♥'.repeat(Math.max(0, 3 - game.lives))}</span>
+                <span className="text-ebene/20">
+                  {'♥'.repeat(Math.max(0, STARTING_LIVES - game.lives))}
+                </span>
               </span>
             </div>
 

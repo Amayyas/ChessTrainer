@@ -191,6 +191,17 @@ describe('useHuntGame', () => {
     expect(result.current.phase).toBe('over')
   })
 
+  it('never leaves the champion stuck off the board once the round is over', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+    act(() => vi.advanceTimersByTime(ROUND_MS + 500))
+
+    // A round that ends mid-respawn used to report the champion as gone for good.
+    expect(result.current.phase).toBe('over')
+    expect(result.current.isRespawning).toBe(false)
+    expect(result.current.championSquare).not.toBeNull()
+  })
+
   it('goes back to the picker on reset', () => {
     const { result } = renderHook(() => useHuntGame())
     act(() => result.current.start('q'))

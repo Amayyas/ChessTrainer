@@ -122,18 +122,27 @@ function moveOneEnemy(state: HuntInternals): void {
   const squares = [...state.enemies.keys()]
   if (squares.length === 0) return
 
-  const from = squares[Math.floor(Math.random() * squares.length)]!
-  const piece = state.enemies.get(from)
-  if (!piece) return
+  // Try the enemies in a random order rather than picking one and giving up:
+  // a blocked pawn or a boxed-in piece would otherwise waste the whole reply.
+  for (let i = squares.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[squares[i], squares[j]] = [squares[j]!, squares[i]!]
+  }
 
   // While the champion is off the board there is nobody to hunt.
   const champion = state.respawnAt === null ? state.championSquare : null
-  const to = chooseEnemyMove(from, state.enemies, champion)
-  if (!to) return
 
-  state.enemies.delete(from)
-  state.enemies.set(to, piece)
-  state.enemiesVersion += 1
+  for (const from of squares) {
+    const piece = state.enemies.get(from)
+    if (!piece) continue
+    const to = chooseEnemyMove(from, state.enemies, champion)
+    if (!to) continue
+
+    state.enemies.delete(from)
+    state.enemies.set(to, piece)
+    state.enemiesVersion += 1
+    return
+  }
 }
 
 /**
@@ -202,8 +211,14 @@ export function useHuntGame(): HuntGame {
       current.combo = 0
       current.dangerSince = null
       current.timeLeftMs = Math.max(0, current.timeLeftMs - CAPTURE_PENALTY_MS)
-      current.respawnAt = now + RESPAWN_DELAY_MS
-      if (current.lives <= 0) enterPhase('over')
+      if (current.lives <= 0) {
+        // The round is over: no reappearance is coming, so the pause must not
+        // outlive it or the champion would stay off the board for good.
+        current.respawnAt = null
+        enterPhase('over')
+      } else {
+        current.respawnAt = now + RESPAWN_DELAY_MS
+      }
     },
     [enterPhase],
   )
@@ -275,7 +290,10 @@ export function useHuntGame(): HuntGame {
         else if (now - current.dangerSince >= DANGER_GRACE_MS) loseLife(now)
       }
 
-      if (current.timeLeftMs <= 0) enterPhase('over')
+      if (current.timeLeftMs <= 0) {
+        current.respawnAt = null
+        enterPhase('over')
+      }
       render()
     }, TICK_MS)
 
@@ -289,7 +307,7 @@ export function useHuntGame(): HuntGame {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [current.enemiesVersion],
   )
-  const isRespawning = current.respawnAt !== null
+  const isRespawning = phase === 'playing' && current.respawnAt !== null
   const isPlaying = phase === 'playing' && !isRespawning
 
   return {

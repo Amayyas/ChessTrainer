@@ -32,6 +32,11 @@ describe('nextCombo', () => {
   it('starts over when the captures are too far apart', () => {
     expect(nextCombo(3, COMBO_WINDOW_MS + 1)).toBe(1)
   })
+
+  it('treats the window as exclusive: exactly at the boundary breaks it', () => {
+    expect(nextCombo(3, COMBO_WINDOW_MS)).toBe(1)
+    expect(nextCombo(3, COMBO_WINDOW_MS - 1)).toBe(4)
+  })
 })
 
 describe('capturePoints', () => {

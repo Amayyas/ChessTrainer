@@ -20,7 +20,8 @@ export const RESPAWN_DELAY_MS = 700
  * cap, a slower one starts again at x1.
  */
 export function nextCombo(previousCombo: number, msSinceLastCapture: number): number {
-  if (msSinceLastCapture > COMBO_WINDOW_MS) return 1
+  // Strictly closer than the window, so the boundary itself breaks the combo.
+  if (msSinceLastCapture >= COMBO_WINDOW_MS) return 1
   return Math.min(MAX_COMBO, previousCombo + 1)
 }
 
