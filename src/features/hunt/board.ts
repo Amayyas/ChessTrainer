@@ -6,7 +6,7 @@
  * functions instead, so the arcade logic stays testable on its own.
  */
 
-export type ChampionType = 'q' | 'r' | 'b' | 'n' | 'k'
+export type ChampionType = 'q' | 'r' | 'b' | 'n'
 export type EnemyType = 'p' | 'n' | 'b' | 'r' | 'q'
 export type PieceType = ChampionType | EnemyType
 
@@ -99,9 +99,6 @@ export function attackedSquares(
       break
     case 'n':
       steps(KNIGHT_STEPS)
-      break
-    case 'k':
-      steps([...ROOK_DIRS, ...BISHOP_DIRS])
       break
     case 'p':
       steps([
@@ -207,7 +204,6 @@ export const CHAMPION_LABELS: Record<ChampionType, string> = {
   r: 'Tour',
   b: 'Fou',
   n: 'Cavalier',
-  k: 'Roi',
 }
 
 /** Movement description shown on the champion picker (spec section 2.4). */
@@ -216,5 +212,4 @@ export const CHAMPION_DESCRIPTIONS: Record<ChampionType, string> = {
   r: 'Se déplace en ligne droite, horizontalement et verticalement.',
   b: 'Se déplace en diagonale, et reste donc sur ses cases de départ.',
   n: 'Saute en L : deux cases puis une, en passant par-dessus les autres pièces.',
-  k: "Se déplace d'une seule case, dans les huit directions.",
 }

@@ -11,7 +11,9 @@ export const STARTING_LIVES = 3
 /** A capture costs a life and five seconds. */
 export const CAPTURE_PENALTY_MS = 5_000
 /** How long the champion may stay in danger before being taken. */
-export const DANGER_GRACE_MS = 1_500
+export const DANGER_GRACE_MS = 1_000
+/** Pause between being taken and reappearing, so the capture is readable. */
+export const RESPAWN_DELAY_MS = 700
 
 /**
  * The multiplier after a capture: consecutive quick captures build it up to the

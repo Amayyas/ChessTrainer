@@ -7,8 +7,8 @@ import { useHuntGame } from '@/features/hunt/useHuntGame'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { cn } from '@/utils/cn'
 
-const CHAMPIONS: ChampionType[] = ['q', 'r', 'b', 'n', 'k']
-const GLYPHS: Record<ChampionType, string> = { q: '♛', r: '♜', b: '♝', n: '♞', k: '♚' }
+const CHAMPIONS: ChampionType[] = ['q', 'r', 'b', 'n']
+const GLYPHS: Record<ChampionType, string> = { q: '♛', r: '♜', b: '♝', n: '♞' }
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (

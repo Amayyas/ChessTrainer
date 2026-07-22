@@ -4,6 +4,7 @@ import { useHuntGame } from '@/features/hunt/useHuntGame'
 import {
   CAPTURE_PENALTY_MS,
   DANGER_GRACE_MS,
+  RESPAWN_DELAY_MS,
   ROUND_MS,
   STARTING_LIVES,
 } from '@/features/hunt/scoring'
@@ -83,7 +84,7 @@ describe('useHuntGame', () => {
 
   it('adds enemies over time to keep the pressure up', () => {
     const { result } = renderHook(() => useHuntGame())
-    act(() => result.current.start('k'))
+    act(() => result.current.start('b'))
     const initial = result.current.enemies.size
     act(() => vi.advanceTimersByTime(8_000))
     expect(result.current.enemies.size).toBeGreaterThan(initial)
@@ -91,7 +92,7 @@ describe('useHuntGame', () => {
 
   it('takes a life and five seconds when the champion stays in danger', () => {
     const { result } = renderHook(() => useHuntGame())
-    act(() => result.current.start('k'))
+    act(() => result.current.start('b'))
 
     // Let enemies accumulate until the champion is threatened, then wait it out.
     let guard = 0
@@ -107,6 +108,35 @@ describe('useHuntGame', () => {
 
     expect(result.current.lives).toBe(livesBefore - 1)
     expect(result.current.timeLeftMs).toBeLessThanOrEqual(timeBefore - CAPTURE_PENALTY_MS)
+  })
+
+  it('has the threatening enemy take the champion, then respawns it elsewhere', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('b'))
+
+    // Wait until an enemy threatens the champion.
+    let guard = 0
+    while (result.current.threats.length === 0 && guard < 40) {
+      act(() => vi.advanceTimersByTime(1_000))
+      guard += 1
+    }
+    if (result.current.threats.length === 0) return // never threatened in this deal
+
+    const eatenSquare = result.current.championSquare!
+    const attacker = result.current.threats[0]!
+
+    // Stay put past the grace period: the attacker moves in and eats it.
+    act(() => vi.advanceTimersByTime(DANGER_GRACE_MS + 200))
+    expect(result.current.isRespawning).toBe(true)
+    expect(result.current.championSquare).toBeNull()
+    expect(result.current.enemies.get(eatenSquare)).toBeDefined()
+    expect(result.current.enemies.has(attacker)).toBe(false)
+
+    // After the pause the champion is back, somewhere else.
+    act(() => vi.advanceTimersByTime(RESPAWN_DELAY_MS + 200))
+    expect(result.current.isRespawning).toBe(false)
+    expect(result.current.championSquare).not.toBeNull()
+    expect(result.current.championSquare).not.toBe(eatenSquare)
   })
 
   it('ends the round when the clock runs out', () => {

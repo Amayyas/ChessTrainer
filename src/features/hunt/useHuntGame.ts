@@ -11,6 +11,7 @@ import {
 import {
   CAPTURE_PENALTY_MS,
   DANGER_GRACE_MS,
+  RESPAWN_DELAY_MS,
   ROUND_MS,
   STARTING_LIVES,
   capturePoints,
@@ -38,6 +39,8 @@ interface HuntInternals {
   lastCaptureAt: number
   /** When the champion first came under threat, or null. */
   dangerSince: number | null
+  /** While set, the champion has been eaten and is waiting to reappear. */
+  respawnAt: number | null
   nextSpawnAt: number
   lastTick: number
 }
@@ -45,7 +48,8 @@ interface HuntInternals {
 export interface HuntGame {
   phase: HuntPhase
   champion: ChampionType | null
-  championSquare: string
+  /** Null while the champion has been eaten and has not reappeared yet. */
+  championSquare: string | null
   enemies: ReadonlyMap<string, EnemyType>
   timeLeftMs: number
   lives: number
@@ -54,6 +58,8 @@ export interface HuntGame {
   combo: number
   /** Enemies currently able to take the champion. */
   threats: string[]
+  /** True during the pause between being eaten and reappearing. */
+  isRespawning: boolean
   moves: string[]
   start: (champion: ChampionType) => void
   moveTo: (square: string) => boolean
@@ -72,6 +78,7 @@ function emptyInternals(): HuntInternals {
     combo: 0,
     lastCaptureAt: 0,
     dangerSince: null,
+    respawnAt: null,
     nextSpawnAt: 0,
     lastTick: 0,
   }
@@ -128,18 +135,30 @@ export function useHuntGame(): HuntGame {
     render()
   }, [enterPhase, render])
 
-  /** Takes a life, pushes the champion to safety and costs five seconds. */
+  /**
+   * The champion is taken: the enemy that was threatening it moves onto its
+   * square — it eats it — and the champion only reappears after a short pause,
+   * costing a life and five seconds.
+   */
   const loseLife = useCallback(
     (now: number) => {
       const current = state.current
+
+      const attacker = threateningEnemies(current.championSquare, current.enemies)[0]
+      if (attacker) {
+        const type = current.enemies.get(attacker)
+        if (type) {
+          current.enemies.delete(attacker)
+          current.enemies.set(current.championSquare, type)
+        }
+      }
+
       current.lives -= 1
       current.combo = 0
       current.dangerSince = null
       current.timeLeftMs = Math.max(0, current.timeLeftMs - CAPTURE_PENALTY_MS)
-      const square = respawnSquare(current.enemies)
-      if (square) current.championSquare = square
+      current.respawnAt = now + RESPAWN_DELAY_MS
       if (current.lives <= 0) enterPhase('over')
-      void now
     },
     [enterPhase],
   )
@@ -147,7 +166,7 @@ export function useHuntGame(): HuntGame {
   const moveTo = useCallback(
     (square: string) => {
       const current = state.current
-      if (phaseRef.current !== 'playing') return false
+      if (phaseRef.current !== 'playing' || current.respawnAt !== null) return false
       if (
         !championMoves(current.champion, current.championSquare, current.enemies).includes(square)
       )
@@ -189,11 +208,18 @@ export function useHuntGame(): HuntGame {
         current.nextSpawnAt = now + SPAWN_INTERVAL_MS
       }
 
-      // Danger: the champion must step away before the grace period runs out.
-      const inDanger = isInDanger(current.championSquare, current.enemies)
-      if (!inDanger) current.dangerSince = null
-      else {
-        if (current.dangerSince === null) current.dangerSince = now
+      if (current.respawnAt !== null) {
+        // Eaten: reappear on a safe square once the pause is over.
+        if (now >= current.respawnAt) {
+          const square = respawnSquare(current.enemies)
+          if (square) current.championSquare = square
+          current.respawnAt = null
+        }
+      } else {
+        // Danger: the champion must step away before the grace period runs out.
+        const inDanger = isInDanger(current.championSquare, current.enemies)
+        if (!inDanger) current.dangerSince = null
+        else if (current.dangerSince === null) current.dangerSince = now
         else if (now - current.dangerSince >= DANGER_GRACE_MS) loseLife(now)
       }
 
@@ -205,12 +231,13 @@ export function useHuntGame(): HuntGame {
   }, [phase, loseLife, enterPhase, render])
 
   const current = state.current
-  const isPlaying = phase === 'playing'
+  const isRespawning = current.respawnAt !== null
+  const isPlaying = phase === 'playing' && !isRespawning
 
   return {
     phase,
     champion: phase === 'setup' ? null : current.champion,
-    championSquare: current.championSquare,
+    championSquare: isRespawning ? null : current.championSquare,
     enemies: current.enemies,
     timeLeftMs: current.timeLeftMs,
     lives: current.lives,
@@ -218,6 +245,7 @@ export function useHuntGame(): HuntGame {
     captures: current.captures,
     combo: current.combo,
     threats: isPlaying ? threateningEnemies(current.championSquare, current.enemies) : [],
+    isRespawning,
     moves: isPlaying
       ? championMoves(current.champion, current.championSquare, current.enemies)
       : [],

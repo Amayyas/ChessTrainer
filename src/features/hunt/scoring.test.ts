@@ -73,7 +73,7 @@ describe('addScore', () => {
 
 describe('personalBest', () => {
   it('is zero without a recorded round', () => {
-    expect(personalBest({}, 'k')).toBe(0)
+    expect(personalBest({}, 'b')).toBe(0)
   })
 
   it('returns the top score for that piece', () => {

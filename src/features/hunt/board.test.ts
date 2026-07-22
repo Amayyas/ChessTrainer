@@ -34,12 +34,6 @@ describe('attackedSquares', () => {
     expect(attackedSquares('n', 'a1').sort()).toEqual(['b3', 'c2'])
   })
 
-  it('gives a king eight neighbours in the centre', () => {
-    expect(attackedSquares('k', 'd4').sort()).toEqual(
-      ['c3', 'c4', 'c5', 'd3', 'd5', 'e3', 'e4', 'e5'].sort(),
-    )
-  })
-
   it('sweeps a rook along its file and rank', () => {
     const squares = attackedSquares('r', 'a1')
     expect(squares).toHaveLength(14)

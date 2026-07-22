@@ -6,7 +6,8 @@ import type { ChampionType, EnemyType } from '@/features/hunt/board'
 
 export interface HuntBoardProps {
   champion: ChampionType
-  championSquare: string
+  /** Null while the champion has been eaten and has not reappeared yet. */
+  championSquare: string | null
   enemies: ReadonlyMap<string, EnemyType>
   /** Squares the champion can reach. */
   moves: string[]
@@ -22,8 +23,6 @@ const DARK_SQUARE = '#4A4A5A'
 const CHAMPION_HIGHLIGHT = 'rgba(201, 168, 76, 0.55)'
 const THREAT_HIGHLIGHT = 'rgba(220, 38, 38, 0.55)'
 const TARGET_DOT = 'radial-gradient(circle, rgba(26,26,46,0.3) 22%, transparent 26%)'
-const CAPTURE_RING =
-  'radial-gradient(circle, transparent 55%, rgba(16,185,129,0.75) 56%, rgba(16,185,129,0.75) 64%, transparent 65%)'
 
 /**
  * The arcade board (spec section 2.4). It holds a champion and loose enemies
@@ -46,29 +45,31 @@ export default function HuntBoard({
   const position = useMemo<BoardPosition>(() => {
     // Squares come from the arcade engine as plain strings; the board types them
     // as the algebraic union, which they always are.
-    const board: Partial<Record<Square, Piece>> = {
-      [championSquare as Square]: `w${champion.toUpperCase()}` as Piece,
-    }
+    const board: Partial<Record<Square, Piece>> = {}
     for (const [square, piece] of enemies) {
       board[square as Square] = `b${piece.toUpperCase()}` as Piece
     }
+    // While the champion is eaten it is off the board entirely.
+    if (championSquare) board[championSquare as Square] = `w${champion.toUpperCase()}` as Piece
     return board as BoardPosition
   }, [champion, championSquare, enemies])
 
   const squareStyles = useMemo(() => {
     const styles: Record<string, Record<string, string>> = {}
 
+    // Only empty reachable squares are dotted. Marking capturable enemies would
+    // hand the player the next move, which is not the point of the exercise.
     for (const square of moves) {
-      styles[square] = {
-        backgroundImage: enemies.has(square) ? CAPTURE_RING : TARGET_DOT,
-      }
+      if (!enemies.has(square)) styles[square] = { backgroundImage: TARGET_DOT }
     }
     for (const square of threats) {
       styles[square] = { ...styles[square], backgroundColor: THREAT_HIGHLIGHT }
     }
-    styles[championSquare] = {
-      ...styles[championSquare],
-      backgroundColor: threats.length > 0 ? THREAT_HIGHLIGHT : CHAMPION_HIGHLIGHT,
+    if (championSquare) {
+      styles[championSquare] = {
+        ...styles[championSquare],
+        backgroundColor: threats.length > 0 ? THREAT_HIGHLIGHT : CHAMPION_HIGHLIGHT,
+      }
     }
     return styles
   }, [moves, threats, enemies, championSquare])
