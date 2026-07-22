@@ -1,0 +1,263 @@
+import { Chess } from 'chess.js'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { parseUciMove } from '@/engine/uci'
+import { useStockfish } from '@/engine/useStockfish'
+import type { UseChessGame } from '@/hooks/useChessGame'
+import type { Color, Square } from '@/utils/chess'
+import {
+  classifyMove,
+  moveAccuracy,
+  toWhiteEval,
+  winningChances,
+  type MoveQuality,
+  type WhiteEval,
+} from '@/utils/evaluation'
+
+interface PositionAnalysis {
+  eval: WhiteEval
+  bestMoveUci: string | null
+  pv: string[]
+}
+
+export interface PositionInsight {
+  eval: WhiteEval | null
+  bestMove: { from: Square; to: Square } | null
+}
+
+export interface GameSummary {
+  accuracyWhite: number | null
+  accuracyBlack: number | null
+  inaccuracies: number
+  mistakes: number
+  blunders: number
+  bestMove: { san: string; index: number; color: Color } | null
+}
+
+export interface CoachAnalysis {
+  isReady: boolean
+  isAnalyzing: boolean
+  currentEval: WhiteEval | null
+  bestMove: { from: Square; to: Square } | null
+  bestMoveUci: string | null
+  qualities: (MoveQuality | null)[]
+  summary: GameSummary
+  analysisAt: (fen: string) => PositionInsight
+}
+
+function turnOf(fen: string): Color {
+  return fen.split(' ')[1] === 'b' ? 'b' : 'w'
+}
+
+/** FEN after playing a UCI move on `fen`, or null if it is not legal. */
+function applyUci(fen: string, uci: string): string | null {
+  const parsed = parseUciMove(uci)
+  if (!parsed) return null
+  try {
+    const chess = new Chess(fen)
+    chess.move({ from: parsed.from, to: parsed.to, promotion: parsed.promotion })
+    return chess.fen()
+  } catch {
+    return null
+  }
+}
+
+function uciToSquares(uci: string | null): { from: Square; to: Square } | null {
+  if (!uci || uci === '(none)') return null
+  const parsed = parseUciMove(uci)
+  return parsed ? { from: parsed.from as Square, to: parsed.to as Square } : null
+}
+
+/**
+ * Orchestrates Stockfish analysis for the coach (spec section 2.1).
+ *
+ * To classify a move fairly it compares the eval *after the best move* with the
+ * eval *after the played move* — both with the opponent to move, so the ~50 cp
+ * side-to-move bias between consecutive searches cancels out. That needs, for
+ * each position, an extra analysis of the position reached by the best move.
+ */
+export function useCoachAnalysis(
+  game: UseChessGame,
+  options: { enabled: boolean; depth?: number },
+): CoachAnalysis {
+  const { enabled, depth = 14 } = options
+  const { isReady, isAnalyzing, analyze } = useStockfish({ enabled, depth })
+  const [cache, setCache] = useState<Map<string, PositionAnalysis>>(new Map())
+  const pending = useRef(new Set<string>())
+
+  const { fen } = game
+
+  // For each played move, the FEN reached by the best move in its start position.
+  const bestReplyFens = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const move of game.history) {
+      const before = cache.get(move.before)
+      if (before?.bestMoveUci && before.bestMoveUci !== '(none)') {
+        const replyFen = applyUci(move.before, before.bestMoveUci)
+        if (replyFen) map.set(move.before, replyFen)
+      }
+    }
+    return map
+  }, [game.history, cache])
+
+  // Every FEN the coach needs evaluated: the live position, each position in the
+  // game, and each "after the best move" baseline.
+  const desiredFens = useMemo(() => {
+    const set = new Set<string>()
+    set.add(fen)
+    for (const move of game.history) {
+      set.add(move.before)
+      set.add(move.after)
+    }
+    for (const replyFen of bestReplyFens.values()) set.add(replyFen)
+    return set
+  }, [fen, game.history, bestReplyFens])
+
+  // Analyse one missing position per pass; each cache update re-runs this until
+  // everything needed is evaluated.
+  useEffect(() => {
+    if (!enabled || !isReady) return
+    let target: string | undefined
+    for (const candidate of desiredFens) {
+      if (!cache.has(candidate) && !pending.current.has(candidate)) {
+        target = candidate
+        break
+      }
+    }
+    if (!target) return
+
+    const fenToAnalyze = target
+    pending.current.add(fenToAnalyze)
+    let active = true
+
+    analyze(fenToAnalyze).then((result) => {
+      pending.current.delete(fenToAnalyze)
+      if (!active || !result) return
+      setCache((previous) => {
+        if (previous.has(fenToAnalyze)) return previous
+        const next = new Map(previous)
+        next.set(fenToAnalyze, {
+          eval: toWhiteEval(result, turnOf(fenToAnalyze)),
+          bestMoveUci: result.bestMove,
+          pv: result.pv,
+        })
+        return next
+      })
+    })
+
+    return () => {
+      active = false
+    }
+  }, [desiredFens, cache, enabled, isReady, analyze])
+
+  const current = cache.get(fen) ?? null
+  const bestMove = useMemo(() => uciToSquares(current?.bestMoveUci ?? null), [current])
+
+  /**
+   * Compares the played move with the best move on the same "after move" phase.
+   * Returns the centipawns lost and the mover's winning chances before (best
+   * reply) and after (played move), or null while the needed evals are missing.
+   */
+  const evalMove = useCallback(
+    (
+      move: UseChessGame['history'][number],
+    ): { loss: number; winBaseline: number; winAfter: number } | null => {
+      const replyFen = bestReplyFens.get(move.before)
+      const baseline = replyFen ? cache.get(replyFen) : null
+      const after = cache.get(move.after)
+      if (!baseline || !after) return null
+
+      const sign = move.color === 'w' ? 1 : -1
+      const loss = Math.max(0, sign * (baseline.eval.cp - after.eval.cp))
+      const toMoverWin = (whiteCp: number) => {
+        const white = winningChances(whiteCp)
+        return move.color === 'w' ? white : 1 - white
+      }
+      return {
+        loss,
+        winBaseline: toMoverWin(baseline.eval.cp),
+        winAfter: toMoverWin(after.eval.cp),
+      }
+    },
+    [bestReplyFens, cache],
+  )
+
+  const qualities = useMemo(() => {
+    return game.history.map((move) => {
+      if (move.san.includes('#')) return 'excellent'
+      const result = evalMove(move)
+      return result === null ? null : classifyMove(result.loss)
+    })
+  }, [game.history, evalMove])
+
+  const summary = useMemo<GameSummary>(() => {
+    const whiteAccuracies: number[] = []
+    const blackAccuracies: number[] = []
+    let inaccuracies = 0
+    let mistakes = 0
+    let blunders = 0
+    let best: GameSummary['bestMove'] = null
+    let bestGain = -Infinity
+
+    game.history.forEach((move, index) => {
+      const before = cache.get(move.before)
+      const after = cache.get(move.after)
+      if (!before || !after) return
+
+      // Ranking metric for the game's best move: how much the mover improved
+      // their winning chances (relative, so the phase bias cancels out).
+      const moverWinBefore =
+        move.color === 'w' ? winningChances(before.eval.cp) : 1 - winningChances(before.eval.cp)
+      const moverWinAfter =
+        move.color === 'w' ? winningChances(after.eval.cp) : 1 - winningChances(after.eval.cp)
+      const gain = moverWinAfter - moverWinBefore
+      if (gain > bestGain) {
+        bestGain = gain
+        best = { san: move.san, index, color: move.color }
+      }
+
+      const isMate = move.san.includes('#')
+      const evaluated = evalMove(move)
+      if (!isMate && !evaluated) return
+
+      const quality = isMate || !evaluated ? 'excellent' : classifyMove(evaluated.loss)
+      if (quality === 'inaccuracy') inaccuracies += 1
+      if (quality === 'mistake') mistakes += 1
+      if (quality === 'blunder') blunders += 1
+
+      const accuracy =
+        isMate || !evaluated ? 100 : moveAccuracy(evaluated.winBaseline, evaluated.winAfter)
+      ;(move.color === 'w' ? whiteAccuracies : blackAccuracies).push(accuracy)
+    })
+
+    const mean = (values: number[]) =>
+      values.length ? Math.round(values.reduce((sum, v) => sum + v, 0) / values.length) : null
+
+    return {
+      accuracyWhite: mean(whiteAccuracies),
+      accuracyBlack: mean(blackAccuracies),
+      inaccuracies,
+      mistakes,
+      blunders,
+      bestMove: best,
+    }
+  }, [game.history, cache, evalMove])
+
+  const analysisAt = useCallback(
+    (targetFen: string): PositionInsight => {
+      const entry = cache.get(targetFen)
+      return { eval: entry?.eval ?? null, bestMove: uciToSquares(entry?.bestMoveUci ?? null) }
+    },
+    [cache],
+  )
+
+  return {
+    isReady,
+    isAnalyzing,
+    currentEval: current?.eval ?? null,
+    bestMove,
+    bestMoveUci: current?.bestMoveUci ?? null,
+    qualities,
+    summary,
+    analysisAt,
+  }
+}
