@@ -81,14 +81,23 @@ describe('useChessClock', () => {
   })
 
   it('flags a player who runs out of time while making their move', () => {
-    const { result } = renderHook(() => useChessClock(getTimeControl('bullet')))
+    // 50 ms on the clock, pressed after 80 ms: the 100 ms interval has not
+    // fired yet, so only press's own settling can catch the expiry. The
+    // generous increment must not be credited to a player who already flagged.
+    const control = {
+      id: 'bullet' as const,
+      label: 'Test (50 ms)',
+      initialMs: 50,
+      incrementMs: 5_000,
+    }
+    const { result } = renderHook(() => useChessClock(control))
     act(() => result.current.start('w'))
-    act(() => vi.advanceTimersByTime(59_950))
-    act(() => vi.advanceTimersByTime(100))
+    act(() => vi.advanceTimersByTime(80))
     act(() => result.current.press('w'))
 
     expect(result.current.flagged).toBe('w')
     expect(result.current.whiteMs).toBe(0)
+    expect(result.current.active).toBeNull()
   })
 
   it('flags the side that runs out of time', () => {
