@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import {
   championMoves,
   isInDanger,
@@ -95,8 +95,16 @@ function spawnEnemy(state: HuntInternals): void {
  */
 export function useHuntGame(): HuntGame {
   const state = useRef<HuntInternals>(emptyInternals())
-  const phase = useRef<HuntPhase>('setup')
+  // Phase is real state, not a ref: the round loop is an effect, and an effect
+  // cannot react to a ref changing.
+  const [phase, setPhase] = useState<HuntPhase>('setup')
+  const phaseRef = useRef<HuntPhase>('setup')
   const [, render] = useReducer((tick: number) => tick + 1, 0)
+
+  const enterPhase = useCallback((next: HuntPhase) => {
+    phaseRef.current = next
+    setPhase(next)
+  }, [])
 
   const start = useCallback(
     (champion: ChampionType) => {
@@ -108,35 +116,38 @@ export function useHuntGame(): HuntGame {
       fresh.nextSpawnAt = now + SPAWN_INTERVAL_MS
       for (let i = 0; i < INITIAL_ENEMIES; i += 1) spawnEnemy(fresh)
       state.current = fresh
-      phase.current = 'playing'
+      enterPhase('playing')
       render()
     },
-    [render],
+    [enterPhase, render],
   )
 
   const reset = useCallback(() => {
     state.current = emptyInternals()
-    phase.current = 'setup'
+    enterPhase('setup')
     render()
-  }, [render])
+  }, [enterPhase, render])
 
   /** Takes a life, pushes the champion to safety and costs five seconds. */
-  const loseLife = useCallback((now: number) => {
-    const current = state.current
-    current.lives -= 1
-    current.combo = 0
-    current.dangerSince = null
-    current.timeLeftMs = Math.max(0, current.timeLeftMs - CAPTURE_PENALTY_MS)
-    const square = respawnSquare(current.enemies)
-    if (square) current.championSquare = square
-    if (current.lives <= 0) phase.current = 'over'
-    void now
-  }, [])
+  const loseLife = useCallback(
+    (now: number) => {
+      const current = state.current
+      current.lives -= 1
+      current.combo = 0
+      current.dangerSince = null
+      current.timeLeftMs = Math.max(0, current.timeLeftMs - CAPTURE_PENALTY_MS)
+      const square = respawnSquare(current.enemies)
+      if (square) current.championSquare = square
+      if (current.lives <= 0) enterPhase('over')
+      void now
+    },
+    [enterPhase],
+  )
 
   const moveTo = useCallback(
     (square: string) => {
       const current = state.current
-      if (phase.current !== 'playing') return false
+      if (phaseRef.current !== 'playing') return false
       if (
         !championMoves(current.champion, current.championSquare, current.enemies).includes(square)
       )
@@ -162,11 +173,11 @@ export function useHuntGame(): HuntGame {
   )
 
   useEffect(() => {
-    if (phase.current !== 'playing') return
+    if (phase !== 'playing') return
 
     const id = setInterval(() => {
       const current = state.current
-      if (phase.current !== 'playing') return
+      if (phaseRef.current !== 'playing') return
 
       const now = Date.now()
       const elapsed = now - current.lastTick
@@ -186,20 +197,19 @@ export function useHuntGame(): HuntGame {
         else if (now - current.dangerSince >= DANGER_GRACE_MS) loseLife(now)
       }
 
-      if (current.timeLeftMs <= 0) phase.current = 'over'
+      if (current.timeLeftMs <= 0) enterPhase('over')
       render()
     }, TICK_MS)
 
     return () => clearInterval(id)
-    // `render` and `loseLife` are stable; the loop restarts only on phase changes.
-  }, [loseLife, render, phase.current])
+  }, [phase, loseLife, enterPhase, render])
 
   const current = state.current
-  const isPlaying = phase.current === 'playing'
+  const isPlaying = phase === 'playing'
 
   return {
-    phase: phase.current,
-    champion: phase.current === 'setup' ? null : current.champion,
+    phase,
+    champion: phase === 'setup' ? null : current.champion,
     championSquare: current.championSquare,
     enemies: current.enemies,
     timeLeftMs: current.timeLeftMs,
