@@ -104,7 +104,10 @@ The button is shown regardless; it only works once this is done.
 2. **Credentials > Create credentials > OAuth client ID**, type **Web
    application**. Under **Authorised redirect URIs**, paste the callback shown
    by Supabase in **Authentication > Providers > Google** — it looks like
-   `https://<project-ref>.supabase.co/auth/v1/callback`.
+   `https://<project-ref>.supabase.co/auth/v1/callback`. Add
+   `http://127.0.0.1:54321/auth/v1/callback` as well if you intend to sign in
+   against a local stack; that is where its own auth service listens, and
+   Google rejects any callback not listed here.
 3. Copy the generated **Client ID** and **Client secret** into that same
    Supabase Google provider panel, enable it, and save.
 
