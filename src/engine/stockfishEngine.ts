@@ -1,3 +1,4 @@
+import type { EngineLevel } from '@/engine/levels'
 import { parseBestMove, parseInfo } from '@/engine/uci'
 
 export interface Analysis {
@@ -41,6 +42,22 @@ export class StockfishEngine {
 
   private send(command: string): void {
     this.ensureWorker().postMessage(command)
+  }
+
+  /**
+   * Applies a UCI option. Used to calibrate playing strength (spec section 2.2);
+   * see engine/levels.ts for why Skill Level replaces UCI_Elo here.
+   */
+  async setOption(name: string, value: string | number): Promise<void> {
+    await this.init()
+    this.send(`setoption name ${name} value ${value}`)
+  }
+
+  /** Calibrates playing strength to a difficulty level (spec section 2.2). */
+  async configureLevel(level: EngineLevel): Promise<void> {
+    await this.setOption('Skill Level', level.skill)
+    await this.setOption('Skill Level Maximum Error', level.maxError)
+    await this.setOption('Skill Level Probability', level.errorProbability)
   }
 
   /** Boots the engine and resolves once it reports readiness (uciok + readyok). */
