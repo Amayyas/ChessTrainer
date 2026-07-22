@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
@@ -59,16 +59,6 @@ export default function HuntPage() {
       captures: game.captures,
       championLabel: CHAMPION_LABELS[game.champion],
     })
-
-    // Signed-in players are entered in the worldwide table automatically.
-    if (supabase && session && game.score > 0) {
-      void supabase.from('scores').insert({
-        user_id: session.user.id,
-        piece: game.champion,
-        score: game.score,
-        captures: game.captures,
-      })
-    }
     setScoreboard((board) =>
       addScore(board, {
         champion: game.champion!,
@@ -77,16 +67,37 @@ export default function HuntPage() {
         playedAt: new Date().toISOString(),
       }),
     )
-  }, [
-    game.phase,
-    game.champion,
-    game.score,
-    game.captures,
-    scoreboard,
-    setScoreboard,
-    recordHunt,
-    session,
-  ])
+  }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard, recordHunt])
+
+  // Submitting to the worldwide table is tracked apart from the local record:
+  // the session is restored asynchronously, so a short round can end before it
+  // exists. Sharing one flag would drop the score for good; this effect simply
+  // runs again once the session arrives.
+  const submitted = useRef(false)
+  const [submitFailed, setSubmitFailed] = useState(false)
+  useEffect(() => {
+    if (game.phase !== 'over') {
+      submitted.current = false
+      setSubmitFailed(false)
+      return
+    }
+    if (submitted.current || !supabase || !session || !game.champion || game.score <= 0) return
+    submitted.current = true
+
+    const client = supabase
+    const round = { piece: game.champion, score: game.score, captures: game.captures }
+    void client
+      .from('scores')
+      .insert({ user_id: session.user.id, ...round })
+      .then(({ error }) => {
+        // A silently dropped score looks like the leaderboard is broken, so the
+        // failure is surfaced and a retry is allowed.
+        if (error) {
+          submitted.current = false
+          setSubmitFailed(true)
+        }
+      })
+  }, [game.phase, game.champion, game.score, game.captures, session])
 
   if (game.phase === 'setup') {
     return (
@@ -149,6 +160,13 @@ export default function HuntPage() {
           <p className="text-sm text-ardoise">
             {encouragement(game.score, previousBest, game.captures)}
           </p>
+
+          {submitFailed && (
+            <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              Score enregistré localement, mais son envoi au classement mondial a échoué. Il sera
+              renvoyé à la prochaine manche.
+            </p>
+          )}
 
           {!session && game.score > 0 && (
             <p className="rounded-xl bg-or/15 px-3 py-2 text-sm text-ebene">
