@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { earnedBadgeIds } from '@/features/progression/badges'
+import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
+import { dayKey } from '@/features/puzzle/dailySet'
 
 export type ActivityKind = 'battle' | 'puzzle' | 'hunt' | 'coach'
 
@@ -53,6 +56,7 @@ export interface BattleOutcomeInput {
 interface ProgressionState {
   xp: number
   stats: ProgressionStats
+  daily: DailyCounters
   activities: Activity[]
   unlockedBadges: string[]
   /** Badges unlocked but not yet shown to the player. */
@@ -88,19 +92,38 @@ export const useProgressionStore = create<ProgressionState>()(
         xp: number,
         activity: Omit<Activity, 'id' | 'xp' | 'at'>,
         updateStats: (stats: ProgressionStats) => ProgressionStats,
+        updateDaily: (counters: DailyCounters) => DailyCounters = (counters) => counters,
       ) =>
-        set((state) => ({
-          xp: state.xp + xp,
-          stats: updateStats(state.stats),
-          activities: [
-            { ...activity, id: activityId(), xp, at: new Date().toISOString() },
-            ...state.activities,
-          ].slice(0, ACTIVITY_LIMIT),
-        }))
+        set((state) => {
+          const stats = updateStats(state.stats)
+          const today = dayKey()
+          // A new calendar day wipes the counters the challenges read.
+          const base = state.daily.day === today ? state.daily : emptyCounters(today)
+
+          // Badges are granted here rather than by each mode, so a stat can
+          // never move without its badges being reconsidered.
+          const earned = earnedBadgeIds(stats)
+          const fresh = earned.filter((id) => !state.unlockedBadges.includes(id))
+
+          return {
+            xp: state.xp + xp,
+            stats,
+            daily: updateDaily(base),
+            activities: [
+              { ...activity, id: activityId(), xp, at: new Date().toISOString() },
+              ...state.activities,
+            ].slice(0, ACTIVITY_LIMIT),
+            unlockedBadges: fresh.length
+              ? [...state.unlockedBadges, ...fresh]
+              : state.unlockedBadges,
+            pendingBadges: fresh.length ? [...state.pendingBadges, ...fresh] : state.pendingBadges,
+          }
+        })
 
       return {
         xp: 0,
         stats: EMPTY_STATS,
+        daily: emptyCounters(),
         activities: [],
         unlockedBadges: [],
         pendingBadges: [],
@@ -119,13 +142,21 @@ export const useProgressionStore = create<ProgressionState>()(
                 ? `Nulle contre l'IA (${levelLabel})`
                 : `Défaite contre l'IA (${levelLabel})`
 
-          award(xp, { kind: 'battle', label }, (stats) => ({
-            ...stats,
-            gamesPlayed: stats.gamesPlayed + 1,
-            gamesWon: stats.gamesWon + (outcome === 'win' ? 1 : 0),
-            checkmatesDelivered:
-              stats.checkmatesDelivered + (outcome === 'win' && byCheckmate ? 1 : 0),
-          }))
+          award(
+            xp,
+            { kind: 'battle', label },
+            (stats) => ({
+              ...stats,
+              gamesPlayed: stats.gamesPlayed + 1,
+              gamesWon: stats.gamesWon + (outcome === 'win' ? 1 : 0),
+              checkmatesDelivered:
+                stats.checkmatesDelivered + (outcome === 'win' && byCheckmate ? 1 : 0),
+            }),
+            (counters) => ({
+              ...counters,
+              battleWins: counters.battleWins + (outcome === 'win' ? 1 : 0),
+            }),
+          )
         },
 
         recordPuzzle: ({ flawless, streak }) => {
@@ -139,6 +170,7 @@ export const useProgressionStore = create<ProgressionState>()(
               flawlessPuzzles: stats.flawlessPuzzles + (flawless ? 1 : 0),
               bestPuzzleStreak: Math.max(stats.bestPuzzleStreak, streak),
             }),
+            (counters) => ({ ...counters, puzzlesSolved: counters.puzzlesSolved + 1 }),
           )
         },
 
@@ -150,6 +182,11 @@ export const useProgressionStore = create<ProgressionState>()(
               ...stats,
               bestHuntScore: Math.max(stats.bestHuntScore, score),
               huntCaptures: stats.huntCaptures + captures,
+            }),
+            (counters) => ({
+              ...counters,
+              huntScore: Math.max(counters.huntScore, score),
+              huntCaptures: counters.huntCaptures + captures,
             }),
           )
         },
@@ -169,6 +206,7 @@ export const useProgressionStore = create<ProgressionState>()(
                 averageAccuracy: Math.round(previous + (accuracy - previous) / samples),
               }
             },
+            (counters) => ({ ...counters, coachAnalyses: counters.coachAnalyses + 1 }),
           )
         },
 
@@ -188,6 +226,7 @@ export const useProgressionStore = create<ProgressionState>()(
           set({
             xp: 0,
             stats: EMPTY_STATS,
+            daily: emptyCounters(),
             activities: [],
             unlockedBadges: [],
             pendingBadges: [],

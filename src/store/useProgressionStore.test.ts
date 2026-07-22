@@ -73,6 +73,37 @@ describe('useProgressionStore', () => {
     expect([...times].sort().reverse()).toEqual(times)
   })
 
+  it('unlocks a badge on its own when a stat crosses the threshold', () => {
+    expect(store().unlockedBadges).toEqual([])
+
+    // A win by checkmate earns both the first win and the first mate.
+    store().recordBattle({ outcome: 'win', byCheckmate: true, levelLabel: 'Novice' })
+
+    expect(store().unlockedBadges).toEqual(expect.arrayContaining(['first-win', 'first-mate']))
+    expect(store().pendingBadges).toEqual(expect.arrayContaining(['first-mate']))
+  })
+
+  it('advances the daily counters the challenges read', () => {
+    store().recordBattle({ outcome: 'win', byCheckmate: false, levelLabel: 'Novice' })
+    store().recordPuzzle({ flawless: false, streak: 1 })
+    store().recordHunt({ score: 180, captures: 5, championLabel: 'Dame' })
+    store().recordCoachAnalysis({ accuracy: 70 })
+
+    expect(store().daily).toMatchObject({
+      battleWins: 1,
+      puzzlesSolved: 1,
+      huntScore: 180,
+      huntCaptures: 5,
+      coachAnalyses: 1,
+    })
+  })
+
+  it('keeps the best hunt score of the day, not the latest', () => {
+    store().recordHunt({ score: 200, captures: 4, championLabel: 'Tour' })
+    store().recordHunt({ score: 50, captures: 2, championLabel: 'Tour' })
+    expect(store().daily.huntScore).toBe(200)
+  })
+
   it('unlocks a badge once and queues it for announcement', () => {
     store().unlockBadges(['first-mate'])
     store().unlockBadges(['first-mate'])
