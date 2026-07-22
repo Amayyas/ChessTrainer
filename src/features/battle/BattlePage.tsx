@@ -1,12 +1,123 @@
-import ModuleStub from '@/features/ModuleStub'
+import { ChessBoard, MoveHistory } from '@/components/Board'
+import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import BattleSetup from '@/features/battle/BattleSetup'
+import ClockDisplay from '@/features/battle/ClockDisplay'
+import { useBattleGame } from '@/features/battle/useBattleGame'
+import { describeStatus } from '@/utils/chess'
 
+/**
+ * Battle mode (spec section 2.2): play Stockfish at one of five calibrated
+ * levels, with your chosen colour and an optional clock.
+ */
 export default function BattlePage() {
+  const battle = useBattleGame()
+  const { game, clock, level, playerColor, phase, result } = battle
+
+  const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
+  const engineLabel = playerColor === 'w' ? `IA (noirs)` : `IA (blancs)`
+  const playerMs = playerColor === 'w' ? clock.whiteMs : clock.blackMs
+  const engineMs = playerColor === 'w' ? clock.blackMs : clock.whiteMs
+
+  if (phase === 'setup') {
+    return (
+      <div>
+        <PageHeader
+          title="Affrontement"
+          subtitle="Choisissez un niveau, votre couleur et une cadence, puis défiez l'IA."
+        />
+        <BattleSetup onStart={battle.start} disabled={!battle.isEngineReady} />
+      </div>
+    )
+  }
+
   return (
-    <ModuleStub
-      glyph="♜"
-      title="Affrontement contre l'IA"
-      module="M5"
-      summary="Cinq niveaux calibrés de 800 à 2200 Elo, contrôle du temps et analyse post-partie."
-    />
+    <div>
+      <PageHeader
+        title="Affrontement"
+        subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
+        actions={
+          battle.isThinking ? (
+            <span className="flex items-center gap-2 text-sm text-ardoise">
+              <Spinner size="sm" /> L'IA réfléchit…
+            </span>
+          ) : (
+            <Badge variant="neutral">{describeStatus(game.status, game.turn)}</Badge>
+          )
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="mx-auto w-full max-w-[560px] self-start">
+          <ChessBoard
+            fen={game.fen}
+            turn={game.turn}
+            orientation={playerColor === 'w' ? 'white' : 'black'}
+            interactive={phase === 'playing' && game.turn === playerColor}
+            onMove={battle.playerMove}
+            getLegalTargets={game.getLegalTargets}
+            isPromotion={game.isPromotion}
+            lastMove={game.lastMove}
+            checkSquare={game.checkSquare}
+          />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {result && (
+            <Card className="flex flex-col gap-3">
+              <div>
+                <h2 className="font-display text-lg font-bold text-ebene">Partie terminée</h2>
+                <p className="mt-1 text-sm text-ardoise">{result.label}</p>
+              </div>
+              <Badge
+                variant={
+                  result.outcome === 'win'
+                    ? 'success'
+                    : result.outcome === 'loss'
+                      ? 'danger'
+                      : 'gold'
+                }
+              >
+                {result.outcome === 'win'
+                  ? 'Victoire'
+                  : result.outcome === 'loss'
+                    ? 'Défaite'
+                    : 'Nulle'}
+              </Badge>
+              <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                Nouvelle partie
+              </Button>
+            </Card>
+          )}
+
+          <Card className="flex h-fit flex-col gap-4">
+            {clock.enabled && (
+              <div className="flex flex-col gap-2">
+                <ClockDisplay
+                  label={engineLabel}
+                  ms={engineMs}
+                  isActive={clock.active !== null && clock.active !== playerColor}
+                />
+                <ClockDisplay
+                  label={playerLabel}
+                  ms={playerMs}
+                  isActive={clock.active === playerColor}
+                />
+              </div>
+            )}
+
+            <div>
+              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Coups joués</h2>
+              <MoveHistory moves={game.sanHistory} />
+            </div>
+
+            {phase === 'playing' && (
+              <Button variant="secondary" size="sm" onClick={battle.resign}>
+                Abandonner
+              </Button>
+            )}
+          </Card>
+        </div>
+      </div>
+    </div>
   )
 }
