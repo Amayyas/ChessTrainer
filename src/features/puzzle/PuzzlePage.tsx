@@ -1,8 +1,10 @@
+import { useEffect, useRef } from 'react'
 import { ChessBoard } from '@/components/Board'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import { usePuzzleSession, HINT_COST, scorePuzzle } from '@/features/puzzle/usePuzzleSession'
 import { DIFFICULTY_LABELS, difficultyOf, themeLabel } from '@/features/puzzle/types'
+import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
 /** Seconds, or m:ss once past a minute. */
@@ -19,6 +21,24 @@ function formatDuration(ms: number): string {
 export default function PuzzlePage() {
   const session = usePuzzleSession()
   const { puzzle, feedback, progress } = session
+  const recordPuzzle = useProgressionStore((state) => state.recordPuzzle)
+
+  // Award XP for each newly solved puzzle, exactly once.
+  const recordedCount = useRef(0)
+  useEffect(() => {
+    // Restarting the series clears the scores, so the marker rewinds with it.
+    if (session.scores.length < recordedCount.current) recordedCount.current = 0
+    if (session.scores.length === recordedCount.current) return
+
+    const fresh = session.scores.slice(recordedCount.current)
+    recordedCount.current = session.scores.length
+    for (const score of fresh) {
+      recordPuzzle({
+        flawless: score.errors === 0 && score.hints === 0,
+        streak: progress.streak,
+      })
+    }
+  }, [session.scores, progress.streak, recordPuzzle])
 
   const streakBadge = (
     <Badge variant={progress.streak > 0 ? 'gold' : 'neutral'}>

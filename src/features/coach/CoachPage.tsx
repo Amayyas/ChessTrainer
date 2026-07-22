@@ -6,6 +6,7 @@ import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
+import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Square } from '@/utils/chess'
 
 const PIECE_NAMES: Record<string, string> = {
@@ -91,6 +92,26 @@ export default function CoachPage() {
       : inReplay
         ? null
         : game.lastMove
+
+  // A finished, analysed game counts towards progression, once per game.
+  const recordCoachAnalysis = useProgressionStore((state) => state.recordCoachAnalysis)
+  const recordedGame = useRef<string | null>(null)
+  useEffect(() => {
+    if (!game.status.isOver || game.sanHistory.length === 0) {
+      if (game.sanHistory.length === 0) recordedGame.current = null
+      return
+    }
+    const { accuracyWhite, accuracyBlack } = analysis.summary
+    if (accuracyWhite === null && accuracyBlack === null) return
+    if (recordedGame.current === game.pgn) return
+
+    recordedGame.current = game.pgn
+    const both = [accuracyWhite, accuracyBlack].filter((value): value is number => value !== null)
+    const accuracy = both.length
+      ? Math.round(both.reduce((sum, value) => sum + value, 0) / both.length)
+      : null
+    recordCoachAnalysis({ accuracy })
+  }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)
   const statusVariant = game.status.isOver ? 'gold' : game.status.isCheck ? 'danger' : 'neutral'

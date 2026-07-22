@@ -11,6 +11,7 @@ import {
 } from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
+import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
 const CHAMPIONS: ChampionType[] = ['q', 'r', 'b', 'n']
@@ -32,6 +33,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 export default function HuntPage() {
   const game = useHuntGame()
   const [scoreboard, setScoreboard] = useLocalStorage<Scoreboard>('chesstrainer.hunt.scores', {})
+  const recordHunt = useProgressionStore((state) => state.recordHunt)
 
   // Record the round once, when it ends.
   const recorded = useRef(false)
@@ -47,6 +49,11 @@ export default function HuntPage() {
     if (recorded.current || !game.champion) return
     recorded.current = true
     bestBeforeRound.current = personalBest(scoreboard, game.champion)
+    recordHunt({
+      score: game.score,
+      captures: game.captures,
+      championLabel: CHAMPION_LABELS[game.champion],
+    })
     setScoreboard((board) =>
       addScore(board, {
         champion: game.champion!,
@@ -55,7 +62,7 @@ export default function HuntPage() {
         playedAt: new Date().toISOString(),
       }),
     )
-  }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard])
+  }, [game.phase, game.champion, game.score, game.captures, scoreboard, setScoreboard, recordHunt])
 
   if (game.phase === 'setup') {
     return (

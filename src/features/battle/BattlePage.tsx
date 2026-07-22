@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChessBoard, MoveHistory } from '@/components/Board'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
@@ -5,6 +6,7 @@ import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
 import { ROUTES } from '@/routes'
+import { useProgressionStore } from '@/store/useProgressionStore'
 import { describeStatus } from '@/utils/chess'
 
 /**
@@ -15,6 +17,23 @@ export default function BattlePage() {
   const battle = useBattleGame()
   const navigate = useNavigate()
   const { game, clock, level, playerColor, phase, result } = battle
+  const recordBattle = useProgressionStore((state) => state.recordBattle)
+
+  // Award XP once, when the game ends.
+  const recorded = useRef(false)
+  useEffect(() => {
+    if (phase !== 'over') {
+      recorded.current = false
+      return
+    }
+    if (recorded.current || !result) return
+    recorded.current = true
+    recordBattle({
+      outcome: result.outcome,
+      byCheckmate: game.status.reason === 'checkmate',
+      levelLabel: level.label,
+    })
+  }, [phase, result, game.status.reason, level.label, recordBattle])
 
   const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
   const engineLabel = playerColor === 'w' ? `IA (noirs)` : `IA (blancs)`
