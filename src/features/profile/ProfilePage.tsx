@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const xp = useProgressionStore((state) => state.xp)
   const stats = useProgressionStore((state) => state.stats)
   const unlocked = useProgressionStore((state) => state.unlockedBadges)
+  const isReady = useAuthStore((state) => state.isReady)
   const session = useAuthStore((state) => state.session)
   const authProfile = useAuthStore((state) => state.profile)
   const updateProfile = useAuthStore((state) => state.updateProfile)
@@ -61,6 +62,11 @@ export default function ProfilePage() {
                 Aucun serveur n'est configuré : vous jouez en invité et votre progression reste sur
                 cet appareil.
               </p>
+            ) : !isReady || (session && !authProfile) ? (
+              // The stored session, then the profile, are both fetched on
+              // start-up. Falling through to the guest block meanwhile would
+              // invite a signed-in player to create a second account.
+              <p className="text-sm text-ardoise">Chargement de votre compte…</p>
             ) : session && authProfile ? (
               <>
                 <div className="flex items-center gap-3">

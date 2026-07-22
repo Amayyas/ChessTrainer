@@ -48,7 +48,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return () => {}
     }
 
+    // Sign-out, then sign-in, can overlap: without this token a slow first
+    // request could land last and hand the new session the old profile.
+    let latestRequest = 0
+
     const loadProfile = async (session: Session | null) => {
+      const request = ++latestRequest
       if (!session) {
         set({ profile: null })
         return
@@ -58,6 +63,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         .select('*')
         .eq('id', session.user.id)
         .maybeSingle()
+      if (request !== latestRequest) return
       set({ profile: (data as Profile | null) ?? null })
     }
 
