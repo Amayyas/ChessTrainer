@@ -1,0 +1,126 @@
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useHuntGame } from '@/features/hunt/useHuntGame'
+import {
+  CAPTURE_PENALTY_MS,
+  DANGER_GRACE_MS,
+  ROUND_MS,
+  STARTING_LIVES,
+} from '@/features/hunt/scoring'
+
+describe('useHuntGame', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  it('starts in setup with no champion', () => {
+    const { result } = renderHook(() => useHuntGame())
+    expect(result.current.phase).toBe('setup')
+    expect(result.current.champion).toBeNull()
+  })
+
+  it('deals a full round when a champion is chosen', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+
+    expect(result.current.phase).toBe('playing')
+    expect(result.current.champion).toBe('q')
+    expect(result.current.lives).toBe(STARTING_LIVES)
+    expect(result.current.timeLeftMs).toBe(ROUND_MS)
+    expect(result.current.enemies.size).toBeGreaterThan(0)
+    expect(result.current.moves.length).toBeGreaterThan(0)
+  })
+
+  it('never starts the champion in danger', () => {
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      const { result, unmount } = renderHook(() => useHuntGame())
+      act(() => result.current.start('n'))
+      expect(result.current.threats).toEqual([])
+      unmount()
+    }
+  })
+
+  it('counts down the clock', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('r'))
+    act(() => vi.advanceTimersByTime(3_000))
+    expect(result.current.timeLeftMs).toBeLessThanOrEqual(ROUND_MS - 2_900)
+  })
+
+  it('refuses a move the champion cannot make', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('r'))
+
+    const illegal = ['a1', 'b2', 'c3', 'e5'].find(
+      (square) => !result.current.moves.includes(square),
+    )!
+    const before = result.current.championSquare
+    let applied = true
+    act(() => {
+      applied = result.current.moveTo(illegal)
+    })
+    expect(applied).toBe(false)
+    expect(result.current.championSquare).toBe(before)
+  })
+
+  it('moves the champion and scores a capture', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+
+    const target = result.current.moves.find((square) => result.current.enemies.has(square))
+    if (!target) return // no enemy reachable on this deal
+
+    const enemiesBefore = result.current.enemies.size
+    act(() => {
+      result.current.moveTo(target)
+    })
+
+    expect(result.current.championSquare).toBe(target)
+    expect(result.current.enemies.size).toBe(enemiesBefore - 1)
+    expect(result.current.captures).toBe(1)
+    expect(result.current.score).toBeGreaterThan(0)
+    expect(result.current.combo).toBe(1)
+  })
+
+  it('adds enemies over time to keep the pressure up', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('k'))
+    const initial = result.current.enemies.size
+    act(() => vi.advanceTimersByTime(8_000))
+    expect(result.current.enemies.size).toBeGreaterThan(initial)
+  })
+
+  it('takes a life and five seconds when the champion stays in danger', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('k'))
+
+    // Let enemies accumulate until the champion is threatened, then wait it out.
+    let guard = 0
+    while (result.current.threats.length === 0 && guard < 40) {
+      act(() => vi.advanceTimersByTime(1_000))
+      guard += 1
+    }
+    if (result.current.threats.length === 0) return // never threatened in this deal
+
+    const livesBefore = result.current.lives
+    const timeBefore = result.current.timeLeftMs
+    act(() => vi.advanceTimersByTime(DANGER_GRACE_MS + 300))
+
+    expect(result.current.lives).toBe(livesBefore - 1)
+    expect(result.current.timeLeftMs).toBeLessThanOrEqual(timeBefore - CAPTURE_PENALTY_MS)
+  })
+
+  it('ends the round when the clock runs out', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('b'))
+    act(() => vi.advanceTimersByTime(ROUND_MS + 500))
+    expect(result.current.phase).toBe('over')
+  })
+
+  it('goes back to the picker on reset', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+    act(() => result.current.reset())
+    expect(result.current.phase).toBe('setup')
+    expect(result.current.score).toBe(0)
+  })
+})
