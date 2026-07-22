@@ -3,6 +3,8 @@ import {
   ALL_SQUARES,
   attackedSquares,
   championMoves,
+  chooseEnemyMove,
+  moveTargets,
   fromSquare,
   isInDanger,
   respawnSquare,
@@ -50,6 +52,49 @@ describe('attackedSquares', () => {
 
   it('has a black pawn attack diagonally downwards', () => {
     expect(attackedSquares('p', 'd5').sort()).toEqual(['c4', 'e4'])
+  })
+})
+
+describe('moveTargets', () => {
+  it('advances a black pawn straight, never diagonally', () => {
+    // A pawn attacks c4/e4 but only moves to d4.
+    expect(moveTargets('p', 'd5')).toEqual(['d4'])
+  })
+
+  it('blocks a pawn that has a piece in front of it', () => {
+    expect(moveTargets('p', 'd5', new Set(['d4']))).toEqual([])
+  })
+
+  it('excludes occupied squares for a slider', () => {
+    const targets = moveTargets('r', 'a1', new Set(['a4']))
+    expect(targets).toContain('a3')
+    expect(targets).not.toContain('a4')
+    expect(targets).not.toContain('a5')
+  })
+})
+
+describe('chooseEnemyMove', () => {
+  it('never steps onto the champion', () => {
+    const enemies = board({ d8: 'r' })
+    for (let i = 0; i < 100; i += 1) {
+      expect(chooseEnemyMove('d8', enemies, 'd4')).not.toBe('d4')
+    }
+  })
+
+  it('closes in on the champion when hunting', () => {
+    // A rook on a8 can reach a4, which attacks the champion on d4.
+    const enemies = board({ a8: 'r' })
+    const target = chooseEnemyMove('a8', enemies, 'd4', () => 0, 1)
+    expect(target).not.toBeNull()
+    const next = new Map(enemies)
+    next.delete('a8')
+    next.set(target!, 'r')
+    expect(isInDanger('d4', next)).toBe(true)
+  })
+
+  it('returns null for a piece with nowhere to go', () => {
+    // A pawn on rank 1 has no square ahead of it.
+    expect(chooseEnemyMove('d1', board({ d1: 'p' }), 'h8')).toBeNull()
   })
 })
 

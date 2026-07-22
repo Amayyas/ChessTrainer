@@ -110,6 +110,26 @@ export function attackedSquares(
   return squares
 }
 
+/**
+ * Empty squares a piece can *move* to. This is not the same as the squares it
+ * attacks: a pawn attacks diagonally but advances straight, and this mode is
+ * meant to teach how pieces move, so the difference matters.
+ */
+export function moveTargets(
+  piece: PieceType,
+  from: string,
+  occupied: ReadonlySet<string> = new Set(),
+): string[] {
+  if (piece === 'p') {
+    const { file, rank } = fromSquare(from)
+    // Enemy pawns are black: they advance towards rank 1.
+    if (!isOnBoard(file, rank - 1)) return []
+    const ahead = toSquare(file, rank - 1)
+    return occupied.has(ahead) ? [] : [ahead]
+  }
+  return attackedSquares(piece, from, occupied).filter((square) => !occupied.has(square))
+}
+
 export type EnemyBoard = ReadonlyMap<string, EnemyType>
 
 /**
@@ -181,6 +201,41 @@ export function spawnSquareFor(
   })
 
   return pick(candidates, rng)
+}
+
+/**
+ * Picks a move for one enemy. It never steps onto the champion: taking it is
+ * the job of the danger countdown, which is what gives the player a chance to
+ * escape (spec section 2.4). With `huntChance` it prefers a square that puts
+ * the champion under threat, so the board closes in rather than milling about.
+ */
+export function chooseEnemyMove(
+  from: string,
+  enemies: EnemyBoard,
+  championSquare: string | null,
+  rng: Rng = Math.random,
+  huntChance = 0.5,
+): string | null {
+  const piece = enemies.get(from)
+  if (!piece) return null
+
+  const occupied = new Set(enemies.keys())
+  if (championSquare) occupied.add(championSquare)
+
+  const targets = moveTargets(piece, from, occupied)
+  if (targets.length === 0) return null
+
+  if (championSquare && rng() < huntChance) {
+    const hunting = targets.filter((target) => {
+      const next = new Map(enemies)
+      next.delete(from)
+      next.set(target, piece)
+      return isInDanger(championSquare, next)
+    })
+    if (hunting.length > 0) return pick(hunting, rng)
+  }
+
+  return pick(targets, rng)
 }
 
 /** A safe respawn square for the champion, preferring squares far from enemies. */

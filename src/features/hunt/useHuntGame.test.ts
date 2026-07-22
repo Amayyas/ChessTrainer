@@ -82,6 +82,33 @@ describe('useHuntGame', () => {
     expect(result.current.combo).toBe(1)
   })
 
+  it('keeps at least three enemies on the board, refilling after a capture', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+    expect(result.current.enemies.size).toBeGreaterThanOrEqual(3)
+
+    const target = result.current.moves.find((square) => result.current.enemies.has(square))
+    if (!target) return // no enemy reachable on this deal
+
+    act(() => {
+      result.current.moveTo(target)
+    })
+    // The captured piece is replaced at once, so there is always prey.
+    expect(result.current.enemies.size).toBeGreaterThanOrEqual(3)
+    expect(result.current.captures).toBe(1)
+  })
+
+  it('moves the enemies around over time', () => {
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('n'))
+    const before = [...result.current.enemies.keys()].sort().join(',')
+
+    act(() => vi.advanceTimersByTime(5_000))
+
+    const after = [...result.current.enemies.keys()].sort().join(',')
+    expect(after).not.toBe(before)
+  })
+
   it('adds enemies over time to keep the pressure up', () => {
     const { result } = renderHook(() => useHuntGame())
     act(() => result.current.start('b'))

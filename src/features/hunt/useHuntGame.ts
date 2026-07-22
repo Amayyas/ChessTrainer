@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   championMoves,
+  chooseEnemyMove,
   isInDanger,
   respawnSquare,
   spawnSquareFor,
@@ -21,10 +22,13 @@ import {
 export type HuntPhase = 'setup' | 'playing' | 'over'
 
 const ENEMY_TYPES: EnemyType[] = ['p', 'n', 'b', 'r', 'q']
-const INITIAL_ENEMIES = 3
+/** The board always holds at least this many enemies, so there is always prey. */
+const MIN_ENEMIES = 3
 const MAX_ENEMIES = 7
-/** A new enemy appears on this cadence, to keep the pressure up. */
+/** A new enemy appears on this cadence, on top of the minimum. */
 const SPAWN_INTERVAL_MS = 3_500
+/** One enemy moves on this cadence, so the board closes in on the champion. */
+const ENEMY_MOVE_INTERVAL_MS = 1_400
 const TICK_MS = 100
 
 interface HuntInternals {
@@ -42,7 +46,13 @@ interface HuntInternals {
   /** While set, the champion has been eaten and is waiting to reappear. */
   respawnAt: number | null
   nextSpawnAt: number
+  nextEnemyMoveAt: number
   lastTick: number
+  /**
+   * Bumped on every change to `enemies`. The map is mutated in place, so its
+   * reference never changes and memos downstream would keep a stale board.
+   */
+  enemiesVersion: number
 }
 
 export interface HuntGame {
@@ -80,7 +90,9 @@ function emptyInternals(): HuntInternals {
     dangerSince: null,
     respawnAt: null,
     nextSpawnAt: 0,
+    nextEnemyMoveAt: 0,
     lastTick: 0,
+    enemiesVersion: 0,
   }
 }
 
@@ -89,7 +101,40 @@ function spawnEnemy(state: HuntInternals): void {
   if (state.enemies.size >= MAX_ENEMIES) return
   const type = ENEMY_TYPES[Math.floor(Math.random() * ENEMY_TYPES.length)]!
   const square = spawnSquareFor(type, state.enemies, state.championSquare)
-  if (square) state.enemies.set(square, type)
+  if (square) {
+    state.enemies.set(square, type)
+    state.enemiesVersion += 1
+  }
+}
+
+/** Refills the board so the champion never runs out of prey. */
+function ensureMinimumEnemies(state: HuntInternals): void {
+  let guard = 0
+  while (state.enemies.size < MIN_ENEMIES && guard < 20) {
+    const before = state.enemies.size
+    spawnEnemy(state)
+    if (state.enemies.size === before) break
+    guard += 1
+  }
+}
+
+/** Moves a single enemy, which is what turns a static board into a hunt. */
+function moveOneEnemy(state: HuntInternals): void {
+  const squares = [...state.enemies.keys()]
+  if (squares.length === 0) return
+
+  const from = squares[Math.floor(Math.random() * squares.length)]!
+  const piece = state.enemies.get(from)
+  if (!piece) return
+
+  // While the champion is off the board there is nobody to hunt.
+  const champion = state.respawnAt === null ? state.championSquare : null
+  const to = chooseEnemyMove(from, state.enemies, champion)
+  if (!to) return
+
+  state.enemies.delete(from)
+  state.enemies.set(to, piece)
+  state.enemiesVersion += 1
 }
 
 /**
@@ -121,7 +166,8 @@ export function useHuntGame(): HuntGame {
       fresh.championSquare = 'd4'
       fresh.lastTick = now
       fresh.nextSpawnAt = now + SPAWN_INTERVAL_MS
-      for (let i = 0; i < INITIAL_ENEMIES; i += 1) spawnEnemy(fresh)
+      fresh.nextEnemyMoveAt = now + ENEMY_MOVE_INTERVAL_MS
+      ensureMinimumEnemies(fresh)
       state.current = fresh
       enterPhase('playing')
       render()
@@ -150,6 +196,7 @@ export function useHuntGame(): HuntGame {
         if (type) {
           current.enemies.delete(attacker)
           current.enemies.set(current.championSquare, type)
+          current.enemiesVersion += 1
         }
       }
 
@@ -176,10 +223,12 @@ export function useHuntGame(): HuntGame {
       const captured = current.enemies.get(square)
       if (captured) {
         current.enemies.delete(square)
+        current.enemiesVersion += 1
         current.combo = nextCombo(current.combo, now - current.lastCaptureAt)
         current.lastCaptureAt = now
         current.captures += 1
         current.score += capturePoints(captured, current.combo)
+        ensureMinimumEnemies(current)
       }
 
       current.championSquare = square
@@ -207,6 +256,11 @@ export function useHuntGame(): HuntGame {
         spawnEnemy(current)
         current.nextSpawnAt = now + SPAWN_INTERVAL_MS
       }
+      if (now >= current.nextEnemyMoveAt) {
+        moveOneEnemy(current)
+        current.nextEnemyMoveAt = now + ENEMY_MOVE_INTERVAL_MS
+      }
+      ensureMinimumEnemies(current)
 
       if (current.respawnAt !== null) {
         // Eaten: reappear on a safe square once the pause is over.
@@ -231,6 +285,12 @@ export function useHuntGame(): HuntGame {
   }, [phase, loseLife, enterPhase, render])
 
   const current = state.current
+  // A fresh map whenever the enemies changed, so consumers' memos see it.
+  const enemiesSnapshot = useMemo(
+    () => new Map(current.enemies),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current.enemiesVersion],
+  )
   const isRespawning = current.respawnAt !== null
   const isPlaying = phase === 'playing' && !isRespawning
 
@@ -238,7 +298,7 @@ export function useHuntGame(): HuntGame {
     phase,
     champion: phase === 'setup' ? null : current.champion,
     championSquare: isRespawning ? null : current.championSquare,
-    enemies: current.enemies,
+    enemies: enemiesSnapshot,
     timeLeftMs: current.timeLeftMs,
     lives: current.lives,
     score: current.score,
