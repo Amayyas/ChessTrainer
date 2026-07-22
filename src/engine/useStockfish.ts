@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { EngineLevel } from '@/engine/levels'
 import { StockfishEngine, type Analysis } from '@/engine/stockfishEngine'
 
 export interface UseStockfishOptions {
@@ -12,6 +13,8 @@ export interface UseStockfish {
   isReady: boolean
   isAnalyzing: boolean
   analyze: (fen: string, depth?: number) => Promise<Analysis | null>
+  /** Calibrates playing strength for the battle mode (spec section 2.2). */
+  configureLevel: (level: EngineLevel) => Promise<void>
 }
 
 /**
@@ -68,5 +71,9 @@ export function useStockfish({
     [depth],
   )
 
-  return { isReady, isAnalyzing, analyze }
+  const configureLevel = useCallback(async (level: EngineLevel) => {
+    await engineRef.current?.configureLevel(level)
+  }, [])
+
+  return { isReady, isAnalyzing, analyze, configureLevel }
 }
