@@ -428,6 +428,24 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 > column-level privilege, a player could write any field of their own row —
 > including their XP. Hence the restricted `GRANT` on `profiles`.
 
+### Trust boundary
+
+All gameplay runs in the browser, so the values a client writes to its own rows
+— a hunt `score`, the `xp`, `stats` and `unlocked_badges` in `progression`, an
+`achievements` row — are **asserted by the client**, not computed by the server.
+RLS draws the line it can draw: a player may only ever write rows keyed to their
+own `user_id`, so no one can tamper with **another** account. The `profiles`
+column grant goes one step further, keeping XP and level off the one table the
+leaderboard joins for display.
+
+Making these values authoritative — proof against a user editing their own
+figures — would require moving the scoring to the server behind a validated
+`SECURITY DEFINER` RPC, which the specification does not ask for: this is a
+single-player training app, and self-inflating one's own dashboard cheats only
+oneself. The worldwide leaderboard shares the same bound; its ranking is only as
+trustworthy as the client-reported score, which is the accepted trade-off for a
+fully client-side engine.
+
 ---
 
 ## Reading the relationships
