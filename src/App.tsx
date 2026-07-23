@@ -1,20 +1,26 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import AppLayout from '@/components/Layout/AppLayout'
-import LoginPage from '@/features/auth/LoginPage'
-import RegisterPage from '@/features/auth/RegisterPage'
+import RouteFallback from '@/components/Layout/RouteFallback'
 import RequireAuth from '@/features/auth/RequireAuth'
-import BattlePage from '@/features/battle/BattlePage'
-import CoachPage from '@/features/coach/CoachPage'
 import HomePage from '@/features/home/HomePage'
-import HuntPage from '@/features/hunt/HuntPage'
-import LeaderboardPage from '@/features/leaderboard/LeaderboardPage'
-import NotFoundPage from '@/features/NotFoundPage'
 import { useProgressionSync } from '@/features/progression/useProgressionSync'
-import ProfilePage from '@/features/profile/ProfilePage'
-import PuzzlePage from '@/features/puzzle/PuzzlePage'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
+
+// The home route stays eager so the landing paint — the one Lighthouse measures
+// — needs no extra chunk. Every other route is split out, which keeps the board,
+// the react-chessboard library and the engine wrapper out of the initial bundle
+// until a mode that needs them is opened.
+const CoachPage = lazy(() => import('@/features/coach/CoachPage'))
+const BattlePage = lazy(() => import('@/features/battle/BattlePage'))
+const PuzzlePage = lazy(() => import('@/features/puzzle/PuzzlePage'))
+const HuntPage = lazy(() => import('@/features/hunt/HuntPage'))
+const LeaderboardPage = lazy(() => import('@/features/leaderboard/LeaderboardPage'))
+const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
+const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
+const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'))
+const NotFoundPage = lazy(() => import('@/features/NotFoundPage'))
 
 export default function App() {
   const initialise = useAuthStore((state) => state.initialise)
@@ -29,22 +35,80 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path={ROUTES.home} element={<HomePage />} />
-        <Route path={ROUTES.coach} element={<CoachPage />} />
-        <Route path={ROUTES.battle} element={<BattlePage />} />
-        <Route path={ROUTES.puzzle} element={<PuzzlePage />} />
-        <Route path={ROUTES.hunt} element={<HuntPage />} />
+        <Route
+          path={ROUTES.coach}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <CoachPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.battle}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <BattlePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.puzzle}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <PuzzlePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.hunt}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <HuntPage />
+            </Suspense>
+          }
+        />
         <Route
           path={ROUTES.leaderboard}
           element={
             <RequireAuth>
-              <LeaderboardPage />
+              <Suspense fallback={<RouteFallback />}>
+                <LeaderboardPage />
+              </Suspense>
             </RequireAuth>
           }
         />
-        <Route path={ROUTES.login} element={<LoginPage />} />
-        <Route path={ROUTES.register} element={<RegisterPage />} />
-        <Route path={ROUTES.profile} element={<ProfilePage />} />
-        <Route path="*" element={<NotFoundPage />} />
+        <Route
+          path={ROUTES.login}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <LoginPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.register}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <RegisterPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.profile}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ProfilePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <NotFoundPage />
+            </Suspense>
+          }
+        />
       </Route>
     </Routes>
   )

@@ -6,8 +6,10 @@
  * if the initial bundle exceeds its budget, so a regression shows up on the PR that
  * introduces it rather than at delivery time.
  *
- * Stockfish files (worker + wasm) are excluded from the initial budget: they are
- * loaded on demand and tracked by their own budget.
+ * "Initial" means only what the first paint downloads: the entry chunk and the
+ * chunks it statically imports, read from Vite's build manifest. The lazily
+ * loaded route chunks (M9 code-splitting) and the on-demand Stockfish worker are
+ * reported for visibility but do not count against the initial budget.
  */
 import { gzipSync } from 'node:zlib'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -17,77 +19,95 @@ import { fileURLToPath } from 'node:url'
 const DIST = fileURLToPath(new URL('../dist', import.meta.url))
 const KB = 1024
 
-/** A file can only count toward the first budget that accepts it. */
-const BUDGETS = [
-  {
-    label: 'Stockfish (loaded on demand)',
-    match: (path) => /stockfish/i.test(path),
-    maxGzipKb: 5 * KB,
-  },
-  {
-    label: 'Initial JavaScript',
-    match: (path) => path.endsWith('.js'),
-    // Raised from 200 kB for M10: the Supabase client is about 65 kB gzipped
-    // and is a hard requirement of the accounts and leaderboard of section 2.6.
-    // M9 should bring this back down with route-level lazy loading, which the
-    // specification assigns to it; until then the guard still catches growth.
-    maxGzipKb: 230,
-  },
-  {
-    label: 'CSS',
-    match: (path) => path.endsWith('.css'),
-    maxGzipKb: 50,
-  },
-]
+const BUDGETS = {
+  // The first-load JavaScript: entry chunk plus its static imports.
+  initialJs: { label: 'Initial JavaScript', maxGzipKb: 200 },
+  // Everything the first paint loads on top of the JS.
+  css: { label: 'CSS', maxGzipKb: 50 },
+  // Loaded on demand when a mode that needs the engine is opened.
+  stockfish: { label: 'Stockfish (on demand)', maxGzipKb: 5 * KB },
+}
+
+const gzipKb = (file) => gzipSync(readFileSync(join(DIST, file))).length / KB
 
 function walk(dir) {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry)
-    return statSync(full).isDirectory() ? walk(full) : [full]
+    return statSync(full).isDirectory() ? walk(full) : [relative(DIST, full)]
   })
 }
 
-let files
+let manifest
 try {
-  files = walk(DIST)
+  manifest = JSON.parse(readFileSync(join(DIST, '.vite/manifest.json'), 'utf8'))
 } catch {
-  console.error(`No build found in ${DIST}. Run "npm run build" first.`)
+  console.error(`No build manifest in ${DIST}. Run "npm run build" first.`)
   process.exit(1)
 }
 
-const totals = new Map(BUDGETS.map((budget) => [budget.label, { budget, gzipBytes: 0, files: 0 }]))
-
-for (const file of files) {
-  const path = relative(DIST, file)
-  const budget = BUDGETS.find((candidate) => candidate.match(path))
-  if (!budget) continue
-
-  const entry = totals.get(budget.label)
-  entry.gzipBytes += gzipSync(readFileSync(file)).length
-  entry.files += 1
+// The initial set: the entry, plus every chunk reachable through static imports
+// (never dynamicImports, which are the lazily loaded routes).
+const entry = Object.values(manifest).find((chunk) => chunk.isEntry)
+if (!entry) {
+  console.error('No entry chunk found in the manifest.')
+  process.exit(1)
 }
+
+const initialJs = new Set()
+const initialCss = new Set()
+;(function collect(key, seen = new Set()) {
+  if (seen.has(key)) return
+  seen.add(key)
+  const chunk = manifest[key]
+  if (!chunk) return
+  initialJs.add(chunk.file)
+  for (const css of chunk.css ?? []) initialCss.add(css)
+  for (const imported of chunk.imports ?? []) collect(imported, seen)
+})(Object.keys(manifest).find((key) => manifest[key].isEntry))
+
+const allFiles = walk(DIST)
+const stockfish = allFiles.filter((f) => /stockfish/i.test(f))
+// Lazy route chunks: application .js outside the initial set. Stockfish is
+// excluded — it has its own budget, and it is the engine worker, not a route.
+const lazyJs = allFiles.filter(
+  (f) => f.endsWith('.js') && !initialJs.has(f) && !/stockfish/i.test(f),
+)
+const otherCss = allFiles.filter((f) => f.endsWith('.css') && !initialCss.has(f))
+
+const sum = (files) => files.reduce((total, f) => total + gzipKb(f), 0)
+
+const groups = [
+  { budget: BUDGETS.initialJs, files: [...initialJs] },
+  { budget: BUDGETS.css, files: [...initialCss, ...otherCss] },
+  {
+    budget: BUDGETS.stockfish,
+    files: stockfish.filter((f) => f.endsWith('.js') || f.endsWith('.wasm')),
+  },
+]
 
 let failed = false
 console.log('\nBundle size budget (gzipped sizes)\n')
-
-for (const { budget, gzipBytes, files: count } of totals.values()) {
-  if (count === 0) continue
-
-  const usedKb = gzipBytes / KB
-  const pct = Math.round((usedKb / budget.maxGzipKb) * 100)
+for (const { budget, files } of groups) {
+  if (files.length === 0) continue
+  const usedKb = sum(files)
   const over = usedKb > budget.maxGzipKb
   failed ||= over
-
-  const status = over ? 'OVER' : 'OK'
+  const pct = Math.round((usedKb / budget.maxGzipKb) * 100)
   console.log(
-    `  ${status.padEnd(6)} ${budget.label.padEnd(30)} ` +
+    `  ${(over ? 'OVER' : 'OK').padEnd(6)} ${budget.label.padEnd(24)} ` +
       `${usedKb.toFixed(1).padStart(7)} kB / ${String(budget.maxGzipKb).padStart(5)} kB  (${pct}%)`,
   )
 }
 
+// The lazy route chunks are informational: they are not downloaded up front.
+const lazyKb = sum(lazyJs)
+console.log(
+  `\n  (info) ${lazyJs.length} lazily loaded route chunk(s), ${lazyKb.toFixed(1)} kB gzipped total, ` +
+    'downloaded only when their route is opened.\n',
+)
+
 if (failed) {
-  console.error('\nBudget exceeded. Trim the bundle, or raise the budget with a justification.\n')
+  console.error('Budget exceeded. Trim the bundle, or raise the budget with a justification.\n')
   process.exit(1)
 }
-
-console.log('\nAll budgets are within limits.\n')
+console.log('All budgets are within limits.\n')
