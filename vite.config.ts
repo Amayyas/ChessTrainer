@@ -9,6 +9,11 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    // The manifest lets the size guard tell the initial bundle apart from the
+    // lazily loaded route chunks, so its budget measures first-load JS only.
+    manifest: true,
+  },
   server: {
     port: 5173,
     open: false,
