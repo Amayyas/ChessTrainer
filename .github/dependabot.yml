@@ -1,0 +1,51 @@
+# Dependabot keeps dependencies current without drowning the repo in pull
+# requests. Two deliberate choices fit this project:
+#
+#  - Major updates are ignored. The stack is pinned for Node 18 (React Router 6,
+#    Vite 5, Tailwind 3...), so a major bump would break CI on every run; those
+#    are handled by hand, when the Node baseline moves.
+#  - Minor and patch updates are grouped into a single weekly PR per ecosystem,
+#    so the strict CI (five checks, tests, bundle budget) vets them together
+#    rather than one noisy PR at a time.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    # Conventional Commits, like the rest of the history: "chore(deps): ...".
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Majors are intentional, manual upgrades — never automated here.
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns:
+          - '*'
