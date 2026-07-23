@@ -10,6 +10,7 @@ import HomePage from '@/features/home/HomePage'
 import HuntPage from '@/features/hunt/HuntPage'
 import LeaderboardPage from '@/features/leaderboard/LeaderboardPage'
 import NotFoundPage from '@/features/NotFoundPage'
+import { useProgressionSync } from '@/features/progression/useProgressionSync'
 import ProfilePage from '@/features/profile/ProfilePage'
 import PuzzlePage from '@/features/puzzle/PuzzlePage'
 import { ROUTES } from '@/routes'
@@ -20,6 +21,9 @@ export default function App() {
 
   // Restores the stored session and follows sign-in/sign-out for the whole app.
   useEffect(() => initialise(), [initialise])
+
+  // Mirrors the progression to Supabase for a signed-in account (deliverable 5).
+  useProgressionSync()
 
   return (
     <Routes>

@@ -65,9 +65,11 @@ below.
 policies, privileges, the trigger that creates a profile on sign-up, and the
 realtime publication the leaderboard subscribes to.
 
-The quickest way is the dashboard: open **SQL Editor**, paste the contents of
-`supabase/migrations/20260711000000_init.sql`, and run it. The script is
-idempotent, so running it twice is harmless.
+The quickest way is the dashboard: open **SQL Editor** and run each file in
+`supabase/migrations/` once, in filename order (they are timestamped, so
+alphabetical is chronological). Each script is idempotent, so re-running one is
+harmless — which is also how you apply a later migration to a project that
+already has the earlier ones.
 
 With the [Supabase CLI](https://supabase.com/docs/guides/cli) instead:
 
@@ -77,8 +79,8 @@ npx supabase db push
 ```
 
 Check it worked under **Table Editor**: `profiles`, `scores`,
-`puzzle_progress` and `achievements` should be listed, each marked _RLS
-enabled_.
+`puzzle_progress`, `achievements` and `progression` should be listed, each
+marked _RLS enabled_.
 
 ### 3. Set the URLs
 
