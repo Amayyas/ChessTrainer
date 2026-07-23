@@ -26,14 +26,18 @@ describe('routing', () => {
     // leaderboard is unavailable rather than rendering it.
     [ROUTES.leaderboard, /Classement indisponible/],
     [ROUTES.profile, 'Profil'],
-  ])('renders the expected page at %s', (path, heading) => {
+    // Most routes are lazily loaded, so the heading arrives after the chunk
+    // resolves; findBy waits for it (the eager home route resolves at once).
+  ])('renders the expected page at %s', async (path, heading) => {
     renderAt(path)
-    expect(screen.getByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
   })
 
-  it('renders the 404 page on an unknown route', () => {
+  it('renders the 404 page on an unknown route', async () => {
     renderAt('/route-inexistante')
-    expect(screen.getByRole('heading', { level: 1, name: /Page introuvable/ })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /Page introuvable/ }),
+    ).toBeInTheDocument()
   })
 
   it('renders the main navigation inside the layout', () => {
