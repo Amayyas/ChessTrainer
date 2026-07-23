@@ -192,6 +192,9 @@ section 4.2.
 
 ## Architecture
 
+Class diagrams of the engine layer, the game modes, the global state and the data
+model are in [docs/architecture.md](docs/architecture.md).
+
 Structure mirrors section 3.2 of the specification.
 
 ```
