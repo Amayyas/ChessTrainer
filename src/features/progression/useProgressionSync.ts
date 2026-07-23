@@ -6,6 +6,9 @@ import { type ProgressionSnapshot, useProgressionStore } from '@/store/useProgre
 
 /** Debounce so a burst of gains in one session becomes a single write. */
 const WRITE_DELAY_MS = 1_000
+/** A pull that fails is retried a few times before the session gives up. */
+const MAX_PULL_ATTEMPTS = 4
+const PULL_RETRY_MS = 500
 
 function currentSnapshot(): ProgressionSnapshot {
   const { xp, stats, unlockedBadges } = useProgressionStore.getState()
@@ -22,6 +25,15 @@ function currentSnapshot(): ProgressionSnapshot {
  * rather than dropped. After that the server is the source of truth: a later
  * sign-in — on any device — replaces the local copy. While signed in, every
  * change is written back, debounced into one request.
+ *
+ * A write sends the whole snapshot, so it must never send a stale one. Two
+ * guards ensure that: writes stay disabled until the baseline row has actually
+ * been read (a failed pull is retried, never assumed empty), and at most one
+ * upsert is ever in flight, with a re-run that always reads the latest state —
+ * so the server converges on the newest snapshot and an older one cannot land
+ * last. Two devices playing at the very same second still resolve last-write-
+ * wins on the whole row, which is the same trade-off as "server is the source
+ * of truth on sign-in" and does not warrant per-field version vectors here.
  */
 export function useProgressionSync(): void {
   const session = useAuthStore((state) => state.session)
@@ -39,27 +51,55 @@ export function useProgressionSync(): void {
     }
 
     let active = true
-    // Writes wait for the pull, so a local change during it cannot upset the
-    // seed-or-hydrate decision by landing on the server first.
+    // Writes wait for the baseline, so a local change can never land on the
+    // server before we know whether the account already has a row.
     let ready = false
     let timer: ReturnType<typeof setTimeout> | undefined
 
+    // Serialise writes: one upsert in flight at a time, and if the store moved
+    // while it ran, loop once more reading the store afresh. The server then
+    // always ends on the newest snapshot, never an older one that finished late.
+    let writing = false
+    let writeAgain = false
+
     const write = async () => {
-      const snapshot = currentSnapshot()
-      const key = snapshotKey(snapshot)
-      if (key === syncedKey.current) return
-      const { error } = await client
-        .from('progression')
-        .upsert(snapshotToRow(userId, snapshot), { onConflict: 'user_id' })
-      // On failure the key is left as is, so the next change retries the write.
-      if (!error) syncedKey.current = key
+      if (writing) {
+        writeAgain = true
+        return
+      }
+      writing = true
+      try {
+        do {
+          writeAgain = false
+          const snapshot = currentSnapshot()
+          const key = snapshotKey(snapshot)
+          if (key === syncedKey.current) break
+          const { error } = await client
+            .from('progression')
+            .upsert(snapshotToRow(userId, snapshot), { onConflict: 'user_id' })
+          if (!active) return
+          // On failure the key is left as is, so the next change retries.
+          if (error) break
+          syncedKey.current = key
+        } while (writeAgain)
+      } finally {
+        writing = false
+      }
     }
 
-    // Pull first, then start following local changes, so the seed-or-hydrate
-    // decision is made before any write can race it.
-    void (async () => {
-      // Make sure the client has the freshly signed-in token attached before
-      // the request, otherwise the very first call can race it and be rejected.
+    const scheduleWrite = () => {
+      if (!active || !ready) return
+      clearTimeout(timer)
+      timer = setTimeout(() => void write(), WRITE_DELAY_MS)
+    }
+
+    // Pull, with a bounded retry: writes stay blocked until the row is read
+    // (hydrate) or confirmed absent (seed). A failed pull must never enable
+    // writes, or an unhydrated local snapshot could overwrite the server row.
+    let attempt = 0
+    const pull = async () => {
+      // The first request after sign-in can outrun the token; awaiting the
+      // session first makes sure it is attached.
       await client.auth.getSession()
       const { data, error } = await client
         .from('progression')
@@ -69,11 +109,11 @@ export function useProgressionSync(): void {
       if (!active) return
 
       if (error) {
-        // A failed pull is *not* proof the account has no row. Seeding here
-        // would overwrite a real server copy with the empty local one, so the
-        // only safe move is to leave the server untouched; a later genuine
-        // change still upserts, which merges rather than replaces.
-        ready = true
+        attempt += 1
+        // Give up after a few tries and stay read-only, which is safe — the
+        // next sign-in tries again — rather than risk overwriting the server.
+        if (attempt >= MAX_PULL_ATTEMPTS) return
+        timer = setTimeout(() => void pull(), PULL_RETRY_MS * attempt)
         return
       }
 
@@ -82,19 +122,17 @@ export function useProgressionSync(): void {
         useProgressionStore.getState().hydrate(snapshot)
         syncedKey.current = snapshotKey(snapshot)
       } else {
-        // The query succeeded and there is genuinely no row: seed the account
-        // from the current (guest) progress so it is kept rather than dropped.
+        // Genuinely no row: seed it from the current (guest) progress below.
         syncedKey.current = null
-        await write()
       }
       ready = true
-    })()
+      // Flush now: a seed to send, or any change made while the pull was in
+      // flight. After a hydrate this is a no-op, since the store matches.
+      void write()
+    }
+    void pull()
 
-    const unsubscribe = useProgressionStore.subscribe(() => {
-      if (!active || !ready) return
-      clearTimeout(timer)
-      timer = setTimeout(() => void write(), WRITE_DELAY_MS)
-    })
+    const unsubscribe = useProgressionStore.subscribe(scheduleWrite)
 
     return () => {
       active = false
