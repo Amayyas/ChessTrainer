@@ -49,3 +49,12 @@ updates:
       github-actions:
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Like npm: a major action bump can change the runner contract and break
+      # CI, so it is a manual upgrade rather than an automated one.
+      - dependency-name: '*'
+        update-types:
+          - version-update:semver-major
