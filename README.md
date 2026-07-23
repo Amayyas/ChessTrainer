@@ -172,6 +172,10 @@ guard makes a regression visible on the PR that introduces it.
 | CSS                          | 50 kB  |
 | Stockfish (loaded on demand) | 5 MB   |
 
+"Initial JavaScript" is read from the Vite build manifest — the entry chunk and its static
+imports only. The lazily loaded route chunks are reported for visibility but do not count against
+it, since the first paint never downloads them.
+
 ### Lighthouse thresholds
 
 Configured in [`lighthouserc.json`](lighthouserc.json). Performance, accessibility and best
