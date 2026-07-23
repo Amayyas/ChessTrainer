@@ -66,8 +66,12 @@ const initialCss = new Set()
 })(Object.keys(manifest).find((key) => manifest[key].isEntry))
 
 const allFiles = walk(DIST)
-const lazyJs = allFiles.filter((f) => f.endsWith('.js') && !initialJs.has(f))
 const stockfish = allFiles.filter((f) => /stockfish/i.test(f))
+// Lazy route chunks: application .js outside the initial set. Stockfish is
+// excluded — it has its own budget, and it is the engine worker, not a route.
+const lazyJs = allFiles.filter(
+  (f) => f.endsWith('.js') && !initialJs.has(f) && !/stockfish/i.test(f),
+)
 const otherCss = allFiles.filter((f) => f.endsWith('.css') && !initialCss.has(f))
 
 const sum = (files) => files.reduce((total, f) => total + gzipKb(f), 0)
