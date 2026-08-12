@@ -284,7 +284,22 @@ export const useProgressionStore = create<ProgressionState>()(
         reset: () => set({ ...blankProgress(), ownerId: null }),
       }
     },
-    { name: 'chesstrainer.progression' },
+    {
+      name: 'chesstrainer.progression',
+      version: 1,
+      migrate: (persisted, version) => {
+        // Records written before progression had an owner carry no way of
+        // telling one player's work from another's. Zustand merges them over
+        // the initial state, which would leave the previous account's XP and
+        // badges sitting there as if they were a guest's — visible to the next
+        // person, and seeded into the next account that has no row yet. There
+        // is nothing to disambiguate them with, so the safe reading is to drop
+        // them: a signed-in player gets theirs back from the server on the next
+        // pull, and only an unclaimed guest total is lost, once.
+        if (version < 1) return { ...blankProgress(), ownerId: null }
+        return persisted
+      },
+    },
   ),
 )
 

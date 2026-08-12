@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { rowToSnapshot, snapshotKey, snapshotToRow } from '@/features/progression/sync'
 import { type ProgressionRow, supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -47,14 +47,17 @@ export function useProgressionSync(): void {
   // notably the pull's own hydrate — is never written straight back.
   const syncedKey = useRef<string | null>(null)
 
+  // Ownership is reconciled before the browser paints: an effect would let the
+  // dashboard show the previous account's XP for a frame after a sign-out or a
+  // switch. Only this transition runs here — the network work stays in the
+  // effect below, where it belongs.
+  useLayoutEffect(() => {
+    if (!isReady) return
+    useProgressionStore.getState().adoptOwner(userId)
+  }, [isReady, userId])
+
   useEffect(() => {
     if (!isReady) return
-
-    // Hand the store its current identity before anything else. It clears
-    // itself when the progression on this device belongs to someone else, so
-    // one player's XP, badges and feed can never be shown under another's name
-    // — nor seeded into their row further down.
-    useProgressionStore.getState().adoptOwner(userId)
 
     const client = supabase
     if (!client || !userId) {

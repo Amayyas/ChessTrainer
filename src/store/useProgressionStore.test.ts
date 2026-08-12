@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { XP_REWARDS, huntXp } from '@/features/progression/levels'
-import { useProgressionStore } from '@/store/useProgressionStore'
+import { EMPTY_STATS, useProgressionStore } from '@/store/useProgressionStore'
 
 const store = () => useProgressionStore.getState()
 
@@ -197,5 +197,59 @@ describe('adoptOwner — progression must never cross accounts', () => {
     expect(store().xp).toBe(XP_REWARDS.puzzleSolved)
     expect(store().stats.bestHuntScore).toBe(0)
     expect(store().ownerId).toBe('user-b')
+  })
+})
+
+describe('persisted storage migration', () => {
+  it('drops a pre-ownership record instead of passing it off as guest progress', async () => {
+    // What a browser holds from before progression had an owner: real totals,
+    // no ownerId. Zustand merges these over the initial state, so without a
+    // migration the account's XP would come back looking like a guest's.
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 838,
+          stats: { ...EMPTY_STATS, puzzlesSolved: 11, bestHuntScore: 4860 },
+          daily: { day: '2026-08-12' },
+          activities: [{ id: 'a', kind: 'hunt', label: 'Chasse', xp: 3, at: '2026-08-12' }],
+          unlockedBadges: ['hunter'],
+          pendingBadges: [],
+        },
+        version: 0,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().xp).toBe(0)
+    expect(store().stats.puzzlesSolved).toBe(0)
+    expect(store().stats.bestHuntScore).toBe(0)
+    expect(store().unlockedBadges).toEqual([])
+    expect(store().activities).toEqual([])
+    expect(store().ownerId).toBeNull()
+  })
+
+  it('keeps a record that already carries its owner', async () => {
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 250,
+          stats: { ...EMPTY_STATS, puzzlesSolved: 4 },
+          daily: { day: '2026-08-12' },
+          activities: [],
+          unlockedBadges: [],
+          pendingBadges: [],
+          ownerId: 'user-a',
+        },
+        version: 1,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().xp).toBe(250)
+    expect(store().ownerId).toBe('user-a')
   })
 })
