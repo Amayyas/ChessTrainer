@@ -1,10 +1,8 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseUciMove } from '@/engine/uci'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
 import {
   DAILY_COUNT,
-  EMPTY_PROGRESS,
   dailyPuzzles,
   dayKey,
   recordSolved,
@@ -12,6 +10,7 @@ import {
 } from '@/features/puzzle/dailySet'
 import type { Puzzle } from '@/features/puzzle/types'
 import type { PieceSymbol, Square } from '@/utils/chess'
+import { useProgressionStore } from '@/store/useProgressionStore'
 
 /** Points a flawless puzzle is worth. */
 export const BASE_POINTS = 100
@@ -95,10 +94,10 @@ export function usePuzzleSession(): UsePuzzleSession {
   const [scores, setScores] = useState<PuzzleScore[]>([])
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [elapsedMs, setElapsedMs] = useState(0)
-  const [progress, setProgress] = useLocalStorage<PuzzleProgress>(
-    'chesstrainer.puzzle.progress',
-    EMPTY_PROGRESS,
-  )
+  // In the progression store rather than its own localStorage key, so the
+  // streak belongs to the player and not to the browser they used.
+  const progress = useProgressionStore((state) => state.puzzleProgress)
+  const setProgress = useProgressionStore((state) => state.setPuzzleProgress)
 
   const puzzle = puzzles[index] ?? null
 

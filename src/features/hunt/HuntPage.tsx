@@ -3,15 +3,8 @@ import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
-import {
-  STARTING_LIVES,
-  addScore,
-  encouragement,
-  personalBest,
-  type Scoreboard,
-} from '@/features/hunt/scoring'
+import { STARTING_LIVES, addScore, encouragement, personalBest } from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { supabase } from '@/lib/supabase'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -36,7 +29,10 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
  */
 export default function HuntPage() {
   const game = useHuntGame()
-  const [scoreboard, setScoreboard] = useLocalStorage<Scoreboard>('chesstrainer.hunt.scores', {})
+  // Held in the progression store rather than a localStorage key of its own, so
+  // the board follows the account instead of the browser.
+  const scoreboard = useProgressionStore((state) => state.huntScores)
+  const setScoreboard = useProgressionStore((state) => state.setHuntScores)
   const recordHunt = useProgressionStore((state) => state.recordHunt)
   const session = useAuthStore((state) => state.session)
 
