@@ -1,0 +1,82 @@
+# Keeps the Supabase project awake, and doubles as an uptime alert.
+#
+# A free-tier Supabase project is paused after about seven days without
+# activity. That is harmless while the app is only run locally, but once it is
+# public a quiet week would put the backend to sleep — visitors would then find
+# broken sign-in and an empty leaderboard, with nothing in the app at fault.
+#
+# This reads one row through PostgREST once a day, which touches the database
+# and counts as activity. Daily rather than weekly because GitHub delays, and
+# sometimes drops, scheduled runs under load: at this cadence six consecutive
+# runs would have to be missed before the seven-day window closes.
+#
+# The job fails whenever the health check does not come back with HTTP 200 —
+# a sleeping or broken backend, but equally a missing secret, a rotated key or
+# a network error, so a failure is a signal to look, not a confirmed outage.
+# GitHub notifies the workflow actor of a failed scheduled run, subject to that
+# account's notification settings, so this is a useful heads-up rather than
+# monitoring that can be relied upon.
+#
+# One limit worth knowing: GitHub disables scheduled workflows in a public
+# repository after 60 days with no repository activity, so this protects the
+# project only while the repository is being worked on. Surviving a long pause
+# in the work would need an external scheduler, or a paid Supabase plan.
+name: Keep-alive
+
+on:
+  schedule:
+    # 06:17 UTC daily. Not on the hour: that is when scheduled runs queue up
+    # across GitHub and are most likely to be delayed.
+    - cron: '17 6 * * *'
+  # Also runnable by hand, to check the backend right now.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read one row through PostgREST
+        env:
+          # The anon key is public by design — it ships in the browser bundle,
+          # and row-level security is what protects the data. It lives in the
+          # repository secrets so the URL and key can be rotated without a
+          # commit, and so a fork never inherits them.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "SUPABASE_URL or SUPABASE_ANON_KEY is not set in the repository secrets."
+            echo "Add both under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          # A paused project can take a couple of minutes to answer, and a
+          # transient 5xx should not raise a false alarm, so retry before
+          # reporting the check as failed.
+          for attempt in 1 2 3; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+              "${SUPABASE_URL}/rest/v1/scores?select=id&limit=1" \
+              -H "apikey: ${SUPABASE_ANON_KEY}") || status=000
+
+            if [ "${status}" = "200" ]; then
+              echo "Attempt ${attempt}: HTTP 200 — the database answered, the project stays awake."
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}: HTTP ${status}."
+            [ "${attempt}" -lt 3 ] && sleep 30
+          done
+
+          echo
+          echo "The health check did not return HTTP 200 after three attempts."
+          echo "  000 — no response at all, which is what a paused project looks like."
+          echo "  521 — the project is waking up, or its origin is down."
+          echo "  401 or 404 — the URL or the anon key no longer matches the project."
+          echo "Check the Supabase dashboard, and resume the project if it was paused."
+          exit 1
