@@ -5,18 +5,25 @@
 # public a quiet week would put the backend to sleep — visitors would then find
 # broken sign-in and an empty leaderboard, with nothing in the app at fault.
 #
-# This reads one row through PostgREST every three days, which touches the
-# database and counts as activity. The margin over the seven-day window is wide
-# enough to absorb the delays GitHub applies to scheduled runs under load.
+# This reads one row through PostgREST once a day, which touches the database
+# and counts as activity. Daily rather than weekly because GitHub delays, and
+# sometimes drops, scheduled runs under load: at this cadence six consecutive
+# runs would have to be missed before the seven-day window closes.
 #
 # The job fails when the database does not answer, so GitHub emails a
 # notification: the same run therefore reports an outage, whatever its cause.
+#
+# One limit worth knowing: GitHub disables scheduled workflows in a public
+# repository after 60 days with no repository activity, so this protects the
+# project only while the repository is being worked on. Surviving a long pause
+# in the work would need an external scheduler, or a paid Supabase plan.
 name: Keep-alive
 
 on:
   schedule:
-    # 06:00 UTC, every third day.
-    - cron: '0 6 */3 * *'
+    # 06:17 UTC daily. Not on the hour: that is when scheduled runs queue up
+    # across GitHub and are most likely to be delayed.
+    - cron: '17 6 * * *'
   # Also runnable by hand, to check the backend right now.
   workflow_dispatch:
 
