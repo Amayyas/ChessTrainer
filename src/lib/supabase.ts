@@ -61,5 +61,9 @@ export interface ProgressionRow {
   xp: number
   stats: unknown
   unlocked_badges: string[]
+  /** Best hunt rounds per champion, as one JSON document. */
+  hunt_scores: unknown
+  /** Daily puzzle streak and totals, as one JSON document. */
+  puzzle_progress: unknown
   updated_at: string
 }
