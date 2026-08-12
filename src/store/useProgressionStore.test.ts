@@ -116,3 +116,86 @@ describe('useProgressionStore', () => {
     expect(store().unlockedBadges).toEqual(['first-mate'])
   })
 })
+
+describe('adoptOwner — progression must never cross accounts', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    store().reset()
+  })
+
+  /** Builds some progress and marks it as belonging to `owner`. */
+  const progressOwnedBy = (owner: string | null) => {
+    store().adoptOwner(owner)
+    store().recordPuzzle({ flawless: true, streak: 3 })
+    store().recordHunt({ score: 4860, captures: 20, championLabel: 'Tour' })
+  }
+
+  it('clears an account progression on sign-out', () => {
+    progressOwnedBy('user-a')
+    expect(store().xp).toBeGreaterThan(0)
+
+    store().adoptOwner(null)
+
+    // Signing out must leave a guest with nothing of the account behind.
+    expect(store().xp).toBe(0)
+    expect(store().stats.puzzlesSolved).toBe(0)
+    expect(store().stats.bestHuntScore).toBe(0)
+    expect(store().unlockedBadges).toEqual([])
+    expect(store().activities).toEqual([])
+    expect(store().ownerId).toBeNull()
+  })
+
+  it('clears one account progression when another signs in', () => {
+    progressOwnedBy('user-a')
+    const before = store().xp
+
+    store().adoptOwner('user-b')
+
+    expect(before).toBeGreaterThan(0)
+    expect(store().xp).toBe(0)
+    expect(store().stats.bestHuntScore).toBe(0)
+    expect(store().ownerId).toBe('user-b')
+  })
+
+  it('keeps guest progress when the account signing in adopts it', () => {
+    progressOwnedBy(null)
+    const guestXp = store().xp
+    const guestBest = store().stats.bestHuntScore
+
+    store().adoptOwner('user-a')
+
+    // A guest's own work follows them into the account they create.
+    expect(store().xp).toBe(guestXp)
+    expect(store().stats.bestHuntScore).toBe(guestBest)
+    expect(store().ownerId).toBe('user-a')
+  })
+
+  it('leaves everything untouched when the same account is adopted again', () => {
+    progressOwnedBy('user-a')
+    const snapshot = { xp: store().xp, activities: store().activities.length }
+
+    // A reload, or a second visit by the same player.
+    store().adoptOwner('user-a')
+
+    expect(store().xp).toBe(snapshot.xp)
+    expect(store().activities).toHaveLength(snapshot.activities)
+  })
+
+  it('adopts only what the guest earned after the previous account left', () => {
+    progressOwnedBy('user-a')
+    const accountXp = store().xp
+    store().adoptOwner(null) // user-a signs out
+    store().recordPuzzle({ flawless: false, streak: 1 }) // a guest plays a little
+    const guestXp = store().xp
+
+    store().adoptOwner('user-b') // a different player signs in on the device
+
+    // The guest's own work follows them, but user-a's total must be nowhere in
+    // it — that is what used to leak into the new account's row.
+    expect(guestXp).toBe(XP_REWARDS.puzzleSolved)
+    expect(accountXp).toBeGreaterThan(guestXp)
+    expect(store().xp).toBe(XP_REWARDS.puzzleSolved)
+    expect(store().stats.bestHuntScore).toBe(0)
+    expect(store().ownerId).toBe('user-b')
+  })
+})
