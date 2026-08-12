@@ -1,0 +1,71 @@
+# Keeps the Supabase project awake, and doubles as an uptime alert.
+#
+# A free-tier Supabase project is paused after about seven days without
+# activity. That is harmless while the app is only run locally, but once it is
+# public a quiet week would put the backend to sleep — visitors would then find
+# broken sign-in and an empty leaderboard, with nothing in the app at fault.
+#
+# This reads one row through PostgREST every three days, which touches the
+# database and counts as activity. The margin over the seven-day window is wide
+# enough to absorb the delays GitHub applies to scheduled runs under load.
+#
+# The job fails when the database does not answer, so GitHub emails a
+# notification: the same run therefore reports an outage, whatever its cause.
+name: Keep-alive
+
+on:
+  schedule:
+    # 06:00 UTC, every third day.
+    - cron: '0 6 */3 * *'
+  # Also runnable by hand, to check the backend right now.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping Supabase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read one row through PostgREST
+        env:
+          # The anon key is public by design — it ships in the browser bundle,
+          # and row-level security is what protects the data. It lives in the
+          # repository secrets so the URL and key can be rotated without a
+          # commit, and so a fork never inherits them.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "SUPABASE_URL or SUPABASE_ANON_KEY is not set in the repository secrets."
+            echo "Add both under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          # A paused project can take a couple of minutes to answer, and a
+          # transient 5xx should not raise a false alarm, so retry before
+          # declaring the backend down.
+          for attempt in 1 2 3; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+              "${SUPABASE_URL}/rest/v1/scores?select=id&limit=1" \
+              -H "apikey: ${SUPABASE_ANON_KEY}") || status=000
+
+            if [ "${status}" = "200" ]; then
+              echo "Attempt ${attempt}: HTTP 200 — the database answered, the project stays awake."
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}: HTTP ${status}."
+            [ "${attempt}" -lt 3 ] && sleep 30
+          done
+
+          echo
+          echo "The database did not answer after three attempts."
+          echo "  000 — no response at all, which is what a paused project looks like."
+          echo "  521 — the project is waking up, or its origin is down."
+          echo "  401 or 404 — the URL or the anon key no longer matches the project."
+          echo "Resume it from the Supabase dashboard if it was paused."
+          exit 1
