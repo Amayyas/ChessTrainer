@@ -10,8 +10,12 @@
 # sometimes drops, scheduled runs under load: at this cadence six consecutive
 # runs would have to be missed before the seven-day window closes.
 #
-# The job fails when the database does not answer, so GitHub emails a
-# notification: the same run therefore reports an outage, whatever its cause.
+# The job fails whenever the health check does not come back with HTTP 200 —
+# a sleeping or broken backend, but equally a missing secret, a rotated key or
+# a network error, so a failure is a signal to look, not a confirmed outage.
+# GitHub notifies the workflow actor of a failed scheduled run, subject to that
+# account's notification settings, so this is a useful heads-up rather than
+# monitoring that can be relied upon.
 #
 # One limit worth knowing: GitHub disables scheduled workflows in a public
 # repository after 60 days with no repository activity, so this protects the
@@ -54,7 +58,7 @@ jobs:
 
           # A paused project can take a couple of minutes to answer, and a
           # transient 5xx should not raise a false alarm, so retry before
-          # declaring the backend down.
+          # reporting the check as failed.
           for attempt in 1 2 3; do
             status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
               "${SUPABASE_URL}/rest/v1/scores?select=id&limit=1" \
@@ -70,9 +74,9 @@ jobs:
           done
 
           echo
-          echo "The database did not answer after three attempts."
+          echo "The health check did not return HTTP 200 after three attempts."
           echo "  000 — no response at all, which is what a paused project looks like."
           echo "  521 — the project is waking up, or its origin is down."
           echo "  401 or 404 — the URL or the anon key no longer matches the project."
-          echo "Resume it from the Supabase dashboard if it was paused."
+          echo "Check the Supabase dashboard, and resume the project if it was paused."
           exit 1
