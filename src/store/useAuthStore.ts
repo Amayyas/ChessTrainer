@@ -79,7 +79,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     })
 
     const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
-      set({ session })
+      // Drop the profile as soon as the account changes. The fetch below is
+      // asynchronous and deliberately keeps what it has when it fails, so
+      // without this the previous player's name and avatar would stay on screen
+      // under the new session — briefly on a switch, indefinitely on an error.
+      const previous = get().session?.user.id ?? null
+      const next = session?.user.id ?? null
+      if (previous !== next) set({ session, profile: null })
+      else set({ session })
       void loadProfile(session)
     })
 

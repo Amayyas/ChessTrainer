@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { rowToSnapshot, snapshotKey, snapshotToRow } from '@/features/progression/sync'
 import { type ProgressionRow, supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -36,6 +36,10 @@ function currentSnapshot(): ProgressionSnapshot {
  * of truth on sign-in" and does not warrant per-field version vectors here.
  */
 export function useProgressionSync(): void {
+  // isReady guards the wipe below: until the stored session has been read,
+  // "no user" only means "not known yet", and clearing then would throw away a
+  // returning player's progression on every page load.
+  const isReady = useAuthStore((state) => state.isReady)
   const session = useAuthStore((state) => state.session)
   const userId = session?.user.id ?? null
 
@@ -43,7 +47,18 @@ export function useProgressionSync(): void {
   // notably the pull's own hydrate — is never written straight back.
   const syncedKey = useRef<string | null>(null)
 
+  // Ownership is reconciled before the browser paints: an effect would let the
+  // dashboard show the previous account's XP for a frame after a sign-out or a
+  // switch. Only this transition runs here — the network work stays in the
+  // effect below, where it belongs.
+  useLayoutEffect(() => {
+    if (!isReady) return
+    useProgressionStore.getState().adoptOwner(userId)
+  }, [isReady, userId])
+
   useEffect(() => {
+    if (!isReady) return
+
     const client = supabase
     if (!client || !userId) {
       syncedKey.current = null
@@ -122,7 +137,9 @@ export function useProgressionSync(): void {
         useProgressionStore.getState().hydrate(snapshot)
         syncedKey.current = snapshotKey(snapshot)
       } else {
-        // Genuinely no row: seed it from the current (guest) progress below.
+        // Genuinely no row: seed it from the current progress below. adoptOwner
+        // has already made sure that is either this player's own guest work or
+        // nothing at all, never another account's.
         syncedKey.current = null
       }
       ready = true
@@ -139,5 +156,5 @@ export function useProgressionSync(): void {
       clearTimeout(timer)
       unsubscribe()
     }
-  }, [userId])
+  }, [isReady, userId])
 }

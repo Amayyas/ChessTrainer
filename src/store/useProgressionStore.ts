@@ -73,6 +73,12 @@ interface ProgressionState {
   unlockedBadges: string[]
   /** Badges unlocked but not yet shown to the player. */
   pendingBadges: string[]
+  /**
+   * Whose progression this device currently holds: an account id, or null for
+   * a guest. Without it the store cannot tell its own data from the leftovers
+   * of whoever used the browser before.
+   */
+  ownerId: string | null
 
   recordBattle: (input: BattleOutcomeInput) => void
   recordPuzzle: (input: { flawless: boolean; streak: number }) => void
@@ -82,7 +88,21 @@ interface ProgressionState {
   acknowledgeBadges: () => void
   /** Replaces the synced fields with an account's server copy on sign-in. */
   hydrate: (snapshot: ProgressionSnapshot) => void
+  /** Points the store at an account, or at the guest with null. */
+  adoptOwner: (ownerId: string | null) => void
   reset: () => void
+}
+
+/** Every progression field at its starting value, ownership aside. */
+function blankProgress() {
+  return {
+    xp: 0,
+    stats: EMPTY_STATS,
+    daily: emptyCounters(),
+    activities: [] as Activity[],
+    unlockedBadges: [] as string[],
+    pendingBadges: [] as string[],
+  }
 }
 
 let activitySeq = 0
@@ -136,12 +156,8 @@ export const useProgressionStore = create<ProgressionState>()(
         })
 
       return {
-        xp: 0,
-        stats: EMPTY_STATS,
-        daily: emptyCounters(),
-        activities: [],
-        unlockedBadges: [],
-        pendingBadges: [],
+        ...blankProgress(),
+        ownerId: null,
 
         recordBattle: ({ outcome, byCheckmate, levelLabel }) => {
           const xp =
@@ -249,18 +265,41 @@ export const useProgressionStore = create<ProgressionState>()(
             unlockedBadges,
           }),
 
-        reset: () =>
-          set({
-            xp: 0,
-            stats: EMPTY_STATS,
-            daily: emptyCounters(),
-            activities: [],
-            unlockedBadges: [],
-            pendingBadges: [],
+        adoptOwner: (ownerId) =>
+          set((state) => {
+            // Same identity as before: keep everything, this is a reload or a
+            // second visit by the same player.
+            if (state.ownerId === ownerId) return state
+
+            // Guest progress being taken over by the account signing in. It is
+            // this player's own work, so it is kept and seeded to the account.
+            if (state.ownerId === null && ownerId !== null) return { ownerId }
+
+            // Anything else — another account signing in, or signing out — is a
+            // change of person. Their XP, badges and feed are not the newcomer's
+            // to see, still less to write into their row, so start from nothing.
+            return { ...blankProgress(), ownerId }
           }),
+
+        reset: () => set({ ...blankProgress(), ownerId: null }),
       }
     },
-    { name: 'chesstrainer.progression' },
+    {
+      name: 'chesstrainer.progression',
+      version: 1,
+      migrate: (persisted, version) => {
+        // Records written before progression had an owner carry no way of
+        // telling one player's work from another's. Zustand merges them over
+        // the initial state, which would leave the previous account's XP and
+        // badges sitting there as if they were a guest's — visible to the next
+        // person, and seeded into the next account that has no row yet. There
+        // is nothing to disambiguate them with, so the safe reading is to drop
+        // them: a signed-in player gets theirs back from the server on the next
+        // pull, and only an unclaimed guest total is lost, once.
+        if (version < 1) return { ...blankProgress(), ownerId: null }
+        return persisted
+      },
+    },
   ),
 )
 
