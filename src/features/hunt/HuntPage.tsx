@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
@@ -35,6 +35,28 @@ export default function HuntPage() {
   const setScoreboard = useProgressionStore((state) => state.setHuntScores)
   const recordHunt = useProgressionStore((state) => state.recordHunt)
   const session = useAuthStore((state) => state.session)
+
+  // The server's own handle on the round in progress. It is opened when play
+  // starts, so the submission below can be checked against how long the round
+  // actually lasted rather than against the two numbers it reports.
+  const roundId = useRef<string | null>(null)
+
+  const startRound = useCallback(
+    (champion: ChampionType) => {
+      roundId.current = null
+      game.start(champion)
+      const client = supabase
+      if (!client || !session) return // a guest plays, nothing is filed
+      void client.rpc('start_hunt_round').then(({ data, error }) => {
+        if (error) {
+          console.error('[hunt] could not open the round:', error.message)
+          return
+        }
+        roundId.current = typeof data === 'string' ? data : null
+      })
+    },
+    [game, session],
+  )
 
   // Record the round once, when it ends.
   const recorded = useRef(false)
@@ -78,6 +100,10 @@ export default function HuntPage() {
       return
     }
     if (submitted.current || !supabase || !session || !game.champion || game.score <= 0) return
+    // Without an open round there is nothing for the server to check the score
+    // against, so it would be refused anyway.
+    const round = roundId.current
+    if (!round) return
     submitted.current = true
 
     const client = supabase
@@ -87,6 +113,7 @@ export default function HuntPage() {
     // the session on the server side, never from here.
     void client
       .rpc('submit_hunt_score', {
+        p_round: round,
         p_piece: game.champion,
         p_score: game.score,
         p_captures: game.captures,
@@ -116,7 +143,7 @@ export default function HuntPage() {
               <button
                 key={champion}
                 type="button"
-                onClick={() => game.start(champion)}
+                onClick={() => startRound(champion)}
                 className="flex items-start gap-3 rounded-xl border border-ebene/15 p-3 text-left transition-colors hover:border-or hover:bg-or/10"
               >
                 <span
@@ -204,7 +231,7 @@ export default function HuntPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => game.start(champion)}>Rejouer</Button>
+            <Button onClick={() => startRound(champion)}>Rejouer</Button>
             <Button variant="outline" onClick={game.reset}>
               Changer de pièce
             </Button>
