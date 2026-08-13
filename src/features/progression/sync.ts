@@ -29,6 +29,16 @@ function normaliseStats(stats: unknown): ProgressionStats {
   return merged
 }
 
+/**
+ * A count read from an untrusted document. Anything that is not a finite,
+ * non-negative whole number is not a count, however much it looks like one:
+ * NaN and Infinity are numbers to `typeof`, and both would go on to be
+ * displayed and sorted as if they were real scores.
+ */
+function isCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+}
+
 /** The hunt board is a JSON document too, so it gets the same guarded read. */
 const CHAMPIONS = ['q', 'r', 'b', 'n'] as const
 
@@ -37,8 +47,8 @@ function isHuntEntry(value: unknown): value is HuntScoreEntry {
   const entry = value as Record<string, unknown>
   return (
     CHAMPIONS.includes(entry.champion as (typeof CHAMPIONS)[number]) &&
-    typeof entry.score === 'number' &&
-    typeof entry.captures === 'number' &&
+    isCount(entry.score) &&
+    isCount(entry.captures) &&
     typeof entry.playedAt === 'string'
   )
 }
@@ -58,9 +68,9 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   const raw = value as Record<string, unknown>
   return {
     lastSolvedDay: typeof raw.lastSolvedDay === 'string' ? raw.lastSolvedDay : null,
-    streak: typeof raw.streak === 'number' ? raw.streak : 0,
-    bestStreak: typeof raw.bestStreak === 'number' ? raw.bestStreak : 0,
-    totalSolved: typeof raw.totalSolved === 'number' ? raw.totalSolved : 0,
+    streak: isCount(raw.streak) ? raw.streak : 0,
+    bestStreak: isCount(raw.bestStreak) ? raw.bestStreak : 0,
+    totalSolved: isCount(raw.totalSolved) ? raw.totalSolved : 0,
   }
 }
 

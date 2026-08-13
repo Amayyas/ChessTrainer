@@ -93,8 +93,15 @@ export function useProgressionSync(): void {
             .from('progression')
             .upsert(snapshotToRow(userId, snapshot), { onConflict: 'user_id' })
           if (!active) return
-          // On failure the key is left as is, so the next change retries.
-          if (error) break
+          if (error) {
+            // Left silent, a rejected write loses everything the player earns
+            // while the app keeps looking fine — which is exactly how a column
+            // missing from the database went unnoticed until the profile and
+            // the leaderboard disagreed. The key is left as it was, so the next
+            // change retries.
+            console.error('[progression] save failed:', error.message)
+            break
+          }
           syncedKey.current = key
         } while (writeAgain)
       } finally {

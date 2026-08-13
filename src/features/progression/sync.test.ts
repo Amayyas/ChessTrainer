@@ -165,3 +165,33 @@ describe('hunt board and puzzle streak now travel with the account', () => {
     expect(rowOut.puzzle_progress).toMatchObject({ streak: 3, totalSolved: 11 })
   })
 })
+
+describe('counts read from an untrusted document', () => {
+  it('rejects NaN, Infinity, negatives and fractions in a hunt entry', () => {
+    const bad = (over: Record<string, unknown>) => ({
+      champion: 'q',
+      score: 100,
+      captures: 4,
+      playedAt: '2026-08-12',
+      ...over,
+    })
+    const board = (entry: unknown) => rowToSnapshot(row({ hunt_scores: { q: [entry] } })).huntScores
+
+    expect(board(bad({ score: Number.NaN }))).toEqual({ q: [] })
+    expect(board(bad({ score: Number.POSITIVE_INFINITY }))).toEqual({ q: [] })
+    expect(board(bad({ score: -50 }))).toEqual({ q: [] })
+    expect(board(bad({ captures: 2.5 }))).toEqual({ q: [] })
+    // A well-formed round still gets through.
+    expect(board(bad({})).q).toHaveLength(1)
+  })
+
+  it('falls back to zero for an unusable puzzle count', () => {
+    const read = (over: Record<string, unknown>) =>
+      rowToSnapshot(row({ puzzle_progress: over })).puzzleProgress
+
+    expect(read({ streak: Number.NaN }).streak).toBe(0)
+    expect(read({ bestStreak: Number.POSITIVE_INFINITY }).bestStreak).toBe(0)
+    expect(read({ totalSolved: -3 }).totalSolved).toBe(0)
+    expect(read({ totalSolved: 7 }).totalSolved).toBe(7)
+  })
+})
