@@ -242,6 +242,11 @@ Two Zustand stores hold the only genuinely global state. `useProgressionSync`
 bridges the local progression and the account: it pulls the server snapshot on
 sign-in, then writes changes back.
 
+`ownerId` records whose progression the device currently holds — an account id,
+or `null` for a guest. Without it the store cannot tell its own data from the
+leftovers of whoever used the browser before, which is how one player's XP and
+badges once showed up under another's name.
+
 ```mermaid
 classDiagram
     direction TB
@@ -254,12 +259,18 @@ classDiagram
         +Activity[] activities
         +string[] unlockedBadges
         +string[] pendingBadges
+        +Scoreboard huntScores
+        +PuzzleProgress puzzleProgress
+        +string ownerId
         +recordBattle(input) void
         +recordPuzzle(input) void
         +recordHunt(input) void
         +recordCoachAnalysis(input) void
         +unlockBadges(ids) void
+        +setHuntScores(update) void
+        +setPuzzleProgress(update) void
         +hydrate(snapshot) void
+        +adoptOwner(ownerId) void
         +reset() void
     }
 
@@ -290,6 +301,8 @@ classDiagram
         +number xp
         +ProgressionStats stats
         +string[] unlockedBadges
+        +Scoreboard huntScores
+        +PuzzleProgress puzzleProgress
     }
 
     class AuthStore {
@@ -349,6 +362,14 @@ it is testable without a network.
 Every table is protected by Row Level Security. A SQL trigger creates the profile
 on sign-up, so an account can never exist without one.
 
+`progression` carries the whole of a player's personal progress, including the
+hunt board and the puzzle streak as JSON documents. Those two used to sit in
+localStorage keys of their own, which tied them to the browser rather than to
+the player; riding the progression row means they follow the account, under the
+same ownership rules as everything else. A `puzzle_progress` table existed in
+the first data model but no client code ever used it, so it was dropped rather
+than left as a second home for the same thing.
+
 ```mermaid
 classDiagram
     direction LR
@@ -384,16 +405,9 @@ classDiagram
         +int xp
         +jsonb stats
         +text[] unlocked_badges
+        +jsonb hunt_scores
+        +jsonb puzzle_progress
         +timestamptz updated_at
-    }
-
-    class puzzle_progress {
-        <<table>>
-        +uuid user_id
-        +string puzzle_id
-        +boolean solved
-        +int attempts
-        +timestamptz solved_at
     }
 
     class achievements {
@@ -406,7 +420,6 @@ classDiagram
     auth_users "1" --> "1" profiles : trigger handle_new_user
     profiles "1" --> "0..*" scores : publishes
     profiles "1" --> "0..1" progression : syncs
-    profiles "1" --> "0..*" puzzle_progress : solves
     profiles "1" --> "0..*" achievements : unlocks
 ```
 
@@ -415,13 +428,12 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 
 ### Access rules
 
-| Table             | Read                                     | Write                                                 |
-| ----------------- | ---------------------------------------- | ----------------------------------------------------- |
-| `profiles`        | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only** |
-| `scores`          | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**   |
-| `progression`     | **private** to its owner                 | owner only                                            |
-| `puzzle_progress` | **private** to its owner                 | owner only                                            |
-| `achievements`    | public — badges can be shown off         | insert under one's own id                             |
+| Table          | Read                                     | Write                                                 |
+| -------------- | ---------------------------------------- | ----------------------------------------------------- |
+| `profiles`     | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only** |
+| `scores`       | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**   |
+| `progression`  | **private** to its owner                 | owner only                                            |
+| `achievements` | public — badges can be shown off         | insert under one's own id                             |
 
 > **The security point worth remembering.** Row Level Security filters **rows**,
 > never **columns**. Checking row ownership is therefore not enough: without a

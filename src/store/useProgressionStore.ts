@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { earnedBadgeIds } from '@/features/progression/badges'
+import type { Scoreboard } from '@/features/hunt/scoring'
 import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { dayKey } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, dayKey, type PuzzleProgress } from '@/features/puzzle/dailySet'
 
 export type ActivityKind = 'battle' | 'puzzle' | 'hunt' | 'coach'
 
@@ -63,6 +64,10 @@ export interface ProgressionSnapshot {
   xp: number
   stats: ProgressionStats
   unlockedBadges: string[]
+  /** Best rounds per champion, shown on the Piece Hunt picker and results. */
+  huntScores: Scoreboard
+  /** Daily puzzle streak and totals. */
+  puzzleProgress: PuzzleProgress
 }
 
 interface ProgressionState {
@@ -73,6 +78,14 @@ interface ProgressionState {
   unlockedBadges: string[]
   /** Badges unlocked but not yet shown to the player. */
   pendingBadges: string[]
+  /**
+   * Both of these used to sit in their own localStorage keys, which tied them
+   * to the browser rather than to the player: on a shared device one player
+   * saw another's records. They live here so they follow the account, and are
+   * cleared by the same ownership rules as the rest.
+   */
+  huntScores: Scoreboard
+  puzzleProgress: PuzzleProgress
   /**
    * Whose progression this device currently holds: an account id, or null for
    * a guest. Without it the store cannot tell its own data from the leftovers
@@ -88,9 +101,24 @@ interface ProgressionState {
   acknowledgeBadges: () => void
   /** Replaces the synced fields with an account's server copy on sign-in. */
   hydrate: (snapshot: ProgressionSnapshot) => void
+  setHuntScores: (update: (board: Scoreboard) => Scoreboard) => void
+  setPuzzleProgress: (update: (progress: PuzzleProgress) => PuzzleProgress) => void
   /** Points the store at an account, or at the guest with null. */
   adoptOwner: (ownerId: string | null) => void
   reset: () => void
+}
+
+/**
+ * Removes the pre-account storage keys. Their contents are dropped rather than
+ * adopted, so nothing of unknown provenance is carried into an account.
+ */
+function dropLegacyKeys() {
+  try {
+    window.localStorage.removeItem('chesstrainer.hunt.scores')
+    window.localStorage.removeItem('chesstrainer.puzzle.progress')
+  } catch {
+    // Storage unavailable: the keys are inert anyway, nothing reads them now.
+  }
 }
 
 /** Every progression field at its starting value, ownership aside. */
@@ -102,6 +130,8 @@ function blankProgress() {
     activities: [] as Activity[],
     unlockedBadges: [] as string[],
     pendingBadges: [] as string[],
+    huntScores: {} as Scoreboard,
+    puzzleProgress: EMPTY_PROGRESS,
   }
 }
 
@@ -253,7 +283,12 @@ export const useProgressionStore = create<ProgressionState>()(
 
         acknowledgeBadges: () => set({ pendingBadges: [] }),
 
-        hydrate: ({ xp, stats, unlockedBadges }) =>
+        setHuntScores: (update) => set((state) => ({ huntScores: update(state.huntScores) })),
+
+        setPuzzleProgress: (update) =>
+          set((state) => ({ puzzleProgress: update(state.puzzleProgress) })),
+
+        hydrate: ({ xp, stats, unlockedBadges, huntScores, puzzleProgress }) =>
           // The server copy replaces the synced fields outright, rather than
           // being summed in, so signing in on a second device shows the account
           // as it is and never double counts. Badges arriving this way are
@@ -263,6 +298,8 @@ export const useProgressionStore = create<ProgressionState>()(
             xp,
             stats: { ...EMPTY_STATS, ...stats },
             unlockedBadges,
+            huntScores,
+            puzzleProgress: { ...EMPTY_PROGRESS, ...puzzleProgress },
           }),
 
         adoptOwner: (ownerId) =>
@@ -286,7 +323,7 @@ export const useProgressionStore = create<ProgressionState>()(
     },
     {
       name: 'chesstrainer.progression',
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
         // Records written before progression had an owner carry no way of
         // telling one player's work from another's. Zustand merges them over
@@ -296,7 +333,20 @@ export const useProgressionStore = create<ProgressionState>()(
         // is nothing to disambiguate them with, so the safe reading is to drop
         // them: a signed-in player gets theirs back from the server on the next
         // pull, and only an unclaimed guest total is lost, once.
+        // Before the branches: a version-0 record can sit alongside the old
+        // keys too, and returning early would have left them behind for good.
+        if (version < 2) dropLegacyKeys()
+
         if (version < 1) return { ...blankProgress(), ownerId: null }
+        // Version 1 kept the hunt board and the puzzle streak in localStorage
+        // keys of their own, which were never tied to an account: whatever sits
+        // there could belong to anyone who used this browser. Adopting it would
+        // reintroduce the very leak this ownership work removes, so those keys
+        // are discarded and the records start from nothing.
+        if (version < 2) {
+          const record = persisted as Record<string, unknown>
+          return { ...record, huntScores: {}, puzzleProgress: EMPTY_PROGRESS }
+        }
         return persisted
       },
     },

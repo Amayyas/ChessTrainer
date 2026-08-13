@@ -8,6 +8,7 @@ import {
   scorePuzzle,
   usePuzzleSession,
 } from '@/features/puzzle/usePuzzleSession'
+import { useProgressionStore } from '@/store/useProgressionStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
 
 describe('scorePuzzle', () => {
@@ -27,7 +28,12 @@ describe('scorePuzzle', () => {
 })
 
 describe('usePuzzleSession', () => {
-  beforeEach(() => window.localStorage.clear())
+  beforeEach(() => {
+    window.localStorage.clear()
+    // The puzzle streak lives in the progression store now, and that store is a
+    // module singleton: without this it would carry over between tests.
+    useProgressionStore.getState().reset()
+  })
 
   it('serves a five-puzzle daily series with the solver to move', () => {
     const { result } = renderHook(() => usePuzzleSession())

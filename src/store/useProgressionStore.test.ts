@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { XP_REWARDS, huntXp } from '@/features/progression/levels'
+import { EMPTY_PROGRESS } from '@/features/puzzle/dailySet'
 import { EMPTY_STATS, useProgressionStore } from '@/store/useProgressionStore'
 
 const store = () => useProgressionStore.getState()
@@ -251,5 +252,36 @@ describe('persisted storage migration', () => {
 
     expect(store().xp).toBe(250)
     expect(store().ownerId).toBe('user-a')
+  })
+})
+
+describe('legacy keys are cleared whichever version is migrated', () => {
+  const seedLegacyKeys = () => {
+    window.localStorage.setItem('chesstrainer.hunt.scores', JSON.stringify({ q: [] }))
+    window.localStorage.setItem('chesstrainer.puzzle.progress', JSON.stringify(EMPTY_PROGRESS))
+  }
+  const legacyKeysGone = () =>
+    window.localStorage.getItem('chesstrainer.hunt.scores') === null &&
+    window.localStorage.getItem('chesstrainer.puzzle.progress') === null
+
+  it('clears them when migrating a version-0 record', async () => {
+    // This branch returns early, so it used to leave the keys behind for good.
+    seedLegacyKeys()
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({ state: { xp: 500 }, version: 0 }),
+    )
+    await useProgressionStore.persist.rehydrate()
+    expect(legacyKeysGone()).toBe(true)
+  })
+
+  it('clears them when migrating a version-1 record', async () => {
+    seedLegacyKeys()
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({ state: { xp: 500, ownerId: 'user-a' }, version: 1 }),
+    )
+    await useProgressionStore.persist.rehydrate()
+    expect(legacyKeysGone()).toBe(true)
   })
 })
