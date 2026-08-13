@@ -81,14 +81,21 @@ export default function HuntPage() {
     submitted.current = true
 
     const client = supabase
-    const round = { piece: game.champion, score: game.score, captures: game.captures }
+    // Through the database function rather than a direct insert: the client can
+    // no longer write to `scores` at all, so the round is checked against what
+    // the rules allow before it reaches the leaderboard. The author comes from
+    // the session on the server side, never from here.
     void client
-      .from('scores')
-      .insert({ user_id: session.user.id, ...round })
+      .rpc('submit_hunt_score', {
+        p_piece: game.champion,
+        p_score: game.score,
+        p_captures: game.captures,
+      })
       .then(({ error }) => {
         // A silently dropped score looks like the leaderboard is broken, so the
         // failure is surfaced and a retry is allowed.
         if (error) {
+          console.error('[hunt] score submission refused:', error.message)
           submitted.current = false
           setSubmitFailed(true)
         }

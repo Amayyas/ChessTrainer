@@ -442,22 +442,31 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 
 ### Trust boundary
 
-All gameplay runs in the browser, so the values a client writes to its own rows
-— a hunt `score`, the `xp`, `stats` and `unlocked_badges` in `progression`, an
-`achievements` row — are **asserted by the client**, not computed by the server.
-RLS draws the line it can draw: a player may only ever write rows keyed to their
-own `user_id`, so no one can tamper with **another** account. The `profiles`
-column grant goes one step further, keeping XP and level off the one table the
-leaderboard joins for display.
+All gameplay runs in the browser, so the values a client sends are **asserted by
+the client**, not computed by the server. Two different rules apply, because the
+stakes differ.
 
-Making these values authoritative — proof against a user editing their own
-figures — would require moving the scoring to the server behind a validated
-`SECURITY DEFINER` RPC, which the specification does not ask for: this is a
-single-player training app, and self-inflating one's own dashboard cheats only
-oneself. The worldwide leaderboard shares the same bound; its ranking is only as
-trustworthy as the client-reported score, which is the accepted trade-off for a
-fully client-side engine.
+**The leaderboard is validated.** It is public and competitive, so a forged
+score misleads everyone. The client can no longer insert into `scores` at all:
+the privilege is revoked and the only way in is `submit_hunt_score()`, a
+`SECURITY DEFINER` function that takes the author from the session — never from
+its arguments — and refuses what the rules cannot produce. Every point comes
+from a capture, and no capture exceeds the queen's 90 at the ×4 combo cap, so a
+round is rejected when `score > captures × 360`. Captures are capped per round,
+and submissions per hour, so the table cannot be flooded either.
 
+This does not make the game unforgeable — the round is played client-side, so
+the server has no independent account of it, and a determined player can still
+report a plausible round they did not play. It moves forging from trivial to
+deliberate, which is the honest ceiling for a browser game.
+
+**Personal progression is not validated.** The `xp`, `stats` and
+`unlocked_badges` on `progression`, and the `achievements` rows, remain
+client-asserted. RLS keeps each player inside their own rows, so nobody can
+touch **another** account, and the `profiles` column grant keeps XP and level
+off the table the leaderboard joins. Beyond that, inflating one's own dashboard
+cheats only oneself, and guarding it would cost the same machinery for none of
+the benefit.
 ---
 
 ## Reading the relationships
