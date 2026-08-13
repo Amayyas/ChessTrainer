@@ -333,6 +333,10 @@ export const useProgressionStore = create<ProgressionState>()(
         // is nothing to disambiguate them with, so the safe reading is to drop
         // them: a signed-in player gets theirs back from the server on the next
         // pull, and only an unclaimed guest total is lost, once.
+        // Before the branches: a version-0 record can sit alongside the old
+        // keys too, and returning early would have left them behind for good.
+        if (version < 2) dropLegacyKeys()
+
         if (version < 1) return { ...blankProgress(), ownerId: null }
         // Version 1 kept the hunt board and the puzzle streak in localStorage
         // keys of their own, which were never tied to an account: whatever sits
@@ -341,7 +345,6 @@ export const useProgressionStore = create<ProgressionState>()(
         // are discarded and the records start from nothing.
         if (version < 2) {
           const record = persisted as Record<string, unknown>
-          dropLegacyKeys()
           return { ...record, huntScores: {}, puzzleProgress: EMPTY_PROGRESS }
         }
         return persisted

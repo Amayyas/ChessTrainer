@@ -39,17 +39,35 @@ function isCount(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0
 }
 
+/** A timestamp the results screen can format; anything else renders as a date error. */
+function isTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value))
+}
+
+/** A calendar day as the puzzle streak writes it, YYYY-MM-DD. */
+function isDayKey(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && isTimestamp(value)
+}
+
 /** The hunt board is a JSON document too, so it gets the same guarded read. */
 const CHAMPIONS = ['q', 'r', 'b', 'n'] as const
 
-function isHuntEntry(value: unknown): value is HuntScoreEntry {
+/**
+ * The entry has to name the champion it is filed under, not merely a valid one:
+ * the board is read by key, so a rook round sitting under `q` would be shown as
+ * a queen record.
+ */
+function isHuntEntry(
+  value: unknown,
+  champion: (typeof CHAMPIONS)[number],
+): value is HuntScoreEntry {
   if (typeof value !== 'object' || value === null) return false
   const entry = value as Record<string, unknown>
   return (
-    CHAMPIONS.includes(entry.champion as (typeof CHAMPIONS)[number]) &&
+    entry.champion === champion &&
     isCount(entry.score) &&
     isCount(entry.captures) &&
-    typeof entry.playedAt === 'string'
+    isTimestamp(entry.playedAt)
   )
 }
 
@@ -58,7 +76,11 @@ function normaliseHuntScores(value: unknown): Scoreboard {
   const board: Scoreboard = {}
   for (const champion of CHAMPIONS) {
     const entries = (value as Record<string, unknown>)[champion]
-    if (Array.isArray(entries)) board[champion] = entries.filter(isHuntEntry)
+    if (Array.isArray(entries)) {
+      board[champion] = entries.filter((entry): entry is HuntScoreEntry =>
+        isHuntEntry(entry, champion),
+      )
+    }
   }
   return board
 }
@@ -67,7 +89,7 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   if (typeof value !== 'object' || value === null) return { ...EMPTY_PROGRESS }
   const raw = value as Record<string, unknown>
   return {
-    lastSolvedDay: typeof raw.lastSolvedDay === 'string' ? raw.lastSolvedDay : null,
+    lastSolvedDay: isDayKey(raw.lastSolvedDay) ? raw.lastSolvedDay : null,
     streak: isCount(raw.streak) ? raw.streak : 0,
     bestStreak: isCount(raw.bestStreak) ? raw.bestStreak : 0,
     totalSolved: isCount(raw.totalSolved) ? raw.totalSolved : 0,

@@ -195,3 +195,40 @@ describe('counts read from an untrusted document', () => {
     expect(read({ totalSolved: 7 }).totalSolved).toBe(7)
   })
 })
+
+describe('dates and champion keys in a stored hunt board', () => {
+  const round = (over: Record<string, unknown> = {}) => ({
+    champion: 'q',
+    score: 100,
+    captures: 4,
+    playedAt: '2026-08-12T10:00:00Z',
+    ...over,
+  })
+
+  it('drops an entry filed under a champion it does not name', () => {
+    // The board is read by key, so a rook round under 'q' would otherwise be
+    // shown as a queen record.
+    const board = rowToSnapshot(
+      row({ hunt_scores: { q: [round({ champion: 'r' }), round()] } }),
+    ).huntScores
+    expect(board.q).toHaveLength(1)
+    expect(board.q?.[0]?.champion).toBe('q')
+  })
+
+  it('drops an entry whose date could not be shown', () => {
+    const board = (playedAt: unknown) =>
+      rowToSnapshot(row({ hunt_scores: { q: [round({ playedAt })] } })).huntScores
+    expect(board('pas une date')).toEqual({ q: [] })
+    expect(board(20260812)).toEqual({ q: [] })
+    expect(board('2026-08-12T10:00:00Z').q).toHaveLength(1)
+  })
+
+  it('clears a last solved day that is not a calendar day', () => {
+    const read = (lastSolvedDay: unknown) =>
+      rowToSnapshot(row({ puzzle_progress: { lastSolvedDay } })).puzzleProgress.lastSolvedDay
+    expect(read('hier')).toBeNull()
+    expect(read('2026-13-45')).toBeNull()
+    expect(read('2026-08-12T10:00:00Z')).toBeNull()
+    expect(read('2026-08-12')).toBe('2026-08-12')
+  })
+})
