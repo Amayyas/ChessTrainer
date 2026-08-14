@@ -42,6 +42,15 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      <p className="mb-3 flex flex-wrap gap-x-3 gap-y-1 px-3 text-xs text-ivoire/50">
+        <NavLink to={ROUTES.legal} className="hover:text-ivoire/80">
+          Mentions légales
+        </NavLink>
+        <NavLink to={ROUTES.privacy} className="hover:text-ivoire/80">
+          Confidentialité
+        </NavLink>
+      </p>
+
       {/* Nothing is shown until the stored session has been read, so the footer
           does not flash "Se connecter" at someone who already is. */}
       {isReady &&
