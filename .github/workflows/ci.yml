@@ -22,8 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 18 is the local development version, 20 the migration target.
-        node: [18, 20]
+        # 22 is the baseline the project requires, 24 the next LTS it has to
+        # keep working on. 18 and 20 are both past end of life.
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,24 @@ jobs:
       - name: Types
         run: npm run typecheck
 
+  # Branch protection requires status checks by name, and a matrix job's name
+  # carries the version — so bumping Node renames the checks and leaves the rule
+  # waiting for names that will never report again. That is what blocked this
+  # very pull request. This job's name does not move, so it is the one to
+  # require, and the matrix underneath is free to change.
+  quality-matrix:
+    name: Quality
+    runs-on: ubuntu-latest
+    needs: quality
+    # Without this, a failing matrix skips this job instead of failing it, and a
+    # skipped required check blocks the merge for the wrong reason.
+    if: always()
+    steps:
+      - name: Report the matrix result
+        run: |
+          echo "Quality matrix: ${{ needs.quality.result }}"
+          [ "${{ needs.quality.result }}" = "success" ]
+
   test:
     name: Unit tests
     runs-on: ubuntu-latest
@@ -51,7 +70,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -75,7 +94,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -102,7 +121,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
