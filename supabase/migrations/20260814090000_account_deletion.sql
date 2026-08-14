@@ -28,5 +28,15 @@ begin
 end;
 $$;
 
-revoke execute on function public.delete_my_account() from anon;
+-- From PUBLIC, not merely from anon: Postgres grants EXECUTE to PUBLIC on every
+-- new function, and anon is a member of it, so revoking anon alone leaves the
+-- door open. The same applies to the two functions added with the leaderboard
+-- validation, which is why they are corrected here too.
+revoke execute on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
+
+revoke execute on function public.start_hunt_round() from public;
+grant execute on function public.start_hunt_round() to authenticated;
+
+revoke execute on function public.submit_hunt_score(uuid, text, integer, integer) from public;
+grant execute on function public.submit_hunt_score(uuid, text, integer, integer) to authenticated;

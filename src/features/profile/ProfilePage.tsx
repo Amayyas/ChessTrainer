@@ -30,7 +30,8 @@ export default function ProfilePage() {
   const updateProfile = useAuthStore((state) => state.updateProfile)
   const signOut = useAuthStore((state) => state.signOut)
   const deleteAccount = useAuthStore((state) => state.deleteAccount)
-  const authError = useAuthStore((state) => state.error)
+  const deleteError = useAuthStore((state) => state.deleteError)
+  const clearDeleteError = useAuthStore((state) => state.clearDeleteError)
 
   // Deleting is irreversible and cascades, so it asks for the username to be
   // typed out: a confirm dialog is dismissed by reflex, this cannot be.
@@ -123,7 +124,10 @@ export default function ProfilePage() {
                   {!confirmingDelete ? (
                     <button
                       type="button"
-                      onClick={() => setConfirmingDelete(true)}
+                      onClick={() => {
+                        clearDeleteError()
+                        setConfirmingDelete(true)
+                      }}
                       className="text-sm text-red-700 underline underline-offset-2 hover:text-red-800"
                     >
                       Supprimer mon compte
@@ -145,9 +149,9 @@ export default function ProfilePage() {
                           className="mt-1 h-10 w-full rounded-lg border border-red-300 bg-white px-3 text-ebene outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                         />
                       </label>
-                      {authError && (
+                      {deleteError && (
                         <p role="alert" className="text-sm font-medium text-red-800">
-                          {authError}
+                          {deleteError}
                         </p>
                       )}
                       <div className="flex flex-wrap gap-2">
@@ -157,6 +161,7 @@ export default function ProfilePage() {
                           onClick={() => {
                             setConfirmingDelete(false)
                             setTypedUsername('')
+                            clearDeleteError()
                           }}
                         >
                           Annuler

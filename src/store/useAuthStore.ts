@@ -8,6 +8,12 @@ interface AuthState {
   session: Session | null
   profile: Profile | null
   error: string | null
+  /**
+   * Kept apart from `error`: the deletion panel would otherwise open showing a
+   * stale failure from an avatar change, and keep showing its own after being
+   * cancelled and reopened.
+   */
+  deleteError: string | null
 
   initialise: () => () => void
   signUp: (input: { email: string; password: string; username: string }) => Promise<boolean>
@@ -17,6 +23,7 @@ interface AuthState {
   updateProfile: (patch: { username?: string; avatar_piece?: AvatarPiece }) => Promise<boolean>
   /** Erases the account and everything filed under it. Irreversible. */
   deleteAccount: () => Promise<boolean>
+  clearDeleteError: () => void
   clearError: () => void
 }
 
@@ -41,6 +48,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   session: null,
   profile: null,
   error: null,
+  deleteError: null,
 
   initialise: () => {
     // Captured once so the closures below keep the non-null narrowing.
@@ -141,12 +149,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   deleteAccount: async () => {
     if (!supabase) return false
-    set({ error: null })
+    set({ deleteError: null })
     // The server takes the account from the session and cascades the delete,
     // so nothing is left behind and nobody can aim this at another account.
     const { error } = await supabase.rpc('delete_my_account')
     if (error) {
-      set({ error: 'La suppression a échoué. Réessayez dans un instant.' })
+      set({ deleteError: 'La suppression a échoué. Réessayez dans un instant.' })
       return false
     }
     // The account is gone; the session that outlived it would only produce
@@ -177,4 +185,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  clearDeleteError: () => set({ deleteError: null }),
 }))
