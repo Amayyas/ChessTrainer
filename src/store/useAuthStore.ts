@@ -148,19 +148,41 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   deleteAccount: async () => {
-    if (!supabase) return false
+    const client = supabase
+    const userId = get().session?.user.id
+    if (!client || !userId) return false
     set({ deleteError: null })
     // The server takes the account from the session and cascades the delete,
     // so nothing is left behind and nobody can aim this at another account.
-    const { error } = await supabase.rpc('delete_my_account')
+    const { error } = await client.rpc('delete_my_account')
+
     if (error) {
+      // A rejection and a reply lost on the way back look identical from here,
+      // and the second one means the account is already gone. Telling someone
+      // their erasure failed when it succeeded is the wrong way round, so ask
+      // the database which it was: the profile row goes with the account.
+      const { data, error: lookupFailed } = await client
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (!lookupFailed && data === null) {
+        await client.auth.signOut()
+        set({ session: null, profile: null })
+        return true
+      }
+
+      // Either the account is still there, or the network is down and there is
+      // no honest answer. Report the failure; a retry is harmless, since
+      // deleting an account that has already gone succeeds quietly.
       set({ deleteError: 'La suppression a échoué. Réessayez dans un instant.' })
       return false
     }
     // The account is gone; the session that outlived it would only produce
     // confusing failures, so it goes too. The progression store clears itself
     // when it sees the session disappear.
-    await supabase.auth.signOut()
+    await client.auth.signOut()
     set({ session: null, profile: null })
     return true
   },
