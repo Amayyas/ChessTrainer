@@ -1,9 +1,9 @@
 # Dependabot keeps dependencies current without drowning the repo in pull
 # requests. Two deliberate choices fit this project:
 #
-#  - Major updates are ignored. The stack is pinned for Node 18 (React Router 6,
-#    Vite 5, Tailwind 3...), so a major bump would break CI on every run; those
-#    are handled by hand, when the Node baseline moves.
+#  - Major updates are ignored. They change build and test tooling wholesale, so
+#    they are taken deliberately rather than opened automatically — the move to
+#    Node 22 is what unblocks the ones that were held back.
 #  - Minor and patch updates are grouped into a single weekly PR per ecosystem,
 #    so the strict CI (five checks, tests, bundle budget) vets them together
 #    rather than one noisy PR at a time.

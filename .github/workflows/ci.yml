@@ -22,8 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 18 is the local development version, 20 the migration target.
-        node: [18, 20]
+        # 22 is the baseline the project requires, 24 the next LTS it has to
+        # keep working on. 18 and 20 are both past end of life.
+        node: [22, 24]
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +52,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -75,7 +76,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -102,7 +103,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci

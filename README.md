@@ -25,7 +25,12 @@ Dependencies annotated with a module are added in that module, not before.
 
 ## Requirements
 
-Node.js 18 or later, and npm.
+Node.js 22 or later, and npm.
+
+Node 18 and 20 have both reached end of life — 20 in April 2026 — so 22 is the
+oldest release still receiving security fixes. Supabase's client already asks
+for it, and the current Vite and Vitest majors need 20.19 at minimum. `.nvmrc`
+pins the version, so `nvm use` picks it up.
 
 ## Install and run
 
@@ -155,7 +160,7 @@ is green.
 
 | Job                      | Contents                                                   |
 | ------------------------ | ---------------------------------------------------------- |
-| Quality (Node 18 and 20) | `format:check`, `lint`, `typecheck`                        |
+| Quality (Node 22 and 24) | `format:check`, `lint`, `typecheck`                        |
 | Unit tests               | Vitest + coverage, published as an artifact                |
 | Build & bundle budget    | Production build, then size-budget check                   |
 | Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
