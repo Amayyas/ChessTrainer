@@ -15,6 +15,8 @@ interface AuthState {
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (patch: { username?: string; avatar_piece?: AvatarPiece }) => Promise<boolean>
+  /** Erases the account and everything filed under it. Irreversible. */
+  deleteAccount: () => Promise<boolean>
   clearError: () => void
 }
 
@@ -135,6 +137,24 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (!supabase) return
     await supabase.auth.signOut()
     set({ session: null, profile: null })
+  },
+
+  deleteAccount: async () => {
+    if (!supabase) return false
+    set({ error: null })
+    // The server takes the account from the session and cascades the delete,
+    // so nothing is left behind and nobody can aim this at another account.
+    const { error } = await supabase.rpc('delete_my_account')
+    if (error) {
+      set({ error: 'La suppression a échoué. Réessayez dans un instant.' })
+      return false
+    }
+    // The account is gone; the session that outlived it would only produce
+    // confusing failures, so it goes too. The progression store clears itself
+    // when it sees the session disappear.
+    await supabase.auth.signOut()
+    set({ session: null, profile: null })
+    return true
   },
 
   updateProfile: async (patch) => {
