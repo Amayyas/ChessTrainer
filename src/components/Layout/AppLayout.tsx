@@ -1,9 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useLocation, useOutlet } from 'react-router-dom'
+import { Link, useLocation, useOutlet } from 'react-router-dom'
 import BottomBar from '@/components/Layout/BottomBar'
 import Sidebar from '@/components/Layout/Sidebar'
 import SkipLink from '@/components/Layout/SkipLink'
 import { pageTransition, pageVariants } from '@/lib/motion'
+import { ROUTES } from '@/routes'
 
 export default function AppLayout() {
   const location = useLocation()
@@ -31,6 +32,17 @@ export default function AppLayout() {
               {outlet}
             </motion.div>
           </AnimatePresence>
+
+          {/* The sidebar holds these on desktop, but it is hidden below md and
+              a legal notice has to be reachable from every screen. */}
+          <p className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-ardoise md:hidden">
+            <Link to={ROUTES.legal} className="underline underline-offset-2">
+              Mentions légales
+            </Link>
+            <Link to={ROUTES.privacy} className="underline underline-offset-2">
+              Confidentialité
+            </Link>
+          </p>
         </div>
       </main>
     </div>

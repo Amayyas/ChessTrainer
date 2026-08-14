@@ -21,6 +21,8 @@ const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'))
 const NotFoundPage = lazy(() => import('@/features/NotFoundPage'))
+const LegalPage = lazy(() => import('@/features/legal/LegalPage'))
+const PrivacyPage = lazy(() => import('@/features/legal/PrivacyPage'))
 
 export default function App() {
   const initialise = useAuthStore((state) => state.initialise)
@@ -98,6 +100,22 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <ProfilePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.legal}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <LegalPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.privacy}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <PrivacyPage />
             </Suspense>
           }
         />

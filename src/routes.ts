@@ -9,6 +9,8 @@ export const ROUTES = {
   profile: '/profile',
   login: '/login',
   register: '/register',
+  legal: '/mentions-legales',
+  privacy: '/confidentialite',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]
