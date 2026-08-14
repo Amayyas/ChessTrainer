@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
@@ -28,6 +29,14 @@ export default function ProfilePage() {
   const authProfile = useAuthStore((state) => state.profile)
   const updateProfile = useAuthStore((state) => state.updateProfile)
   const signOut = useAuthStore((state) => state.signOut)
+  const deleteAccount = useAuthStore((state) => state.deleteAccount)
+  const authError = useAuthStore((state) => state.error)
+
+  // Deleting is irreversible and cascades, so it asks for the username to be
+  // typed out: a confirm dialog is dismissed by reflex, this cannot be.
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [typedUsername, setTypedUsername] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const progress = levelFromXp(xp)
   const winRate =
@@ -109,6 +118,64 @@ export default function ProfilePage() {
                 <Button variant="outline" size="sm" onClick={() => void signOut()}>
                   Se déconnecter
                 </Button>
+
+                <div className="mt-2 border-t border-ebene/10 pt-4">
+                  {!confirmingDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(true)}
+                      className="text-sm text-red-700 underline underline-offset-2 hover:text-red-800"
+                    >
+                      Supprimer mon compte
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-3 rounded-xl bg-red-50 p-3">
+                      <p className="text-sm text-red-800">
+                        Cette action est <strong>définitive</strong>. Votre compte, vos scores du
+                        classement, votre progression et vos badges seront effacés. Il n'y a pas de
+                        retour en arrière.
+                      </p>
+                      <label className="text-sm text-red-800">
+                        Saisissez <strong>{authProfile.username}</strong> pour confirmer :
+                        <input
+                          type="text"
+                          value={typedUsername}
+                          onChange={(event) => setTypedUsername(event.target.value)}
+                          autoComplete="off"
+                          className="mt-1 h-10 w-full rounded-lg border border-red-300 bg-white px-3 text-ebene outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        />
+                      </label>
+                      {authError && (
+                        <p role="alert" className="text-sm font-medium text-red-800">
+                          {authError}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setConfirmingDelete(false)
+                            setTypedUsername('')
+                          }}
+                        >
+                          Annuler
+                        </Button>
+                        <button
+                          type="button"
+                          disabled={typedUsername !== authProfile.username || isDeleting}
+                          onClick={() => {
+                            setIsDeleting(true)
+                            void deleteAccount().finally(() => setIsDeleting(false))
+                          }}
+                          className="inline-flex h-9 items-center rounded-xl bg-red-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {isDeleting ? 'Suppression…' : 'Supprimer définitivement'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
