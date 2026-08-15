@@ -1,9 +1,26 @@
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
+import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig({
-  plugins: [react()],
+/**
+ * Absolute URLs for the social preview tags.
+ *
+ * Scrapers do not run the app, so these have to be in the served HTML rather
+ * than set from React. The site has no domain yet: when VITE_SITE_URL is unset
+ * the placeholder collapses to nothing and the paths stay relative, which is
+ * degraded but valid — rather than shipping a literal `%VITE_SITE_URL%`.
+ */
+function siteUrl(mode: string): Plugin {
+  const value = (loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL ?? '').replace(/\/$/, '')
+  return {
+    name: 'site-url',
+    transformIndexHtml: (html) => html.split('__SITE_URL__').join(value),
+  }
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), siteUrl(mode)],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -38,4 +55,4 @@ export default defineConfig({
       ],
     },
   },
-})
+}))

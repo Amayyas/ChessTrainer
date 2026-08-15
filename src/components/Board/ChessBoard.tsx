@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { PromotionPieceOption, Square } from 'react-chessboard/dist/chessboard/types'
 import type { PieceSymbol } from '@/utils/chess'
+import { board } from '@/lib/design-tokens'
 
 export interface ChessBoardProps {
   fen: string
@@ -21,17 +22,6 @@ export interface ChessBoardProps {
   /** Overlay arrows, e.g. the coach best-move suggestion. */
   arrows?: Array<[Square, Square, string?]>
 }
-
-// Board colours derived from the palette (spec section 4.1): ivory light squares,
-// slate dark squares — both keep the SVG pieces legible.
-const LIGHT_SQUARE = '#EDE6D8'
-const DARK_SQUARE = '#4A4A5A'
-const HIGHLIGHT_LAST = 'rgba(201, 168, 76, 0.42)'
-const HIGHLIGHT_SELECTED = 'rgba(201, 168, 76, 0.55)'
-const HIGHLIGHT_CHECK = 'rgba(220, 38, 38, 0.5)'
-const TARGET_DOT = 'radial-gradient(circle, rgba(26,26,46,0.3) 22%, transparent 26%)'
-const CAPTURE_RING =
-  'radial-gradient(circle, transparent 55%, rgba(26,26,46,0.3) 56%, rgba(26,26,46,0.3) 62%, transparent 63%)'
 
 /**
  * Reusable board (spec module M3): react-chessboard styled with the app palette,
@@ -151,19 +141,19 @@ export default function ChessBoard({
     const styles: Record<string, Record<string, string>> = {}
 
     if (lastMove) {
-      styles[lastMove.from] = { backgroundColor: HIGHLIGHT_LAST }
-      styles[lastMove.to] = { backgroundColor: HIGHLIGHT_LAST }
+      styles[lastMove.from] = { backgroundColor: board.lastMove }
+      styles[lastMove.to] = { backgroundColor: board.lastMove }
     }
     // Distinguish capture targets (ring) from empty targets (dot).
     for (const target of targets) {
-      const image = fenHasPieceOn(fen, target) ? CAPTURE_RING : TARGET_DOT
+      const image = fenHasPieceOn(fen, target) ? board.legalCapture : board.legalTarget
       styles[target] = { ...styles[target], backgroundImage: image }
     }
     if (selected) {
-      styles[selected] = { ...styles[selected], backgroundColor: HIGHLIGHT_SELECTED }
+      styles[selected] = { ...styles[selected], backgroundColor: board.selected }
     }
     if (checkSquare) {
-      styles[checkSquare] = { ...styles[checkSquare], backgroundColor: HIGHLIGHT_CHECK }
+      styles[checkSquare] = { ...styles[checkSquare], backgroundColor: board.check }
     }
     return styles
   }, [lastMove, targets, selected, checkSquare, fen])
@@ -187,13 +177,13 @@ export default function ChessBoard({
           promotionToSquare={pendingPromotion?.to ?? undefined}
           onPromotionPieceSelect={handlePromotionSelect}
           customBoardStyle={{ borderRadius: '0' }}
-          customLightSquareStyle={{ backgroundColor: LIGHT_SQUARE }}
-          customDarkSquareStyle={{ backgroundColor: DARK_SQUARE }}
+          customLightSquareStyle={{ backgroundColor: board.lightSquare }}
+          customDarkSquareStyle={{ backgroundColor: board.darkSquare }}
           customSquareStyles={squareStyles}
           // Pass an empty array (not undefined) to clear: react-chessboard keeps
           // the previous arrows when customArrows becomes undefined.
           customArrows={arrows ?? []}
-          customArrowColor="#C9A84C"
+          customArrowColor={board.arrow}
           animationDuration={reduceMotion ? 0 : 200}
           arePremovesAllowed={false}
           id={`board-${turn}`}

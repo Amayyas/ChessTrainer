@@ -8,6 +8,7 @@ import { levelFromXp } from '@/features/progression/levels'
 import { staggerContainer, staggerItem } from '@/lib/motion'
 import { ROUTES, type RoutePath } from '@/routes'
 import { useProgressionStore } from '@/store/useProgressionStore'
+import { brand } from '@/lib/design-tokens'
 
 /**
  * Dashboard (spec section 2.5): progression, the day's challenges, recent
@@ -77,7 +78,7 @@ export default function HomePage() {
   return (
     <div>
       <section className="mb-8 rounded-2xl bg-ebene px-6 py-8 text-ivoire sm:px-10 sm:py-10">
-        <p className="mb-2 font-semibold uppercase tracking-[0.2em] text-or">ChessTrainer AI</p>
+        <p className="mb-2 font-semibold uppercase tracking-[0.2em] text-or">{brand.fullName}</p>
         <h1 className="max-w-2xl font-display text-3xl font-bold leading-tight sm:text-4xl">
           Apprenez les échecs avec un coach intelligent
         </h1>
