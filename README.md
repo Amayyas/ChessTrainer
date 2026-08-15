@@ -25,12 +25,13 @@ Dependencies annotated with a module are added in that module, not before.
 
 ## Requirements
 
-Node.js 22 or later, and npm.
+Node.js 22.12 or later, and npm.
 
 Node 18 and 20 have both reached end of life — 20 in April 2026 — so 22 is the
-oldest release still receiving security fixes. Supabase's client already asks
-for it, and the current Vite and Vitest majors need 20.19 at minimum. `.nvmrc`
-pins the version, so `nvm use` picks it up.
+oldest release still receiving security fixes. The minor matters: Vite 8 and
+puppeteer-core 25 both ask for `>=22.12`, so `22.0` to `22.11` would install but
+not be supported. `.nvmrc` pins the major, so `nvm use` picks up the newest 22.x
+you have.
 
 ## Install and run
 

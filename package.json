@@ -3,7 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "type": "module",
   "scripts": {
@@ -62,7 +62,9 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "puppeteer-core": "^25.7.0",
-    "tmp": "^0.2.4"
+    "@lhci/cli": {
+      "puppeteer-core": "^25.7.0",
+      "tmp": "^0.2.4"
+    }
   }
 }
