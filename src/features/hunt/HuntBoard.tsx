@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { BoardPosition, Piece, Square } from 'react-chessboard/dist/chessboard/types'
 import { useMeasuredWidth } from '@/hooks/useMeasuredWidth'
+import { board } from '@/lib/design-tokens'
 import type { ChampionType, EnemyType } from '@/features/hunt/board'
 
 export interface HuntBoardProps {
@@ -17,12 +18,6 @@ export interface HuntBoardProps {
   interactive?: boolean
   boardWidth?: number
 }
-
-const LIGHT_SQUARE = '#EDE6D8'
-const DARK_SQUARE = '#4A4A5A'
-const CHAMPION_HIGHLIGHT = 'rgba(201, 168, 76, 0.55)'
-const THREAT_HIGHLIGHT = 'rgba(220, 38, 38, 0.55)'
-const TARGET_DOT = 'radial-gradient(circle, rgba(26,26,46,0.3) 22%, transparent 26%)'
 
 /**
  * The arcade board (spec section 2.4). It holds a champion and loose enemies
@@ -60,15 +55,15 @@ export default function HuntBoard({
     // Only empty reachable squares are dotted. Marking capturable enemies would
     // hand the player the next move, which is not the point of the exercise.
     for (const square of moves) {
-      if (!enemies.has(square)) styles[square] = { backgroundImage: TARGET_DOT }
+      if (!enemies.has(square)) styles[square] = { backgroundImage: board.legalTarget }
     }
     for (const square of threats) {
-      styles[square] = { ...styles[square], backgroundColor: THREAT_HIGHLIGHT }
+      styles[square] = { ...styles[square], backgroundColor: board.threat }
     }
     if (championSquare) {
       styles[championSquare] = {
         ...styles[championSquare],
-        backgroundColor: threats.length > 0 ? THREAT_HIGHLIGHT : CHAMPION_HIGHLIGHT,
+        backgroundColor: threats.length > 0 ? board.threat : board.selected,
       }
     }
     return styles
@@ -84,8 +79,8 @@ export default function HuntBoard({
           onSquareClick={(square) => {
             if (interactive) onMove(square)
           }}
-          customLightSquareStyle={{ backgroundColor: LIGHT_SQUARE }}
-          customDarkSquareStyle={{ backgroundColor: DARK_SQUARE }}
+          customLightSquareStyle={{ backgroundColor: board.lightSquare }}
+          customDarkSquareStyle={{ backgroundColor: board.darkSquare }}
           customSquareStyles={squareStyles}
           customBoardStyle={{ borderRadius: '0' }}
           animationDuration={120}

@@ -6,6 +6,7 @@ import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
+import { board } from '@/lib/design-tokens'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Square } from '@/utils/chess'
 
@@ -118,7 +119,7 @@ export default function CoachPage() {
 
   const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
   const arrows = showBestArrow
-    ? ([[insight.bestMove!.from, insight.bestMove!.to, '#C9A84C']] as [Square, Square, string][])
+    ? ([[insight.bestMove!.from, insight.bestMove!.to, board.arrow]] as [Square, Square, string][])
     : undefined
 
   const hint = useMemo(() => {
