@@ -6,7 +6,19 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', 'public/stockfish'] },
+  // supabase/.temp holds artefacts the CLI writes while a local stack runs, and
+  // .lighthouseci the audit reports. Both are generated, both are minified, and
+  // linting them fails the whole run for anyone with a stack up.
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      'public/stockfish',
+      'supabase/.temp',
+      '.lighthouseci',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended, prettier],
