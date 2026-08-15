@@ -3,6 +3,7 @@ import { NAV_ITEMS } from '@/components/Layout/navigation'
 import { AVATAR_GLYPHS } from '@/lib/supabase'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
+import { brand } from '@/lib/design-tokens'
 
 export default function Sidebar() {
   const isReady = useAuthStore((state) => state.isReady)
@@ -13,9 +14,9 @@ export default function Sidebar() {
     <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-white/10 bg-ebene px-4 py-6 md:flex">
       <NavLink to={ROUTES.home} className="mb-8 flex items-center gap-3 px-2">
         <span aria-hidden="true" className="text-3xl text-or">
-          ♞
+          {brand.mark}
         </span>
-        <span className="font-display text-xl font-bold text-ivoire">ChessTrainer</span>
+        <span className="font-display text-xl font-bold text-ivoire">{brand.name}</span>
       </NavLink>
 
       <nav aria-label="Navigation principale" className="flex flex-1 flex-col gap-1">
