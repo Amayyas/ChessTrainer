@@ -20,7 +20,7 @@ export interface HuntBoardProps {
 }
 
 /**
- * The arcade board (spec section 2.4). It holds a champion and loose enemies
+ * The arcade board. It holds a champion and loose enemies
  * rather than a legal chess position, so react-chessboard is driven with a
  * position object instead of a FEN.
  */

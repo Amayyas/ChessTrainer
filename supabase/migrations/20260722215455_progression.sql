@@ -1,4 +1,4 @@
--- ChessTrainer — cross-device progression (specification deliverable 5).
+-- ChessTrainer — cross-device progression.
 --
 -- M10 shipped accounts and the worldwide leaderboard, but the player's XP,
 -- level, badges and statistics still lived only in the browser's localStorage,

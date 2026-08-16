@@ -3,7 +3,7 @@ import type { Color } from '@/utils/chess'
 
 /**
  * Turns a raw Stockfish score into a White-relative evaluation and classifies
- * played moves, following the thresholds of the specification (section 2.1).
+ * played moves against fixed centipawn thresholds.
  */
 
 export interface WhiteEval {
@@ -56,7 +56,7 @@ export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
 
 /**
  * Classifies a played move from how many centipawns it lost against the best
- * move (spec section 2.1): excellent ≤10, good ≤30, inaccuracy ≤80,
+ * move: excellent ≤10, good ≤30, inaccuracy ≤80,
  * mistake ≤200, blunder beyond — or immediately a blunder if it let a forced
  * mate slip.
  */

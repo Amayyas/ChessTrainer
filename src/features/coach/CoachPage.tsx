@@ -20,7 +20,7 @@ const PIECE_NAMES: Record<string, string> = {
 }
 
 /**
- * Coach mode (spec section 2.1): a playable board with live Stockfish analysis —
+ * Coach mode: a playable board with live Stockfish analysis —
  * evaluation bar, best-move arrow, per-move classification, progressive hints,
  * an end-of-game summary and a move-by-move replay.
  */
@@ -31,17 +31,17 @@ export default function CoachPage() {
   const [hintLevel, setHintLevel] = useState(0)
   const [replayPly, setReplayPly] = useState<number | null>(null)
   // Best-move arrow is off by default (play your own move first) but available
-  // on demand, as the specification requires it to be toggleable (section 2.1).
+  // on demand: the arrow is meant to be toggleable, not always on.
   const [showArrow, setShowArrow] = useState(false)
   // "Partie" plays from the start; "Analyse libre" starts from a pasted FEN
-  // (spec section 2.1: play a full game against yourself, or free analysis).
+  // (play a full game against yourself, or analyse freely).
   const [mode, setMode] = useState<'game' | 'analysis'>('game')
   const [fenInput, setFenInput] = useState('')
   const [fenError, setFenError] = useState<string | null>(null)
 
   useEffect(() => setHintLevel(0), [game.fen])
 
-  // A game handed over from the battle mode (spec section 2.2) opens straight
+  // A game handed over from the battle mode opens straight
   // into replay, so it can be reviewed move by move with the annotations.
   const location = useLocation()
   const handedOverPgn = (location.state as { pgn?: string } | null)?.pgn

@@ -1,14 +1,14 @@
 /**
- * Difficulty calibration for the battle mode (spec section 2.2).
+ * Difficulty calibration for the battle mode.
  *
- * The specification asks for UCI_LimitStrength / UCI_Elo (section 3.3), but the
+ * UCI_LimitStrength / UCI_Elo would be the natural choice, but the
  * Stockfish 11 build we ship does not expose either option — it only offers
  * `Skill Level`, `Skill Level Maximum Error` and `Skill Level Probability`.
  * (No Stockfish build reaches 800 Elo through UCI_Elo anyway: its floor is
  * ~1320.) Levels therefore combine those three parameters, plus a search-depth
  * cap on the weakest levels, which is the only way down to novice strength.
  *
- * The Elo figures are the targets from the specification, not measured ratings.
+ * The Elo figures are target strengths, not measured ratings.
  */
 
 export type LevelId = 1 | 2 | 3 | 4 | 5
@@ -16,7 +16,7 @@ export type LevelId = 1 | 2 | 3 | 4 | 5
 export interface EngineLevel {
   id: LevelId
   label: string
-  /** Approximate target strength from the specification. */
+  /** Approximate target strength. */
   elo: number
   /** Stockfish `Skill Level`, 0–20. */
   skill: number
@@ -26,7 +26,7 @@ export interface EngineLevel {
   errorProbability: number
   /** Search depth cap. */
   depth: number
-  /** Simulated thinking time, so moves do not appear instantly (section 2.2). */
+  /** Simulated thinking time, so moves do not appear instantly. */
   minDelayMs: number
   maxDelayMs: number
 }

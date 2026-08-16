@@ -18,7 +18,7 @@ function AccuracyStat({ label, value }: { label: string; value: number | null })
   )
 }
 
-/** End-of-game report (spec section 2.1): accuracy, mistake counts, best move. */
+/** End-of-game report: accuracy, mistake counts, best move. */
 export default function GameSummary({ summary, statusLabel }: GameSummaryProps) {
   return (
     <Card className="flex flex-col gap-4">

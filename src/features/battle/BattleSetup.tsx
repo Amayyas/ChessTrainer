@@ -43,7 +43,7 @@ function OptionButton({
   )
 }
 
-/** Pre-game settings: level, colour and time control (spec section 2.2). */
+/** Pre-game settings: level, colour and time control. */
 export default function BattleSetup({ onStart, disabled = false }: BattleSetupProps) {
   const [levelId, setLevelId] = useState<LevelId>(3)
   const [colorChoice, setColorChoice] = useState<ColorChoice>('white')

@@ -68,7 +68,7 @@ function uciToSquares(uci: string | null): { from: Square; to: Square } | null {
 }
 
 /**
- * Orchestrates Stockfish analysis for the coach (spec section 2.1).
+ * Orchestrates Stockfish analysis for the coach.
  *
  * To classify a move fairly it compares the eval *after the best move* with the
  * eval *after the played move* — both with the opponent to move, so the ~50 cp

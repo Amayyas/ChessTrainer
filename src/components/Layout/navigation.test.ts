@@ -16,7 +16,7 @@ describe('navigation', () => {
     expect(new Set(paths).size).toBe(paths.length)
   })
 
-  it('only exposes the 4 modes and the profile in the bottom bar (spec section 4.3)', () => {
+  it('only exposes the 4 modes and the profile in the bottom bar', () => {
     expect(BOTTOM_BAR_ITEMS.map((item) => item.path)).toEqual([
       ROUTES.coach,
       ROUTES.battle,

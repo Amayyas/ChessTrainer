@@ -17,7 +17,7 @@ export interface Analysis {
 const DEFAULT_SCRIPT_URL = '/stockfish/stockfish.js'
 
 /**
- * Thin wrapper around the Stockfish Web Worker (spec section 3.3). Communicates
+ * Thin wrapper around the Stockfish Web Worker. Communicates
  * over UCI, runs one search at a time (analyses are serialised so their output
  * never interleaves), and keeps the worker alive for reuse.
  */
@@ -45,7 +45,7 @@ export class StockfishEngine {
   }
 
   /**
-   * Applies a UCI option. Used to calibrate playing strength (spec section 2.2);
+   * Applies a UCI option. Used to calibrate playing strength;
    * see engine/levels.ts for why Skill Level replaces UCI_Elo here.
    */
   async setOption(name: string, value: string | number): Promise<void> {
@@ -53,7 +53,7 @@ export class StockfishEngine {
     this.send(`setoption name ${name} value ${value}`)
   }
 
-  /** Calibrates playing strength to a difficulty level (spec section 2.2). */
+  /** Calibrates playing strength to a difficulty level. */
   async configureLevel(level: EngineLevel): Promise<void> {
     await this.setOption('Skill Level', level.skill)
     await this.setOption('Skill Level Maximum Error', level.maxError)

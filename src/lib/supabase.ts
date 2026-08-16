@@ -5,9 +5,9 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 /**
  * Whether a backend is configured. Everything auth- or leaderboard-related is
- * optional: without credentials the app still runs entirely as a guest, which
- * is what section 2.6 asks for ("mode invité autorisé pour tous les modes") and
- * what lets the build and CI work with no secrets at all.
+ * optional: without credentials the app still runs entirely as a guest — every
+ * mode stays open to one — which is also what lets the build and CI run with no
+ * secrets at all.
  */
 export const isSupabaseConfigured = Boolean(url && anonKey)
 
@@ -15,14 +15,14 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url!, anonKey!, {
       auth: {
         persistSession: true,
-        // The JWT refreshes itself client-side (specification section 2.6).
+        // The JWT refreshes itself client-side.
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
     })
   : null
 
-/** The six piece symbols an avatar can be (specification section 2.6). */
+/** The six piece symbols an avatar can be. */
 export const AVATAR_PIECES = ['k', 'q', 'r', 'b', 'n', 'p'] as const
 export type AvatarPiece = (typeof AVATAR_PIECES)[number]
 
@@ -53,7 +53,7 @@ export interface ScoreRow {
 
 /**
  * The account's copy of the progression store, so XP, badges and statistics
- * follow the player across devices (specification deliverable 5). `stats` holds
+ * follow the player across devices. `stats` holds
  * the whole ProgressionStats object as one JSON document.
  */
 export interface ProgressionRow {

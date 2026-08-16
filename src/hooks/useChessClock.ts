@@ -12,7 +12,7 @@ export interface TimeControl {
   incrementMs: number
 }
 
-/** The optional time controls of the specification (section 2.2). */
+/** The optional time controls. */
 export const TIME_CONTROLS: readonly TimeControl[] = [
   { id: 'bullet', label: 'Bullet (1+0)', initialMs: 60_000, incrementMs: 0 },
   { id: 'blitz', label: 'Blitz (5+0)', initialMs: 300_000, incrementMs: 0 },
@@ -53,7 +53,7 @@ export interface UseChessClock {
 const TICK_MS = 100
 
 /**
- * Two-sided chess clock with increment (spec section 2.2). Counts down from
+ * Two-sided chess clock with increment. Counts down from
  * real timestamps rather than tick counts, so it stays accurate if the tab
  * throttles the interval.
  */

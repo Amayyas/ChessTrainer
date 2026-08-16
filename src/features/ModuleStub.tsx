@@ -16,7 +16,7 @@ interface ModuleStubProps {
 export default function ModuleStub({ glyph, title, module, summary }: ModuleStubProps) {
   return (
     <Card className="mx-auto max-w-xl text-center">
-      {/* Ebony medallion: gold on ivory is only 2:1, too low (spec section 4.2, WCAG AA). */}
+      {/* Ebony medallion: gold on ivory is only 2:1, too low (WCAG AA). */}
       <span
         aria-hidden="true"
         className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-ebene text-4xl text-or"

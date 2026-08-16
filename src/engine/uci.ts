@@ -1,5 +1,5 @@
 /**
- * Minimal parser for the Stockfish UCI output lines we rely on (spec section 3.3).
+ * Minimal parser for the Stockfish UCI output lines we rely on.
  * Everything here is pure so it can be unit-tested without a running engine.
  */
 

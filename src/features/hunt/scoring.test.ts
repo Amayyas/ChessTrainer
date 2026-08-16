@@ -25,7 +25,7 @@ describe('nextCombo', () => {
     expect(nextCombo(2, 200)).toBe(3)
   })
 
-  it('never passes the x4 cap of the specification', () => {
+  it('never passes the x4 cap', () => {
     expect(nextCombo(MAX_COMBO, 100)).toBe(MAX_COMBO)
   })
 

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TIME_CONTROLS, formatClock, getTimeControl, useChessClock } from '@/hooks/useChessClock'
 
 describe('TIME_CONTROLS', () => {
-  it('matches the specification list', () => {
+  it('matches the documented list', () => {
     expect(TIME_CONTROLS.map((c) => c.label)).toEqual([
       'Bullet (1+0)',
       'Blitz (5+0)',

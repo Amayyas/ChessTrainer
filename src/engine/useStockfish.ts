@@ -3,9 +3,9 @@ import type { EngineLevel } from '@/engine/levels'
 import { StockfishEngine, type Analysis } from '@/engine/stockfishEngine'
 
 export interface UseStockfishOptions {
-  /** Only boot the engine when true (lazy loading, spec risk mitigation section 06). */
+  /** Only boot the engine when true, so the 5 MB worker loads on demand. */
   enabled?: boolean
-  /** Search depth; the specification recommends 12–18 (section 2.1). */
+  /** Search depth; 12–18 is the useful range here. */
   depth?: number
 }
 
@@ -13,7 +13,7 @@ export interface UseStockfish {
   isReady: boolean
   isAnalyzing: boolean
   analyze: (fen: string, depth?: number) => Promise<Analysis | null>
-  /** Calibrates playing strength for the battle mode (spec section 2.2). */
+  /** Calibrates playing strength for the battle mode. */
   configureLevel: (level: EngineLevel) => Promise<void>
 }
 

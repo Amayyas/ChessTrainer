@@ -25,7 +25,7 @@ describe('levelFromXp', () => {
     }
   })
 
-  it('never passes the level cap of the specification', () => {
+  it('never passes the level cap', () => {
     const capped = levelFromXp(totalXpForLevel(MAX_LEVEL) + 100_000)
     expect(capped.level).toBe(MAX_LEVEL)
     expect(capped.isMaxLevel).toBe(true)

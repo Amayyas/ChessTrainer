@@ -15,7 +15,7 @@ function formatDuration(ms: number): string {
 }
 
 /**
- * Puzzle mode (spec section 2.3): a daily series of tactical positions with
+ * Puzzle mode: a daily series of tactical positions with
  * real-time validation, progressive hints, scoring and a daily streak.
  */
 export default function PuzzlePage() {
@@ -100,7 +100,7 @@ export default function PuzzlePage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="mx-auto w-full max-w-[560px] self-start">
-          {/* Green on a correct move, red on a wrong one (spec section 2.3). */}
+          {/* Green on a correct move, red on a wrong one. */}
           <div
             className={cn(
               'rounded-md ring-4 transition-colors duration-200',

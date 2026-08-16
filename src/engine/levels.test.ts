@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ENGINE_LEVELS, getLevel, thinkingDelay } from '@/engine/levels'
 
 describe('ENGINE_LEVELS', () => {
-  it('offers the five levels of the specification', () => {
+  it('offers five calibrated levels', () => {
     expect(ENGINE_LEVELS).toHaveLength(5)
     expect(ENGINE_LEVELS.map((level) => level.elo)).toEqual([800, 1000, 1300, 1700, 2200])
     expect(ENGINE_LEVELS.map((level) => level.label)).toEqual([

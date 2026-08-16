@@ -3,9 +3,9 @@
  *
  * Generated and verified by scripts/generate-puzzles.mjs: every solution is
  * Stockfish's own best line, kept only when it is decisively better than the
- * second-best move, so a correct answer can never be marked wrong. The
- * specification's Lichess import is replaced by this bundled set, the fallback
- * its own risk section allows.
+ * second-best move, so a correct answer can never be marked wrong. Bundling
+ * them keeps the puzzles offline, deterministic and free of a runtime
+ * dependency on an external database.
  *
  * DO NOT EDIT BY HAND — regenerate with the script.
  */

@@ -1,8 +1,8 @@
 /**
  * Bundle size guard.
  *
- * The specification rates "Stockfish bundle above 5 MB" as a highly probable risk
- * (section 06), with lazy loading of the worker as the mitigation. This script fails
+ * Shipping a chess engine to the browser makes bundle weight a standing risk,
+ * with lazy loading of the worker as the mitigation. This script fails
  * if the initial bundle exceeds its budget, so a regression shows up on the PR that
  * introduces it rather than at delivery time.
  *

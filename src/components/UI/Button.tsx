@@ -7,7 +7,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  // Contrast pairs verified against WCAG AA (spec section 4.2).
+  // Contrast pairs verified against WCAG AA.
   primary: 'bg-or text-ebene hover:bg-or-light shadow-gold',
   secondary: 'bg-ebene text-ivoire hover:bg-ebene-light',
   ghost: 'bg-transparent text-ebene hover:bg-ebene/5',
@@ -29,7 +29,7 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref' | 'ch
 }
 
 /**
- * Design-system button (spec section M2). Wraps a native <button> so type,
+ * Design-system button. Wraps a native <button> so type,
  * disabled and every ARIA attribute pass straight through.
  */
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

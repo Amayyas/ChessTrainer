@@ -8,7 +8,7 @@ const stats = (overrides: Partial<ProgressionStats> = {}): ProgressionStats => (
 })
 
 describe('BADGES', () => {
-  it('has unique ids and includes the four the specification names', () => {
+  it('has unique ids and includes the four core badges', () => {
     const ids = BADGES.map((badge) => badge.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids).toEqual(

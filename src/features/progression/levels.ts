@@ -1,5 +1,5 @@
 /**
- * Experience and levels (spec section 2.5): XP is earned in every mode and
+ * Experience and levels: XP is earned in every mode and
  * feeds a 1–30 ladder.
  */
 

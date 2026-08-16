@@ -11,7 +11,7 @@ interface AuthLayoutProps {
   footer: ReactNode
 }
 
-/** Shell shared by the sign-in and sign-up screens (spec section 2.6). */
+/** Shell shared by the sign-in and sign-up screens. */
 export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
   const error = useAuthStore((state) => state.error)
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle)

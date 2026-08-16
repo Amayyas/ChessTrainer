@@ -1,5 +1,5 @@
 /**
- * Self-hosted fonts (spec section 4.2): Playfair Display for headings,
+ * Self-hosted fonts: Playfair Display for headings,
  * Inter for body text. Bundled by Vite rather than fetched from a CDN, which
  * keeps the app self-contained and avoids a render-blocking external request.
  * Only the weights actually used are imported, to keep the payload small.

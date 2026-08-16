@@ -1,7 +1,7 @@
--- ChessTrainer — data model of specification section 2.6.
+-- ChessTrainer — initial data model: profiles, scores, puzzles, achievements.
 --
 -- Row Level Security is enabled on every table and no policy is permissive by
--- default: section 06 of the specification rates a misconfigured RLS as a high
+-- default: a misconfigured RLS policy is the highest-consequence mistake
 -- impact risk, so each table states exactly who may read and who may write.
 
 -- ---------------------------------------------------------------- profiles --
@@ -199,5 +199,5 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- --------------------------------------------------------------- realtime --
--- The leaderboard subscribes to score inserts (specification section 2.6).
+-- The leaderboard subscribes to score inserts.
 alter publication supabase_realtime add table public.scores;

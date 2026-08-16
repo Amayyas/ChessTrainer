@@ -57,7 +57,7 @@ const DEFAULT_CONFIG: BattleConfig = {
 }
 
 /**
- * Drives a game against Stockfish (spec section 2.2): calibrated level, chosen
+ * Drives a game against Stockfish: calibrated level, chosen
  * colour, optional clock, engine replies after a simulated think time, and
  * automatic detection of mate, stalemate, draw, timeout and resignation.
  */

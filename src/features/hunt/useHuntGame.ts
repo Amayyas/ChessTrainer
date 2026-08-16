@@ -146,7 +146,7 @@ function moveOneEnemy(state: HuntInternals): void {
 }
 
 /**
- * The arcade round of section 2.4: capture as much as possible in sixty
+ * The arcade round: capture as much as possible in sixty
  * seconds, three lives, combo multiplier, enemies appearing over time.
  *
  * The round lives in a ref driven by one interval rather than in many pieces of

@@ -5,7 +5,7 @@ export type BadgeVariant = 'neutral' | 'gold' | 'success' | 'danger'
 
 const VARIANTS: Record<BadgeVariant, string> = {
   // Gold badges use a gold background with ebony text: gold text on a light
-  // surface only reaches 2.3:1, which fails WCAG AA (spec section 4.2).
+  // surface only reaches 2.3:1, which fails WCAG AA.
   neutral: 'bg-ebene/5 text-ardoise',
   gold: 'bg-or text-ebene',
   success: 'bg-emerald-600 text-white',
@@ -18,7 +18,7 @@ export interface BadgeProps {
   className?: string
 }
 
-/** Small pill used for categories, difficulty and achievements (spec section M2). */
+/** Small pill used for categories, difficulty and achievements. */
 export default function Badge({ variant = 'neutral', children, className }: BadgeProps) {
   return (
     <span

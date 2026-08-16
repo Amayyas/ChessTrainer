@@ -16,7 +16,7 @@ function formatEval(evaluation: WhiteEval): string {
 }
 
 /**
- * Vertical advantage bar (spec section 2.1). The white segment grows with
+ * Vertical advantage bar. The white segment grows with
  * White's winning chances; the numeric evaluation sits on the leading side.
  */
 export default function EvalBar({ evaluation, orientation = 'white', className }: EvalBarProps) {

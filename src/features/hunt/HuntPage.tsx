@@ -24,7 +24,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 /**
- * Piece Hunt (spec section 2.4): capture as many enemies as possible in sixty
+ * Piece Hunt: capture as many enemies as possible in sixty
  * seconds with a single champion, without being taken.
  */
 export default function HuntPage() {

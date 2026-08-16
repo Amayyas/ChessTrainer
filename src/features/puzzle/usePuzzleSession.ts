@@ -14,7 +14,7 @@ import { useProgressionStore } from '@/store/useProgressionStore'
 
 /** Points a flawless puzzle is worth. */
 export const BASE_POINTS = 100
-/** Deducted per hint revealed (spec section 2.3). */
+/** Deducted per hint revealed. */
 export const HINT_COST = 10
 /** Deducted per wrong move. */
 export const ERROR_COST = 15
@@ -73,7 +73,7 @@ const PIECE_NAMES: Record<string, string> = {
 }
 
 /**
- * Runs the daily puzzle series (spec section 2.3): validates each move against
+ * Runs the daily puzzle series: validates each move against
  * the stored solution, plays the opponent's reply, tracks errors, hints and
  * score, and keeps the daily streak.
  */
