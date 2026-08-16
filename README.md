@@ -1,37 +1,64 @@
 # ChessTrainer AI
 
-A web app for chess training, built around artificial intelligence as its personalized
-learning engine. Complete rewrite (v2.0) of the initial school-project version.
+A chess trainer that analyses your games with Stockfish, explains what each move
+was worth, and turns practice into something you actually come back to.
 
-Development follows the project specification, one module at a time. The user interface is in
-French, since the app targets French-speaking learners; the codebase itself is English.
+Every mode is playable without an account. The interface is in French — the app
+targets French-speaking learners — while the codebase is English throughout.
+
+![The AI Coach: an annotated game, a live evaluation and the best move drawn on the board](docs/screenshots/coach.png)
+
+## What it does
+
+**AI Coach** — play both sides and get a running evaluation, a grade for every
+move (excellent, good, inaccuracy, mistake, blunder) from the centipawns it lost
+against the best line, and the best continuation drawn as an arrow. Hints are
+revealed one step at a time, so you can ask for a nudge instead of the answer.
+Finished games can be replayed move by move.
+
+**Battle** — five levels of opposition, labelled 800 to 2200 Elo. Those are
+target strengths, not measured ratings: the Stockfish 11 build shipped here
+exposes `Skill Level` rather than `UCI_Elo`, so the levels combine skill,
+allowed error and a search-depth cap on the weakest ones — which is the only way
+down to genuine novice strength.
+
+**Puzzles** — tactical positions to solve, tracked so you resume where you left
+off.
+
+**Piece Hunt** — an arcade mode: one champion piece, sixty seconds, three lives,
+and a board of enemies that move back. Scores go to a worldwide leaderboard.
+
+**Progression** — experience, levels, daily challenges and achievements across
+every mode, kept locally for guests and synced to your account once you sign in.
+
+<p align="center">
+  <img src="docs/screenshots/hunt.png" width="49%" alt="Piece Hunt: the arcade mode, with the champion highlighted and reachable squares marked" />
+  <img src="docs/screenshots/puzzle.png" width="49%" alt="Puzzle mode" />
+</p>
 
 ## Stack
 
-| Area         | Choice                               |
-| ------------ | ------------------------------------ |
-| UI           | React 18 + TypeScript 5              |
-| Build        | Vite 5                               |
-| Styling      | Tailwind CSS 3                       |
-| Routing      | React Router 6                       |
-| Game logic   | chess.js _(M3)_                      |
-| Board        | react-chessboard _(M3)_              |
-| AI           | Stockfish.js in a Web Worker _(M4)_  |
-| Global state | Zustand                              |
-| Animations   | Framer Motion _(M2)_                 |
-| Backend      | Supabase — Auth + PostgreSQL _(M10)_ |
-
-Dependencies annotated with a module are added in that module, not before.
+| Area         | Choice                           |
+| ------------ | -------------------------------- |
+| UI           | React 18 + TypeScript 5          |
+| Build        | Vite 8                           |
+| Styling      | Tailwind CSS 3                   |
+| Routing      | React Router 7                   |
+| Game logic   | chess.js                         |
+| Board        | react-chessboard                 |
+| Engine       | Stockfish (WASM) in a Web Worker |
+| Global state | Zustand                          |
+| Animations   | Framer Motion                    |
+| Backend      | Supabase — Auth + PostgreSQL     |
+| Tests        | Vitest + Testing Library         |
 
 ## Requirements
 
 Node.js 22.12 or later, and npm.
 
-Node 18 and 20 have both reached end of life — 20 in April 2026 — so 22 is the
-oldest release still receiving security fixes. The minor matters: Vite 8 and
-puppeteer-core 25 both ask for `>=22.12`, so `22.0` to `22.11` would install but
-not be supported. `.nvmrc` pins the major, so `nvm use` picks up the newest 22.x
-you have.
+The minor matters: Vite 8 and puppeteer-core 25 both ask for `>=22.12`, so
+`22.0` to `22.11` would install but not be supported. `.nvmrc` pins the major,
+so `nvm use` picks the newest 22.x you have installed.
 
 ## Install and run
 
@@ -40,14 +67,93 @@ npm install
 npm run dev
 ```
 
-The app is served on http://localhost:5173.
+The app is served on http://localhost:5173, in guest mode, with no further
+setup.
+
+## How it works
+
+### The engine runs in the browser
+
+Stockfish is compiled to WebAssembly and driven over UCI from a Web Worker, so
+analysis never blocks the interface and no position ever leaves the device.
+
+The build is single-threaded on purpose. The threaded build is faster but needs
+`SharedArrayBuffer`, which requires cross-origin isolation (`COOP`/`COEP`)
+— headers that constrain every third-party embed and every asset the page loads.
+For the depths this app searches, the trade was not worth it.
+
+Stockfish is loaded on demand rather than in the initial bundle: opening the
+home page does not download 5 MB of engine.
+
+### The server does not trust the client
+
+The Supabase anon key ships in the browser bundle, as it is meant to. Anything
+the client merely _asserts_ is therefore worthless, which shapes two decisions:
+
+- **Row Level Security on every table**, with column-level grants where a
+  player may edit part of a row but not all of it — you can change your
+  username, not your experience total.
+- **Scores are validated server-side.** A Piece Hunt round is opened by an RPC
+  that stamps it against the server's clock; the score is submitted against that
+  round and checked for plausibility — points per capture, captures per second,
+  minimum duration, rounds per hour. The client cannot insert into `scores` at
+  all.
+
+This bounds cheating and makes it expensive; it does not eliminate it. A
+fabricated round played out at a believable pace remains possible, as do
+multiple accounts.
+
+### Guests are first-class
+
+No mode is behind a login. Progress is kept in `localStorage` and scoped to an
+owner, so signing in adopts your guest progress and signing out does not leak it
+to the next person on the same browser. Only the worldwide leaderboard needs an
+account.
+
+## Architecture
+
+Class diagrams of the engine layer, the game modes, the global state and the
+data model are in [docs/architecture.md](docs/architecture.md).
+
+```
+src/
+├── components/
+│   ├── Board/       # Board, pieces, arrows, highlighting
+│   ├── UI/          # Buttons, cards, bars, badges
+│   └── Layout/      # Navigation, header, containers
+├── features/        # One folder per functional module
+│   ├── coach/       # AI Coach mode
+│   ├── battle/      # AI battle mode
+│   ├── puzzle/      # Puzzle mode
+│   ├── hunt/        # Piece Hunt arcade mode
+│   ├── home/        # Dashboard
+│   ├── profile/     # User profile
+│   ├── auth/        # Sign-in and the route guard
+│   ├── legal/       # Notices and privacy policy
+│   └── leaderboard/ # Global leaderboard
+├── engine/          # Stockfish wrapper (Web Worker)
+├── store/           # Zustand global state
+├── lib/             # Design tokens, Supabase client
+├── hooks/           # Custom React hooks
+├── types/           # Shared types
+└── utils/           # Chess helpers, formatters
+```
+
+The `@/` alias points to `src/`.
+
+### Design tokens
+
+Colours, typefaces and the brand live in
+[`src/lib/design-tokens.ts`](src/lib/design-tokens.ts), which the Tailwind
+config imports. The boards read from it too, since react-chessboard styles
+squares with CSS values rather than class names — so a change of palette is a
+change to one file.
 
 ## Backend setup (optional)
 
 Every mode is playable without a backend: the app detects that no Supabase
-project is configured and runs in guest mode, keeping progress in
-`localStorage`. Only accounts and the worldwide leaderboard need the steps
-below.
+project is configured and runs in guest mode. Only accounts and the worldwide
+leaderboard need the steps below.
 
 ### 1. Create the project
 
@@ -68,8 +174,8 @@ below.
 ### 2. Create the tables
 
 `supabase/migrations/` holds the whole schema: tables, Row Level Security
-policies, privileges, the trigger that creates a profile on sign-up, and the
-realtime publication the leaderboard subscribes to.
+policies, privileges, the score-validation functions, the trigger that creates a
+profile on sign-up, and the realtime publication the leaderboard subscribes to.
 
 The quickest way is the dashboard: open **SQL Editor** and run each file in
 `supabase/migrations/` once, in filename order (they are timestamped, so
@@ -84,7 +190,7 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-Check it worked under **Table Editor**: `profiles`, `scores`,
+Check it worked under **Table Editor**: `profiles`, `scores`, `hunt_rounds`,
 `puzzle_progress`, `achievements` and `progression` should be listed, each
 marked _RLS enabled_.
 
@@ -92,8 +198,8 @@ marked _RLS enabled_.
 
 Under **Authentication > URL Configuration**:
 
-- **Site URL** — `http://localhost:5173` while developing, the deployed
-  address once online.
+- **Site URL** — `http://localhost:5173` while developing, the deployed address
+  once online.
 - **Redirect URLs** — add `http://localhost:5173/profile` and, once deployed,
   `https://<your-domain>/profile`. Sign-in sends the player back to `/profile`
   and this list is matched exactly, so a missing entry fails the sign-in.
@@ -114,8 +220,8 @@ The button is shown regardless; it only works once this is done.
    by Supabase in **Authentication > Providers > Google** — it looks like
    `https://<project-ref>.supabase.co/auth/v1/callback`. Add
    `http://127.0.0.1:54321/auth/v1/callback` as well if you intend to sign in
-   against a local stack; that is where its own auth service listens, and
-   Google rejects any callback not listed here.
+   against a local stack; that is where its own auth service listens, and Google
+   rejects any callback not listed here.
 3. Copy the generated **Client ID** and **Client secret** into that same
    Supabase Google provider panel, enable it, and save.
 
@@ -155,9 +261,9 @@ Run `npm run ci` before every commit: it is the same sequence as the remote CI.
 
 ## Continuous integration
 
-The workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request and
-on every push to `main`. The `main` branch is protected: it only accepts merges from PRs whose CI
-is green.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull
+request and every push to `main`. The `main` branch is protected: it only
+accepts merges from PRs whose CI is green.
 
 | Job                      | Contents                                                   |
 | ------------------------ | ---------------------------------------------------------- |
@@ -168,9 +274,9 @@ is green.
 
 ### Size budgets
 
-Defined in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs), expressed in gzip.
-The specification rates "Stockfish bundle above 5 MB" as a highly probable risk (section 06); this
-guard makes a regression visible on the PR that introduces it.
+Defined in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs),
+expressed in gzip. Shipping a chess engine to the browser makes bundle weight a
+standing risk, so a regression is made visible on the PR that introduces it.
 
 | Category                     | Budget |
 | ---------------------------- | ------ |
@@ -178,16 +284,15 @@ guard makes a regression visible on the PR that introduces it.
 | CSS                          | 50 kB  |
 | Stockfish (loaded on demand) | 5 MB   |
 
-"Initial JavaScript" is read from the Vite build manifest — the entry chunk and its static
-imports only. The lazily loaded route chunks are reported for visibility but do not count against
-it, since the first paint never downloads them.
+"Initial JavaScript" is read from the Vite build manifest — the entry chunk and
+its static imports only. The lazily loaded route chunks are reported for
+visibility but do not count against it, since the first paint never downloads
+them.
 
 ### Lighthouse thresholds
 
-Configured in [`lighthouserc.json`](lighthouserc.json). Performance, accessibility and best
-practices are blocking; SEO only warns. These thresholds serve success criterion 6 of the
-specification ("the app loads in under 5 seconds") and the WCAG AA accessibility requirement of
-section 4.2.
+Configured in [`lighthouserc.json`](lighthouserc.json). Performance,
+accessibility and best practices are blocking; SEO only warns.
 
 | Category       | Threshold | Blocking |
 | -------------- | --------- | -------- |
@@ -196,65 +301,15 @@ section 4.2.
 | Best practices | 90        | Yes      |
 | SEO            | 90        | No       |
 
-## Architecture
+## Privacy
 
-Class diagrams of the engine layer, the game modes, the global state and the data
-model are in [docs/architecture.md](docs/architecture.md).
+Players can export nothing they did not provide and can delete their account
+themselves: `delete_my_account()` removes the auth user, and every table
+cascades from it. The in-app notices live under `/mentions-legales` and
+`/confidentialite`.
 
-Structure mirrors section 3.2 of the specification.
+## Credits
 
-```
-src/
-├── components/
-│   ├── Board/       # Board, pieces, arrows, highlighting
-│   ├── UI/          # Buttons, cards, bars, badges
-│   └── Layout/      # Navigation, header, containers
-├── features/        # Functional modules
-│   ├── coach/       # AI Coach mode
-│   ├── battle/      # AI battle mode
-│   ├── puzzle/      # Puzzle mode
-│   ├── hunt/        # Piece Hunt arcade mode
-│   ├── home/        # Dashboard
-│   ├── profile/     # User profile
-│   └── leaderboard/ # Global leaderboard
-├── engine/          # Stockfish wrapper (Web Worker)
-├── store/           # Zustand global state
-├── hooks/           # Custom React hooks
-├── types/           # Shared types
-└── utils/           # Chess helpers, formatters
-```
-
-`home/`, `profile/` and `leaderboard/` extend the `features/` convention of the specification,
-which only named the 4 game modes explicitly.
-
-The `@/` alias points to `src/`.
-
-## Palette
-
-Defined in section 4.1 of the specification and exposed as Tailwind classes.
-
-| Name  | Hex       | Tailwind class | Usage                   |
-| ----- | --------- | -------------- | ----------------------- |
-| Ebony | `#1A1A2E` | `ebene`        | Backgrounds, authority  |
-| Gold  | `#C9A84C` | `or`           | Accent, CTA, rewards    |
-| Ivory | `#F5F0E8` | `ivoire`       | Main content background |
-| Slate | `#4A4A5A` | `ardoise`      | Secondary text          |
-
-Tailwind color keys keep their French names to match the specification wording.
-
-## Progress
-
-| Module | Title                       | Status  |
-| ------ | --------------------------- | ------- |
-| M1     | Setup & Architecture        | ✅ Done |
-| M2     | Design system & UI          | ✅ Done |
-| M3     | Core Chess Engine           | ✅ Done |
-| M4     | AI Coach mode               | ✅ Done |
-| M5     | AI Battle mode              | ✅ Done |
-| M6     | Puzzle mode                 | ✅ Done |
-| M7     | Piece Hunt mode             | ✅ Done |
-| M8     | Progression system          | ✅ Done |
-| M10    | Auth, Backend & Leaderboard | To do   |
-| M9     | Tests & Optimization        | To do   |
-
-M10 precedes M9, per phase 4 of the plan (section 5.1).
+[Stockfish](https://stockfishchess.org) is licensed under the GPL v3; its
+licence ships alongside the binary in
+[`public/stockfish/`](public/stockfish/LICENSE.txt).
