@@ -1,0 +1,45 @@
+# Netlify deployment.
+#
+# Node comes from .nvmrc, which Netlify reads, so the build runs on the same
+# major as CI and as local development. Keep the version in that one file.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Client-side routing. Without this, a direct hit on /coach — a shared link, a
+# bookmark, a page reload — asks the CDN for a file that does not exist and
+# gets a 404, so the app never starts. Navigating from the home page hides the
+# problem entirely, since React does the routing there.
+#
+# Real files still win: Netlify serves an existing asset before applying a
+# rewrite, so /stockfish/stockfish.js and /og-image.png are unaffected.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Vite fingerprints these filenames, so the name changes whenever the content
+# does and a stale copy can never be served.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The engine is not fingerprinted — the filename is fixed — so it is cached for
+# a day and revalidated, rather than pinned in browsers for a year.
+[[headers]]
+  for = "/stockfish/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+# No cross-origin isolation here on purpose. COOP/COEP would be needed for the
+# threaded Stockfish build, which wants SharedArrayBuffer; this app ships the
+# single-threaded one, and those headers would constrain every asset the page
+# loads for no gain.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
