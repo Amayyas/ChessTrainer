@@ -306,6 +306,35 @@ accessibility and best practices are blocking; SEO only warns.
 | Best practices | 90        | Yes      |
 | SEO            | 90        | No       |
 
+## Deployment
+
+The app is static: `npm run build` produces `dist/`, which is served from a CDN.
+There is no server to run — the database lives in Supabase.
+
+[`netlify.toml`](netlify.toml) holds the whole configuration. The part that
+matters is the rewrite: without it a direct hit on `/coach` asks the CDN for a
+file that does not exist and gets a 404, and only a link shared or reloaded
+would ever reveal it, since navigating from the home page never touches the
+server.
+
+It must be served from the **root of a domain**. The engine is loaded from an
+absolute path (`/stockfish/stockfish.js`), so a deployment under a sub-path
+would leave the coach unable to start unless Vite's `base` is set to match.
+
+Three environment variables are read **at build time** — Vite writes them into
+the bundle rather than reading them at runtime, so changing one means
+rebuilding:
+
+| Variable                 | Effect if missing                               |
+| ------------------------ | ----------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Runs in guest mode: no accounts, no leaderboard |
+| `VITE_SUPABASE_ANON_KEY` | Same                                            |
+| `VITE_SITE_URL`          | Social preview paths stay relative              |
+
+Two settings live outside the repository, and sign-in fails without them: the
+deployed URL has to be added to Supabase's **Redirect URLs**, which are matched
+exactly, and to the authorised origins in the Google Cloud console.
+
 ## Privacy
 
 Players can export nothing they did not provide and can delete their account
