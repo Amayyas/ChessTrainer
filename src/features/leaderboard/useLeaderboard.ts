@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type LeaderboardPeriod = 'today' | 'week' | 'all'
-/** 'all' shows the best score whatever the piece (spec section 2.6). */
+/** 'all' shows the best score whatever the piece. */
 export type LeaderboardPiece = 'all' | 'q' | 'r' | 'b' | 'n'
 
 export interface LeaderboardRow {
@@ -53,7 +53,7 @@ interface ScoreWithProfile {
 }
 
 /**
- * The worldwide Piece Hunt leaderboard (spec section 2.6): top ten per piece or
+ * The worldwide Piece Hunt leaderboard: top ten per piece or
  * overall, filtered by period, and refreshed live through Supabase Realtime.
  */
 export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPeriod) {
@@ -107,7 +107,7 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
     void load()
   }, [load])
 
-  // Live updates: any new score reloads the board (spec section 2.6).
+  // Live updates: any new score reloads the board.
   useEffect(() => {
     if (!supabase) return
     const channel = supabase

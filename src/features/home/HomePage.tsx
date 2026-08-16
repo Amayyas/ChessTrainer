@@ -11,7 +11,7 @@ import { useProgressionStore } from '@/store/useProgressionStore'
 import { brand } from '@/lib/design-tokens'
 
 /**
- * Dashboard (spec section 2.5): progression, the day's challenges, recent
+ * Dashboard: progression, the day's challenges, recent
  * activity, and a way into each mode.
  */
 interface ModeCard {

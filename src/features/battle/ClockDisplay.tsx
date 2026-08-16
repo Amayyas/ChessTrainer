@@ -10,7 +10,7 @@ interface ClockDisplayProps {
 
 const LOW_TIME_MS = 20_000
 
-/** One player's clock (spec section 2.2). */
+/** One player's clock. */
 export default function ClockDisplay({ label, ms, isActive }: ClockDisplayProps) {
   const isLow = ms <= LOW_TIME_MS
 

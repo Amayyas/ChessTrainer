@@ -1,7 +1,7 @@
 import { PUZZLES } from '@/features/puzzle/puzzles'
 import type { Puzzle } from '@/features/puzzle/types'
 
-/** Puzzles in a daily series (spec section 2.3). */
+/** Puzzles in a daily series. */
 export const DAILY_COUNT = 5
 
 /** Local calendar day as YYYY-MM-DD, the key a streak is counted in. */

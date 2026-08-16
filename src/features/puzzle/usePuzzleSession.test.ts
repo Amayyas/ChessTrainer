@@ -16,7 +16,7 @@ describe('scorePuzzle', () => {
     expect(scorePuzzle(0, 0)).toBe(BASE_POINTS)
   })
 
-  it('charges ten points per hint, as the specification states', () => {
+  it('charges ten points per hint', () => {
     expect(scorePuzzle(0, 1)).toBe(BASE_POINTS - HINT_COST)
     expect(scorePuzzle(0, 3)).toBe(BASE_POINTS - 3 * HINT_COST)
   })

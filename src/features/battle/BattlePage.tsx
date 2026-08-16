@@ -10,7 +10,7 @@ import { useProgressionStore } from '@/store/useProgressionStore'
 import { describeStatus } from '@/utils/chess'
 
 /**
- * Battle mode (spec section 2.2): play Stockfish at one of five calibrated
+ * Battle mode: play Stockfish at one of five calibrated
  * levels, with your chosen colour and an optional clock.
  */
 export default function BattlePage() {

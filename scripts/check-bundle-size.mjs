@@ -1,14 +1,14 @@
 /**
  * Bundle size guard.
  *
- * The specification rates "Stockfish bundle above 5 MB" as a highly probable risk
- * (section 06), with lazy loading of the worker as the mitigation. This script fails
+ * Shipping a chess engine to the browser makes bundle weight a standing risk,
+ * with lazy loading of the worker as the mitigation. This script fails
  * if the initial bundle exceeds its budget, so a regression shows up on the PR that
  * introduces it rather than at delivery time.
  *
  * "Initial" means only what the first paint downloads: the entry chunk and the
  * chunks it statically imports, read from Vite's build manifest. The lazily
- * loaded route chunks (M9 code-splitting) and the on-demand Stockfish worker are
+ * loaded route chunks and the on-demand Stockfish worker are
  * reported for visibility but do not count against the initial budget.
  */
 import { gzipSync } from 'node:zlib'

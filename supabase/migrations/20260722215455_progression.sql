@@ -1,6 +1,6 @@
--- ChessTrainer — cross-device progression (specification deliverable 5).
+-- ChessTrainer — cross-device progression.
 --
--- M10 shipped accounts and the worldwide leaderboard, but the player's XP,
+-- Accounts and the worldwide leaderboard shipped first, but the player's XP,
 -- level, badges and statistics still lived only in the browser's localStorage,
 -- so signing in on a second device showed a blank profile. This migration gives
 -- that progression a home on the server, so it follows the account everywhere.
@@ -46,10 +46,10 @@ create policy "a user updates only their own progression"
 grant select, insert, update on public.progression to authenticated;
 
 -- ------------------------------------------------------- retire dead cols --
--- profiles.xp and profiles.level were added in M10 but never read: every level
+-- profiles.xp and profiles.level were added earlier but never read: every level
 -- shown in the app is derived from the progression store, not from these. With
 -- progression now the single source of truth, they would only be a second,
--- always-stale copy of the XP — and the M10 grants deliberately kept them out
+-- always-stale copy of the XP — and the original grants deliberately kept them out
 -- of the client's reach, so nothing could keep them up to date anyway.
 alter table public.profiles drop column if exists xp;
 alter table public.profiles drop column if exists level;

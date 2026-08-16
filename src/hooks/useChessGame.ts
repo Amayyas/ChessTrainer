@@ -35,7 +35,7 @@ export interface UseChessGame {
 }
 
 /**
- * Core chess state (spec module M3). Wraps a single chess.js instance kept in a
+ * Core chess state. Wraps a single chess.js instance kept in a
  * ref, and mirrors it into React state through a version counter so every
  * mutation triggers exactly one re-render, even when a position repeats.
  */

@@ -24,7 +24,7 @@ export interface ChessBoardProps {
 }
 
 /**
- * Reusable board (spec module M3): react-chessboard styled with the app palette,
+ * Reusable board: react-chessboard styled with the app palette,
  * drag-and-drop plus click-to-move, legal-move highlighting, and promotion
  * handled through the built-in dialog for both interaction styles.
  */

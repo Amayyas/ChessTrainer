@@ -1,11 +1,11 @@
 import { CAPTURE_VALUE, type ChampionType, type EnemyType } from '@/features/hunt/board'
 
-/** Captures closer together than this keep the combo alive (spec section 2.4). */
+/** Captures closer together than this keep the combo alive. */
 export const COMBO_WINDOW_MS = 2_500
-/** The specification caps the multiplier at x4. */
+/** The multiplier is capped at x4. */
 export const MAX_COMBO = 4
 
-/** Round length and lives (spec section 2.4). */
+/** Round length and lives. */
 export const ROUND_MS = 60_000
 export const STARTING_LIVES = 3
 /** A capture costs a life and five seconds. */
@@ -40,7 +40,7 @@ export interface HuntScoreEntry {
 
 export type Scoreboard = Partial<Record<ChampionType, HuntScoreEntry[]>>
 
-/** Entries kept per champion (spec section 2.4: top 5 per piece). */
+/** Entries kept per champion (top 5 per piece). */
 export const SCOREBOARD_SIZE = 5
 
 /** Inserts a round into the local table, keeping the best five for that piece. */
@@ -61,7 +61,7 @@ export function personalBest(board: Scoreboard, champion: ChampionType): number 
   return board[champion]?.[0]?.score ?? 0
 }
 
-/** A closing line matched to how the round went (spec section 2.4). */
+/** A closing line matched to how the round went. */
 export function encouragement(score: number, best: number, captures: number): string {
   if (captures === 0) return 'Prenez le temps de repérer les cases atteignables, puis foncez !'
   if (score >= best && score > 0) return 'Nouveau record personnel — impressionnant !'

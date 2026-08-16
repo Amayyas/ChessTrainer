@@ -22,7 +22,7 @@ export interface Challenge {
   progressOf: (counters: DailyCounters) => number
 }
 
-/** The pool the day's challenges are drawn from (spec section 2.5). */
+/** The pool the day's challenges are drawn from. */
 export const CHALLENGE_POOL: readonly Challenge[] = [
   {
     id: 'puzzles-3',

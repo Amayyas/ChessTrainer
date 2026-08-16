@@ -17,7 +17,7 @@ export interface Puzzle {
 
 export type Difficulty = 'debutant' | 'intermediaire' | 'avance'
 
-/** Difficulty bands of the specification (section 2.3). */
+/** Difficulty bands. */
 export function difficultyOf(rating: number): Difficulty {
   if (rating < 1200) return 'debutant'
   if (rating <= 1800) return 'intermediaire'

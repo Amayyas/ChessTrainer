@@ -55,8 +55,8 @@ export interface BattleOutcomeInput {
 }
 
 /**
- * The part of the progression that follows a signed-in account across devices
- * (specification deliverable 5). The daily counters reset each day and the
+ * The part of the progression that follows a signed-in account across devices.
+ * The daily counters reset each day and the
  * activity feed and pending-badge animations are local, so none of them belong
  * to the synced snapshot.
  */
@@ -142,13 +142,13 @@ function activityId(): string {
 }
 
 /**
- * Global progression (spec section 2.5). This is the first genuinely global,
+ * Global progression. This is the first genuinely global,
  * persistent state in the app — XP is fed by all four modes and read by the
  * dashboard — which is what Zustand is listed for in the stack.
  *
  * Persistence is local; for a signed-in account the synced fields are mirrored
  * to Supabase by useProgressionSync, so progression follows the player across
- * devices (specification deliverable 5).
+ * devices.
  */
 export const useProgressionStore = create<ProgressionState>()(
   persist(

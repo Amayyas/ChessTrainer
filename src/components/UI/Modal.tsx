@@ -17,7 +17,7 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
 
 /**
- * Accessible modal dialog (spec section M2, and section 4.2 keyboard navigation).
+ * Accessible modal dialog with keyboard navigation.
  * Renders in a portal, traps focus, closes on Escape or backdrop click, locks
  * body scroll, and restores focus to the previously focused element on close.
  */

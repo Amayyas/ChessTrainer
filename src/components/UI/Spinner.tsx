@@ -15,7 +15,7 @@ export interface SpinnerProps {
 
 /**
  * Loading indicator. Used now by the button, and later as the "spinner during
- * Stockfish computation" mitigation the specification calls for in section 06.
+ * Stockfish computation" state, so a slow search never looks like a freeze.
  * Pure CSS animation so it keeps spinning even while the main thread is busy.
  */
 export default function Spinner({ size = 'md', className, label = 'Chargement' }: SpinnerProps) {

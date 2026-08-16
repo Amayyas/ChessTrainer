@@ -40,7 +40,7 @@ function friendlyError(message: string): string {
 }
 
 /**
- * Authentication and the signed-in profile (spec section 2.6). Every action is
+ * Authentication and the signed-in profile. Every action is
  * a no-op when no backend is configured, so guest play is never blocked.
  */
 export const useAuthStore = create<AuthState>()((set, get) => ({

@@ -1,5 +1,5 @@
 /**
- * Movement rules for the Piece Hunt arcade mode (spec section 2.4).
+ * Movement rules for the Piece Hunt arcade mode.
  *
  * chess.js cannot model this board: there are no kings, the piece sets are
  * arbitrary and the rules are not those of a chess game. These are small pure
@@ -180,9 +180,9 @@ function pick<T>(items: readonly T[], rng: Rng): T | null {
 }
 
 /**
- * A square for a new enemy: free, not the champion's, and — as the
- * specification requires — not an immediate ambush, meaning the newcomer must
- * not already attack the champion.
+ * A square for a new enemy: free, not the champion's, and — as the mode
+ * needs — not an immediate ambush, meaning the newcomer must not already
+ * attack the champion.
  */
 export function spawnSquareFor(
   piece: EnemyType,
@@ -206,7 +206,7 @@ export function spawnSquareFor(
 /**
  * Picks a move for one enemy. It never steps onto the champion: taking it is
  * the job of the danger countdown, which is what gives the player a chance to
- * escape (spec section 2.4). With `huntChance` it prefers a square that puts
+ * escape. With `huntChance` it prefers a square that puts
  * the champion under threat, so the board closes in rather than milling about.
  */
 export function chooseEnemyMove(
@@ -261,7 +261,7 @@ export const CHAMPION_LABELS: Record<ChampionType, string> = {
   n: 'Cavalier',
 }
 
-/** Movement description shown on the champion picker (spec section 2.4). */
+/** Movement description shown on the champion picker. */
 export const CHAMPION_DESCRIPTIONS: Record<ChampionType, string> = {
   q: 'Se déplace en ligne droite et en diagonale, sur toute la longueur du plateau.',
   r: 'Se déplace en ligne droite, horizontalement et verticalement.',

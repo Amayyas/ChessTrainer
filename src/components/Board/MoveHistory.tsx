@@ -50,7 +50,7 @@ function MoveCell({
   )
 }
 
-/** Move list in algebraic notation, paired by move number (spec module M3). */
+/** Move list in algebraic notation, paired by move number. */
 export default function MoveHistory({
   moves,
   qualities,

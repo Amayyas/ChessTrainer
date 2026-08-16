@@ -39,7 +39,7 @@ describe('winningChances', () => {
 })
 
 describe('classifyMove', () => {
-  it('applies the specification thresholds', () => {
+  it('applies the documented thresholds', () => {
     expect(classifyMove(0)).toBe('excellent')
     expect(classifyMove(10)).toBe('excellent')
     expect(classifyMove(25)).toBe('good')

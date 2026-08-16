@@ -9,7 +9,7 @@ import {
 
 /**
  * Pure translation between the progression store and its Supabase row
- * (specification deliverable 5). Kept apart from the effect that talks to the
+ * across devices. Kept apart from the effect that talks to the
  * network so the merge rules can be tested on their own.
  */
 

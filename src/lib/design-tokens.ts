@@ -11,7 +11,7 @@
  * squares and the coach arrow on the old one.
  */
 
-/** The four colours of the visual identity (specification section 4.1). */
+/** The four colours of the visual identity. */
 export const palette = {
   ebene: { DEFAULT: '#1A1A2E', light: '#25253F' },
   or: { DEFAULT: '#C9A84C', light: '#D9BD6B' },

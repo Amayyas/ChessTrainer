@@ -1,5 +1,10 @@
 # ChessTrainer AI
 
+[![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.12-5FA04E)](.nvmrc)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
+[![Licence](https://img.shields.io/badge/licence-all%20rights%20reserved-9E9E9E)](#licence)
+
 A chess trainer that analyses your games with Stockfish, explains what each move
 was worth, and turns practice into something you actually come back to.
 
@@ -308,8 +313,26 @@ themselves: `delete_my_account()` removes the auth user, and every table
 cascades from it. The in-app notices live under `/mentions-legales` and
 `/confidentialite`.
 
+## Security
+
+Found a vulnerability? Please report it privately — see
+[SECURITY.md](SECURITY.md), which also lists what is already known and
+accepted, so you can tell a finding from a design decision.
+
 ## Credits
 
 [Stockfish](https://stockfishchess.org) is licensed under the GPL v3; its
 licence ships alongside the binary in
 [`public/stockfish/`](public/stockfish/LICENSE.txt).
+
+## Licence
+
+Copyright © 2026 Amayyas. **All rights reserved.**
+
+The source is published so it can be read, but no licence is granted: you may
+not copy, modify, redistribute or reuse it without written permission. This is
+the default state of an unlicensed repository, stated here so it is a decision
+rather than an omission — the licensing terms are still being settled.
+
+This applies to the application's own code. Stockfish keeps its own GPL v3
+licence, and the npm dependencies keep theirs.

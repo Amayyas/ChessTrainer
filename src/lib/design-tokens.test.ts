@@ -8,7 +8,7 @@ import { board, brand, danger, fonts, palette } from '@/lib/design-tokens'
  * rather than the change reaching a player's screen.
  */
 describe('design tokens', () => {
-  it('keeps the identity palette of the specification', () => {
+  it('keeps the four colours of the visual identity', () => {
     expect(palette.ebene.DEFAULT).toBe('#1A1A2E')
     expect(palette.or.DEFAULT).toBe('#C9A84C')
     expect(palette.ivoire.DEFAULT).toBe('#F5F0E8')

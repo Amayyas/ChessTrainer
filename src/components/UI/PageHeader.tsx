@@ -9,7 +9,7 @@ export interface PageHeaderProps {
   className?: string
 }
 
-/** Consistent page heading used across the app (spec section M2). */
+/** Consistent page heading used across the app. */
 export default function PageHeader({ title, subtitle, actions, className }: PageHeaderProps) {
   return (
     <header

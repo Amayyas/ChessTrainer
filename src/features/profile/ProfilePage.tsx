@@ -16,9 +16,9 @@ import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
 
 /**
- * Profile (spec section 2.5): level, global statistics and the badge
- * collection. The account details of section 2.6 — pseudonym, avatar, sign-up
- * date — arrive with authentication in M10.
+ * Profile: level, global statistics and the badge
+ * collection. The account details — pseudonym, avatar, sign-up
+ * date — arrive with authentication.
  */
 export default function ProfilePage() {
   const xp = useProgressionStore((state) => state.xp)

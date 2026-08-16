@@ -10,8 +10,8 @@ export interface Badge {
 }
 
 /**
- * Unlockable badges (spec section 2.5). The first four are the examples the
- * specification names; the rest round out the set across the four modes.
+ * Unlockable badges. The first four are the core set; the rest spread the
+ * collection across the four game modes.
  */
 export const BADGES: readonly Badge[] = [
   {

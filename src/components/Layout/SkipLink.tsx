@@ -1,4 +1,4 @@
-/** Keyboard skip link — spec section 4.2, keyboard navigation. */
+/** Keyboard skip link for keyboard navigation. */
 export default function SkipLink() {
   return (
     <a

@@ -8,7 +8,7 @@ interface LevelBarProps {
   className?: string
 }
 
-/** Level and progress towards the next one (spec section 2.5). */
+/** Level and progress towards the next one. */
 export default function LevelBar({ progress, onDark = false, className }: LevelBarProps) {
   const percent = Math.round(progress.ratio * 100)
   const label = progress.isMaxLevel

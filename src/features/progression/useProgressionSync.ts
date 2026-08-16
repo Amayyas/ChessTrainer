@@ -17,8 +17,7 @@ function currentSnapshot(): ProgressionSnapshot {
 
 /**
  * Mirrors the progression store to Supabase for a signed-in account, so XP,
- * badges and statistics follow the player across devices (specification
- * deliverable 5).
+ * badges and statistics follow the player across devices.
  *
  * On sign-in it pulls the account's row; the first time an account has none, it
  * seeds one from whatever the player built as a guest, so that progress is kept

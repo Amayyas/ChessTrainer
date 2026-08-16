@@ -15,7 +15,7 @@ alter table public.progression
   add column if not exists puzzle_progress jsonb not null default '{}'::jsonb;
 
 -- ------------------------------------------------------------ cleanup ------
--- The puzzle_progress table was created in the M10 data model but no client
+-- The puzzle_progress table was created in the initial data model but no client
 -- code ever read or wrote it; the puzzle mode kept its progress locally
 -- instead. Leaving it in place next to the column added above would give the
 -- schema two homes for the same thing, so the unused one goes.

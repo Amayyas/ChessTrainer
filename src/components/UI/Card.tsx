@@ -9,7 +9,7 @@ export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref' | 'childre
 }
 
 /**
- * Surface container of the design system (spec section M2). White surface on the
+ * Surface container of the design system. White surface on the
  * ivory page background, soft elevation. When interactive, it lifts on hover.
  */
 const Card = forwardRef<HTMLDivElement, CardProps>(function Card(

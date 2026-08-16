@@ -62,7 +62,7 @@ function Segmented<T extends string>({
 }
 
 /**
- * Worldwide Piece Hunt leaderboard (spec section 2.6): top ten per piece or
+ * Worldwide Piece Hunt leaderboard: top ten per piece or
  * overall, filtered by period, refreshed live, with the signed-in player
  * highlighted.
  */

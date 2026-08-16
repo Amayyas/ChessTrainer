@@ -1,4 +1,4 @@
-/** SPA route table (specification, sections 4.3 and 2.6). */
+/** SPA route table. */
 export const ROUTES = {
   home: '/',
   coach: '/coach',

@@ -2,7 +2,7 @@ import type { Transition, Variants } from 'framer-motion'
 
 /**
  * Shared Framer Motion presets so animations feel consistent across the app
- * (spec section 4.2, "feedback immédiat" and fluid animations).
+ * (immediate feedback, and animations that stay fluid).
  *
  * Every consumer must gate these behind `useReducedMotion()` and fall back to
  * no movement when the user asked for reduced motion.

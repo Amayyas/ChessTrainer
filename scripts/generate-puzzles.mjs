@@ -1,7 +1,7 @@
 /**
- * Offline puzzle generator (spec module M6).
+ * Offline puzzle generator.
  *
- * The specification imports puzzles from the Lichess Open Database, which is
+ * Puzzles come from the Lichess Open Database, which is
  * hundreds of megabytes and cannot be bundled; its own risk section allows a
  * hardcoded set instead. Rather than hand-writing tactics — the reliable way to
  * end up with "solved but marked wrong" — this script lets Stockfish find and
@@ -401,13 +401,13 @@ puzzles.forEach((puzzle, index) => {
 })
 
 const header = `/**
- * Tactical puzzles for module M6.
+ * Tactical puzzles for the puzzle mode.
  *
  * Generated and verified by scripts/generate-puzzles.mjs: every solution is
  * Stockfish's own best line, kept only when it is decisively better than the
- * second-best move, so a correct answer can never be marked wrong. The
- * specification's Lichess import is replaced by this bundled set, the fallback
- * its own risk section allows.
+ * second-best move, so a correct answer can never be marked wrong. Bundling
+ * them keeps the puzzles offline, deterministic and free of a runtime
+ * dependency on an external database.
  *
  * DO NOT EDIT BY HAND — regenerate with the script.
  */

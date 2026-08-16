@@ -6,7 +6,7 @@ import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 
 /**
- * Route guard for the pages that need an account (spec section 2.6). Only the
+ * Route guard for the pages that need an account. Only the
  * leaderboard is behind it: every game mode stays open to guests.
  */
 export default function RequireAuth({ children }: { children: ReactNode }) {

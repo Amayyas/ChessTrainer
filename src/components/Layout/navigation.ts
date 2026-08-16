@@ -5,10 +5,10 @@ export interface NavItem {
   label: string
   /** Unicode chess-piece glyph — avoids pulling in an icon dependency. */
   glyph: string
-  /** Read by screen readers in place of the glyph (spec section 4.2, accessibility). */
+  /** Read by screen readers in place of the glyph (accessibility). */
   description: string
   /**
-   * The mobile bottom bar only exposes the 4 game modes and the profile (spec section 4.3).
+   * The mobile bottom bar only exposes the 4 game modes and the profile.
    * Home and Leaderboard stay reachable from the dashboard.
    */
   inBottomBar: boolean
