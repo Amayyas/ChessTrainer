@@ -8,7 +8,7 @@
  *
  * "Initial" means only what the first paint downloads: the entry chunk and the
  * chunks it statically imports, read from Vite's build manifest. The lazily
- * loaded route chunks (M9 code-splitting) and the on-demand Stockfish worker are
+ * loaded route chunks and the on-demand Stockfish worker are
  * reported for visibility but do not count against the initial budget.
  */
 import { gzipSync } from 'node:zlib'

@@ -1,5 +1,5 @@
 /**
- * Tactical puzzles for module M6.
+ * Tactical puzzles for the puzzle mode.
  *
  * Generated and verified by scripts/generate-puzzles.mjs: every solution is
  * Stockfish's own best line, kept only when it is decisively better than the

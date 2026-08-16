@@ -1,5 +1,5 @@
 /**
- * Offline puzzle generator (spec module M6).
+ * Offline puzzle generator.
  *
  * Puzzles come from the Lichess Open Database, which is
  * hundreds of megabytes and cannot be bundled; its own risk section allows a
@@ -401,7 +401,7 @@ puzzles.forEach((puzzle, index) => {
 })
 
 const header = `/**
- * Tactical puzzles for module M6.
+ * Tactical puzzles for the puzzle mode.
  *
  * Generated and verified by scripts/generate-puzzles.mjs: every solution is
  * Stockfish's own best line, kept only when it is decisively better than the
