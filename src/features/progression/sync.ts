@@ -19,9 +19,9 @@ function normaliseStats(stats: unknown): ProgressionStats {
   const merged: ProgressionStats = { ...EMPTY_STATS }
   for (const key of Object.keys(EMPTY_STATS) as (keyof ProgressionStats)[]) {
     const value = (stats as Record<string, unknown>)[key]
-    // averageAccuracy is the one nullable field; every other stat is a count.
-    if (key === 'averageAccuracy') {
-      if (typeof value === 'number') merged.averageAccuracy = value
+    // battleAccuracy is the one nullable field; every other stat is a count.
+    if (key === 'battleAccuracy') {
+      if (typeof value === 'number') merged.battleAccuracy = value
     } else if (typeof value === 'number' && Number.isFinite(value)) {
       merged[key] = value
     }

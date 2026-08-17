@@ -8,7 +8,7 @@ import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
 import { board } from '@/lib/design-tokens'
 import { useProgressionStore } from '@/store/useProgressionStore'
-import { createGame, describeStatus, type Square } from '@/utils/chess'
+import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pion',
@@ -44,16 +44,25 @@ export default function CoachPage() {
   // A game handed over from the battle mode opens straight
   // into replay, so it can be reviewed move by move with the annotations.
   const location = useLocation()
-  const handedOverPgn = (location.state as { pgn?: string } | null)?.pgn
+  const handedOver = location.state as { pgn?: string; playerColor?: Color } | null
+  const handedOverPgn = handedOver?.pgn
+  /**
+   * The side the player held, when this game arrived from a battle. Only those
+   * games count towards the accuracy statistic: in the coach both sides are the
+   * player's, moves can be taken back and hints asked for, so nothing measured
+   * here would say anything about how well they actually play.
+   */
+  const reviewedColor = useRef<Color | null>(null)
   const loadedPgn = useRef<string | null>(null)
   useEffect(() => {
     if (!handedOverPgn || loadedPgn.current === handedOverPgn) return
     loadedPgn.current = handedOverPgn
+    reviewedColor.current = handedOver?.playerColor ?? null
     if (game.loadPgn(handedOverPgn)) {
       setMode('game')
       setReplayPly(0)
     }
-  }, [handedOverPgn, game])
+  }, [handedOverPgn, handedOver, game])
 
   const selectMode = (next: 'game' | 'analysis') => {
     if (next === mode) return
@@ -102,16 +111,21 @@ export default function CoachPage() {
       if (game.sanHistory.length === 0) recordedGame.current = null
       return
     }
-    const { accuracyWhite, accuracyBlack } = analysis.summary
-    if (accuracyWhite === null && accuracyBlack === null) return
+    // Wait for the whole game. Stockfish works through it position by position,
+    // and the summary read too early is built from the few moves done so far —
+    // which is how a game once recorded 100%, off a single mate.
+    if (!analysis.summary.isComplete) return
     if (recordedGame.current === game.pgn) return
 
     recordedGame.current = game.pgn
-    const both = [accuracyWhite, accuracyBlack].filter((value): value is number => value !== null)
-    const accuracy = both.length
-      ? Math.round(both.reduce((sum, value) => sum + value, 0) / both.length)
-      : null
-    recordCoachAnalysis({ accuracy })
+    const colour = reviewedColor.current
+    const battleAccuracy =
+      colour === 'w'
+        ? analysis.summary.accuracyWhite
+        : colour === 'b'
+          ? analysis.summary.accuracyBlack
+          : null
+    recordCoachAnalysis({ battleAccuracy })
   }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)

@@ -48,7 +48,7 @@ export default function ProfilePage() {
     { label: 'Victoires', value: winRate === null ? '—' : `${stats.gamesWon} (${winRate}%)` },
     {
       label: 'Précision moyenne',
-      value: stats.averageAccuracy === null ? '—' : `${stats.averageAccuracy}%`,
+      value: stats.battleAccuracy === null ? '—' : `${stats.battleAccuracy}%`,
     },
     { label: 'Puzzles résolus', value: String(stats.puzzlesSolved) },
     { label: 'Meilleure série', value: `${stats.bestPuzzleStreak} j` },

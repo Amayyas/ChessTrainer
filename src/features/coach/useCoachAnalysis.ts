@@ -27,6 +27,12 @@ export interface PositionInsight {
 export interface GameSummary {
   accuracyWhite: number | null
   accuracyBlack: number | null
+  /**
+   * Whether every move has been evaluated. Stockfish works through the game
+   * position by position, so a summary read too early is built from the handful
+   * of moves analysed so far — and reads far better than the game deserved.
+   */
+  isComplete: boolean
   inaccuracies: number
   mistakes: number
   blunders: number
@@ -197,36 +203,50 @@ export function useCoachAnalysis(
     let blunders = 0
     let best: GameSummary['bestMove'] = null
     let bestGain = -Infinity
+    // Moves that produced an accuracy. Not the same as moves whose positions are
+    // cached: scoring a move also needs the line it is measured against, so a
+    // position can be evaluated while the move above it still cannot be graded.
+    let scored = 0
 
     game.history.forEach((move, index) => {
       const before = cache.get(move.before)
       const after = cache.get(move.after)
-      if (!before || !after) return
 
-      // Ranking metric for the game's best move: how much the mover improved
-      // their winning chances (relative, so the phase bias cancels out).
-      const moverWinBefore =
-        move.color === 'w' ? winningChances(before.eval.cp) : 1 - winningChances(before.eval.cp)
-      const moverWinAfter =
-        move.color === 'w' ? winningChances(after.eval.cp) : 1 - winningChances(after.eval.cp)
-      const gain = moverWinAfter - moverWinBefore
-      if (gain > bestGain) {
-        bestGain = gain
-        best = { san: move.san, index, color: move.color }
+      if (before && after) {
+        // Ranking metric for the game's best move: how much the mover improved
+        // their winning chances (relative, so the phase bias cancels out).
+        const moverWinBefore =
+          move.color === 'w' ? winningChances(before.eval.cp) : 1 - winningChances(before.eval.cp)
+        const moverWinAfter =
+          move.color === 'w' ? winningChances(after.eval.cp) : 1 - winningChances(after.eval.cp)
+        const gain = moverWinAfter - moverWinBefore
+        if (gain > bestGain) {
+          bestGain = gain
+          best = { san: move.san, index, color: move.color }
+        }
       }
 
-      const isMate = move.san.includes('#')
-      const evaluated = evalMove(move)
-      if (!isMate && !evaluated) return
+      // Checkmate is the best move a position can hold, so it scores full marks
+      // without an evaluation — and could not get one anyway: the position it
+      // leaves has no continuation for the engine to measure against.
+      if (move.san.includes('#')) {
+        scored += 1
+        ;(move.color === 'w' ? whiteAccuracies : blackAccuracies).push(100)
+        return
+      }
 
-      const quality = isMate || !evaluated ? 'excellent' : classifyMove(evaluated.loss)
+      const evaluated = evalMove(move)
+      if (!evaluated) return
+      scored += 1
+
+      const quality = classifyMove(evaluated.loss)
       if (quality === 'inaccuracy') inaccuracies += 1
       if (quality === 'mistake') mistakes += 1
       if (quality === 'blunder') blunders += 1
 
-      const accuracy =
-        isMate || !evaluated ? 100 : moveAccuracy(evaluated.winBaseline, evaluated.winAfter)
-      ;(move.color === 'w' ? whiteAccuracies : blackAccuracies).push(accuracy)
+      ;(move.color === 'w' ? whiteAccuracies : blackAccuracies).push(
+        moveAccuracy(evaluated.winBaseline, evaluated.winAfter),
+      )
     })
 
     const mean = (values: number[]) =>
@@ -235,6 +255,7 @@ export function useCoachAnalysis(
     return {
       accuracyWhite: mean(whiteAccuracies),
       accuracyBlack: mean(blackAccuracies),
+      isComplete: game.history.length > 0 && scored === game.history.length,
       inaccuracies,
       mistakes,
       blunders,

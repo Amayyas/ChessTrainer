@@ -50,19 +50,36 @@ describe('useProgressionStore', () => {
     expect(store().xp).toBe(huntXp(250) + huntXp(120))
   })
 
-  it('averages coach accuracy as a running mean', () => {
-    store().recordCoachAnalysis({ accuracy: 80 })
-    expect(store().stats.averageAccuracy).toBe(80)
+  it('averages reviewed battle accuracy as a running mean', () => {
+    store().recordCoachAnalysis({ battleAccuracy: 80 })
+    expect(store().stats.battleAccuracy).toBe(80)
 
-    store().recordCoachAnalysis({ accuracy: 60 })
-    expect(store().stats.averageAccuracy).toBe(70)
-    expect(store().stats.accuracySamples).toBe(2)
+    store().recordCoachAnalysis({ battleAccuracy: 60 })
+    expect(store().stats.battleAccuracy).toBe(70)
+    expect(store().stats.battleAccuracySamples).toBe(2)
   })
 
   it('ignores a coach analysis with no accuracy but still pays the XP', () => {
-    store().recordCoachAnalysis({ accuracy: null })
-    expect(store().stats.averageAccuracy).toBeNull()
+    store().recordCoachAnalysis({ battleAccuracy: null })
+    expect(store().stats.battleAccuracy).toBeNull()
     expect(store().xp).toBe(XP_REWARDS.coachGameAnalysed)
+  })
+
+  it('still counts the daily challenge for a game that carries no accuracy', () => {
+    // A game played in the coach itself moves the challenge but must not move
+    // the statistic: both sides are the player's there, moves can be taken back
+    // and hints asked for, so it says nothing about how well they play.
+    store().recordCoachAnalysis({ battleAccuracy: null })
+    expect(store().daily.coachAnalyses).toBe(1)
+    expect(store().stats.battleAccuracySamples).toBe(0)
+  })
+
+  it('keeps the running mean inside 0-100', () => {
+    store().recordCoachAnalysis({ battleAccuracy: 100 })
+    store().recordCoachAnalysis({ battleAccuracy: 0 })
+    const { battleAccuracy } = store().stats
+    expect(battleAccuracy).toBeGreaterThanOrEqual(0)
+    expect(battleAccuracy).toBeLessThanOrEqual(100)
   })
 
   it('keeps the activity feed newest first and bounded', () => {
@@ -88,7 +105,7 @@ describe('useProgressionStore', () => {
     store().recordBattle({ outcome: 'win', byCheckmate: false, levelLabel: 'Novice' })
     store().recordPuzzle({ flawless: false, streak: 1 })
     store().recordHunt({ score: 180, captures: 5, championLabel: 'Dame' })
-    store().recordCoachAnalysis({ accuracy: 70 })
+    store().recordCoachAnalysis({ battleAccuracy: 70 })
 
     expect(store().daily).toMatchObject({
       battleWins: 1,

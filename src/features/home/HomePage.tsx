@@ -145,7 +145,7 @@ export default function HomePage() {
           { label: 'Puzzles résolus', value: stats.puzzlesSolved },
           {
             label: 'Précision moyenne',
-            value: stats.averageAccuracy === null ? '—' : `${stats.averageAccuracy}%`,
+            value: stats.battleAccuracy === null ? '—' : `${stats.battleAccuracy}%`,
           },
           { label: 'Record Chasse', value: stats.bestHuntScore },
         ].map((stat) => (

@@ -46,10 +46,10 @@ describe('badge conditions', () => {
   })
 
   it('requires enough analysed games before rewarding accuracy', () => {
-    expect(earnedBadgeIds(stats({ averageAccuracy: 95, accuracySamples: 2 }))).not.toContain(
+    expect(earnedBadgeIds(stats({ battleAccuracy: 95, battleAccuracySamples: 2 }))).not.toContain(
       'precision',
     )
-    expect(earnedBadgeIds(stats({ averageAccuracy: 95, accuracySamples: 3 }))).toContain(
+    expect(earnedBadgeIds(stats({ battleAccuracy: 95, battleAccuracySamples: 3 }))).toContain(
       'precision',
     )
   })
