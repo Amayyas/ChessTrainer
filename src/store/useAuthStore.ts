@@ -6,6 +6,16 @@ interface AuthState {
   /** False until the stored session has been read, so guards do not flash. */
   isReady: boolean
   session: Session | null
+  /**
+   * Counts deliberate departures: signing out, or deleting the account.
+   *
+   * Watching the session go null is not enough to tell that the player left.
+   * Supabase re-emits auth state around a token refresh and can report no
+   * session in between, and reading that as a departure throws away everything
+   * held only on this device — the day's challenge counters and the activity
+   * feed — belonging to the player still sitting in front of it.
+   */
+  departures: number
   profile: Profile | null
   error: string | null
   /**
@@ -46,6 +56,7 @@ function friendlyError(message: string): string {
 export const useAuthStore = create<AuthState>()((set, get) => ({
   isReady: !isSupabaseConfigured,
   session: null,
+  departures: 0,
   profile: null,
   error: null,
   deleteError: null,
@@ -144,7 +155,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signOut: async () => {
     if (!supabase) return
     await supabase.auth.signOut()
-    set({ session: null, profile: null })
+    set((state) => ({ session: null, profile: null, departures: state.departures + 1 }))
   },
 
   deleteAccount: async () => {
@@ -169,7 +180,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
       if (!lookupFailed && data === null) {
         await client.auth.signOut()
-        set({ session: null, profile: null })
+        set((state) => ({ session: null, profile: null, departures: state.departures + 1 }))
         return true
       }
 
@@ -183,7 +194,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     // confusing failures, so it goes too. The progression store clears itself
     // when it sees the session disappear.
     await client.auth.signOut()
-    set({ session: null, profile: null })
+    set((state) => ({ session: null, profile: null, departures: state.departures + 1 }))
     return true
   },
 
