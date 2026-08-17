@@ -1,5 +1,5 @@
 import { PageHeader } from '@/components/UI'
-import { LegalPlaceholderNotice, Section, TODO } from '@/features/legal/shared'
+import { Section } from '@/features/legal/shared'
 
 /**
  * Legal notice, which French law requires of any published website. The
@@ -10,8 +10,6 @@ export default function LegalPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Mentions légales" subtitle="Éditeur, hébergement et contact." />
-
-      <LegalPlaceholderNotice />
 
       <Section title="Éditeur du site">
         <p>
@@ -33,7 +31,7 @@ export default function LegalPage() {
         <p>
           L'application est hébergée par <strong>Netlify, Inc.</strong>, San Francisco, Californie,
           États-Unis. Les comptes et les données de jeu sont hébergés par <strong>Supabase</strong>,
-          dans la région <TODO>région de votre projet Supabase</TODO>.
+          dans l'Union européenne (Irlande).
         </p>
       </Section>
 

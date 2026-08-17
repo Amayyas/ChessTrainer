@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/UI'
-import { LegalPlaceholderNotice, Section, TODO } from '@/features/legal/shared'
+import { Section } from '@/features/legal/shared'
 import { isMonitoringEnabled } from '@/lib/monitoring'
 import { ROUTES } from '@/routes'
 
@@ -17,8 +17,6 @@ export default function PrivacyPage() {
         title="Politique de confidentialité"
         subtitle="Ce que l'application enregistre, pourquoi, et comment tout effacer."
       />
-
-      <LegalPlaceholderNotice />
 
       <Section title="En bref">
         <p>
@@ -80,8 +78,8 @@ export default function PrivacyPage() {
           servent à rien d'autre. Aucune n'est transmise à un tiers à des fins commerciales.
         </p>
         <p>
-          Elles sont conservées tant que votre compte existe. Elles sont hébergées par Supabase,
-          dans la région <TODO>région de votre projet Supabase</TODO>.
+          Elles sont conservées tant que votre compte existe. Elles sont hébergées par Supabase dans
+          l'Union européenne (Irlande) et ne quittent pas ce territoire.
         </p>
       </Section>
 
