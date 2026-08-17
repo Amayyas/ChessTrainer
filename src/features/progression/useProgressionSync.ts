@@ -40,7 +40,13 @@ export function useProgressionSync(): void {
   // returning player's progression on every page load.
   const isReady = useAuthStore((state) => state.isReady)
   const session = useAuthStore((state) => state.session)
+  const departures = useAuthStore((state) => state.departures)
   const userId = session?.user.id ?? null
+
+  // Whether an identity has been settled once since this page loaded, and how
+  // many deliberate departures had happened by then.
+  const settled = useRef(false)
+  const seenDepartures = useRef(departures)
 
   // The last snapshot known to match the server, so an unchanged store — most
   // notably the pull's own hydrate — is never written straight back.
@@ -52,8 +58,21 @@ export function useProgressionSync(): void {
   // effect below, where it belongs.
   useLayoutEffect(() => {
     if (!isReady) return
+
+    const left = departures !== seenDepartures.current
+    seenDepartures.current = departures
+
+    // The first settled reading decides whose progress this is. After that, a
+    // missing session only means a change of person when they deliberately
+    // left: Supabase re-emits auth state around a token refresh and reports no
+    // session in between. Adopting that as a sign-out wiped the day's counters
+    // and the activity feed of the player still sitting there — everything held
+    // only on this device, since the server copy restored the rest and hid it.
+    if (settled.current && userId === null && !left) return
+
+    settled.current = true
     useProgressionStore.getState().adoptOwner(userId)
-  }, [isReady, userId])
+  }, [isReady, userId, departures])
 
   useEffect(() => {
     if (!isReady) return
