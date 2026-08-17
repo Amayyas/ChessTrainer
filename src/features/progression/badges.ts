@@ -68,7 +68,7 @@ export const BADGES: readonly Badge[] = [
     label: 'Précision',
     description: 'Tenir 80 % de précision sur au moins trois parties analysées.',
     glyph: '📐',
-    isEarned: (stats) => stats.accuracySamples >= 3 && (stats.averageAccuracy ?? 0) >= 80,
+    isEarned: (stats) => stats.battleAccuracySamples >= 3 && (stats.battleAccuracy ?? 0) >= 80,
   },
 ]
 

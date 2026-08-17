@@ -20,9 +20,16 @@ export interface Activity {
 export interface ProgressionStats {
   gamesPlayed: number
   gamesWon: number
-  /** Average accuracy across analysed games, 0–100, or null before any. */
-  averageAccuracy: number | null
-  accuracySamples: number
+  /**
+   * Mean accuracy over reviewed battle games, 0–100, or null before any.
+   *
+   * Renamed from averageAccuracy on purpose. That field measured something else
+   * — both colours of any coach game, recorded off a partial analysis — and rows
+   * already hold those values. A new name lets them be ignored rather than read
+   * as if they meant this.
+   */
+  battleAccuracy: number | null
+  battleAccuracySamples: number
   puzzlesSolved: number
   flawlessPuzzles: number
   bestHuntScore: number
@@ -35,8 +42,8 @@ export interface ProgressionStats {
 export const EMPTY_STATS: ProgressionStats = {
   gamesPlayed: 0,
   gamesWon: 0,
-  averageAccuracy: null,
-  accuracySamples: 0,
+  battleAccuracy: null,
+  battleAccuracySamples: 0,
   puzzlesSolved: 0,
   flawlessPuzzles: 0,
   bestHuntScore: 0,
@@ -96,7 +103,7 @@ interface ProgressionState {
   recordBattle: (input: BattleOutcomeInput) => void
   recordPuzzle: (input: { flawless: boolean; streak: number }) => void
   recordHunt: (input: { score: number; captures: number; championLabel: string }) => void
-  recordCoachAnalysis: (input: { accuracy: number | null }) => void
+  recordCoachAnalysis: (input: { battleAccuracy: number | null }) => void
   unlockBadges: (ids: string[]) => void
   acknowledgeBadges: () => void
   /** Replaces the synced fields with an account's server copy on sign-in. */
@@ -252,19 +259,22 @@ export const useProgressionStore = create<ProgressionState>()(
           )
         },
 
-        recordCoachAnalysis: ({ accuracy }) => {
+        recordCoachAnalysis: ({ battleAccuracy }) => {
           award(
             XP_REWARDS.coachGameAnalysed,
             { kind: 'coach', label: 'Partie analysée dans le Coach' },
             (stats) => {
-              if (accuracy === null) return stats
+              // Only a reviewed battle carries an accuracy. A game played in the
+              // coach itself passes null and moves no statistic: both sides are
+              // the player's there, moves can be taken back and hints asked for.
+              if (battleAccuracy === null) return stats
               // Running mean, so one weak game does not erase the history.
-              const samples = stats.accuracySamples + 1
-              const previous = stats.averageAccuracy ?? accuracy
+              const samples = stats.battleAccuracySamples + 1
+              const previous = stats.battleAccuracy ?? battleAccuracy
               return {
                 ...stats,
-                accuracySamples: samples,
-                averageAccuracy: Math.round(previous + (accuracy - previous) / samples),
+                battleAccuracySamples: samples,
+                battleAccuracy: Math.round(previous + (battleAccuracy - previous) / samples),
               }
             },
             (counters) => ({ ...counters, coachAnalyses: counters.coachAnalyses + 1 }),

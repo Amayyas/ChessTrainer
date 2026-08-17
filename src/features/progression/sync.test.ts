@@ -39,11 +39,9 @@ describe('rowToSnapshot', () => {
     expect(snapshot.stats).not.toHaveProperty('injected')
   })
 
-  it('keeps a null averageAccuracy but takes a numeric one', () => {
-    expect(
-      rowToSnapshot(row({ stats: { averageAccuracy: null } })).stats.averageAccuracy,
-    ).toBeNull()
-    expect(rowToSnapshot(row({ stats: { averageAccuracy: 82 } })).stats.averageAccuracy).toBe(82)
+  it('keeps a null battleAccuracy but takes a numeric one', () => {
+    expect(rowToSnapshot(row({ stats: { battleAccuracy: null } })).stats.battleAccuracy).toBeNull()
+    expect(rowToSnapshot(row({ stats: { battleAccuracy: 82 } })).stats.battleAccuracy).toBe(82)
   })
 
   it('tolerates non-array badges', () => {

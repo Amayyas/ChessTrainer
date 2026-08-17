@@ -109,7 +109,11 @@ export default function BattlePage() {
                 <Button
                   size="sm"
                   disabled={game.sanHistory.length === 0}
-                  onClick={() => navigate(ROUTES.coach, { state: { pgn: game.pgn } })}
+                  onClick={() =>
+                    // The colour travels with the game: the coach grades only
+                    // the side the player actually chose, never the engine's.
+                    navigate(ROUTES.coach, { state: { pgn: game.pgn, playerColor } })
+                  }
                 >
                   Analyser dans le Coach
                 </Button>
