@@ -1,5 +1,9 @@
 # ChessTrainer AI
 
+**[chesstrainer.fr](https://chesstrainer.fr)** — live, free, and playable without
+an account.
+
+[![Live](https://img.shields.io/badge/chesstrainer.fr-live-C9A84C)](https://chesstrainer.fr)
 [![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.12-5FA04E)](.nvmrc)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
@@ -11,7 +15,7 @@ was worth, and turns practice into something you actually come back to.
 Every mode is playable without an account. The interface is in French — the app
 targets French-speaking learners — while the codebase is English throughout.
 
-![The AI Coach: an annotated game, a live evaluation and the best move drawn on the board](docs/screenshots/coach.png)
+[![The AI Coach: an annotated game, a live evaluation and the best move drawn on the board](docs/screenshots/coach.png)](https://chesstrainer.fr/coach)
 
 ## What it does
 
@@ -307,6 +311,9 @@ accessibility and best practices are blocking; SEO only warns.
 | SEO            | 90        | No       |
 
 ## Deployment
+
+Deployed at **[chesstrainer.fr](https://chesstrainer.fr)**, from `main`, on every
+merge.
 
 The app is static: `npm run build` produces `dist/`, which is served from a CDN.
 There is no server to run — the database lives in Supabase.
