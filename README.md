@@ -337,10 +337,27 @@ rebuilding:
 | `VITE_SUPABASE_URL`      | Runs in guest mode: no accounts, no leaderboard |
 | `VITE_SUPABASE_ANON_KEY` | Same                                            |
 | `VITE_SITE_URL`          | Social preview paths stay relative              |
+| `VITE_SENTRY_DSN`        | No error reporting; the SDK is never loaded     |
 
-Two settings live outside the repository, and sign-in fails without them: the
+One setting lives outside the repository, and sign-in fails without it: the
 deployed URL has to be added to Supabase's **Redirect URLs**, which are matched
-exactly, and to the authorised origins in the Google Cloud console.
+exactly.
+
+### Error reporting
+
+Errors go to Sentry when `VITE_SENTRY_DSN` is set, and nowhere otherwise — the
+SDK is not even downloaded.
+
+It loads dynamically, after first paint, so its ~27 kB never delays the app or
+counts against the initial bundle budget. Native `error` and `unhandledrejection`
+listeners are installed synchronously and buffer whatever happens in the
+meantime, so startup is not a blind spot.
+
+No IP address, no account identifier and no session recording are collected, and
+tracing is stripped at build time rather than merely disabled at runtime. The SDK
+is imported by destructuring rather than as a namespace: a namespace import
+forces the bundler to keep Session Replay and User Feedback, which took the chunk
+from 27 kB to 172 kB.
 
 ## Privacy
 
