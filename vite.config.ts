@@ -21,6 +21,13 @@ function siteUrl(mode: string): Plugin {
 
 export default defineConfig(({ mode }) => ({
   plugins: [react(), siteUrl(mode)],
+  // Sentry ships its tracing and debug code unless these are switched off at
+  // build time; tracesSampleRate only disables tracing at runtime, leaving the
+  // bytes in the bundle. This app reports errors and nothing else.
+  define: {
+    __SENTRY_DEBUG__: false,
+    __SENTRY_TRACING__: false,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
