@@ -1,4 +1,6 @@
+import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import type { HuntScoreEntry, Scoreboard } from '@/features/hunt/scoring'
+import { HISTORY_LIMIT, type AccuracyEntry } from '@/features/progression/accuracyHistory'
 import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 import type { ProgressionRow } from '@/lib/supabase'
 import {
@@ -96,6 +98,35 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   }
 }
 
+const OUTCOMES: readonly BattleOutcome[] = ['win', 'loss', 'draw']
+
+/**
+ * An accuracy between 0 and 100 that is actually a number: the JSON is
+ * untrusted, and a NaN here would be averaged into a chart and rendered as a
+ * gap nobody could explain.
+ */
+function isAccuracy(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100
+}
+
+function isAccuracyEntry(value: unknown): value is AccuracyEntry {
+  if (typeof value !== 'object' || value === null) return false
+  const entry = value as Record<string, unknown>
+  return (
+    isTimestamp(entry.playedAt) &&
+    isAccuracy(entry.accuracy) &&
+    typeof entry.level === 'string' &&
+    OUTCOMES.includes(entry.outcome as BattleOutcome)
+  )
+}
+
+function normaliseAccuracyHistory(value: unknown): AccuracyEntry[] {
+  if (!Array.isArray(value)) return []
+  // Trimmed on the way in as well as out: a row written by an older or tampered
+  // client must not be able to make every later save unbounded.
+  return value.filter(isAccuracyEntry).slice(0, HISTORY_LIMIT)
+}
+
 /** The account's server copy, shaped for the store's `hydrate`. */
 export function rowToSnapshot(row: ProgressionRow): ProgressionSnapshot {
   return {
@@ -104,6 +135,7 @@ export function rowToSnapshot(row: ProgressionRow): ProgressionSnapshot {
     unlockedBadges: Array.isArray(row.unlocked_badges) ? row.unlocked_badges : [],
     huntScores: normaliseHuntScores(row.hunt_scores),
     puzzleProgress: normalisePuzzleProgress(row.puzzle_progress),
+    accuracyHistory: normaliseAccuracyHistory(row.accuracy_history),
   }
 }
 
@@ -119,6 +151,7 @@ export function snapshotToRow(
     unlocked_badges: snapshot.unlockedBadges,
     hunt_scores: snapshot.huntScores,
     puzzle_progress: snapshot.puzzleProgress,
+    accuracy_history: snapshot.accuracyHistory,
   }
 }
 

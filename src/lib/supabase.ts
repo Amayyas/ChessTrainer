@@ -65,5 +65,7 @@ export interface ProgressionRow {
   hunt_scores: unknown
   /** Daily puzzle streak and totals, as one JSON document. */
   puzzle_progress: unknown
+  /** One entry per reviewed battle, newest first, as one JSON document. */
+  accuracy_history: unknown
   updated_at: string
 }

@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
+import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
 import { board } from '@/lib/design-tokens'
@@ -44,7 +45,12 @@ export default function CoachPage() {
   // A game handed over from the battle mode opens straight
   // into replay, so it can be reviewed move by move with the annotations.
   const location = useLocation()
-  const handedOver = location.state as { pgn?: string; playerColor?: Color } | null
+  const handedOver = location.state as {
+    pgn?: string
+    playerColor?: Color
+    levelLabel?: string
+    outcome?: BattleOutcome
+  } | null
   const handedOverPgn = handedOver?.pgn
   /**
    * The side the player held, when this game arrived from a battle. Only those
@@ -53,11 +59,17 @@ export default function CoachPage() {
    * here would say anything about how well they actually play.
    */
   const reviewedColor = useRef<Color | null>(null)
+  /** The level faced and how it ended, kept for the history entry. */
+  const reviewedBattle = useRef<{ level: string; outcome: BattleOutcome } | null>(null)
   const loadedPgn = useRef<string | null>(null)
   useEffect(() => {
     if (!handedOverPgn || loadedPgn.current === handedOverPgn) return
     loadedPgn.current = handedOverPgn
     reviewedColor.current = handedOver?.playerColor ?? null
+    reviewedBattle.current =
+      handedOver?.levelLabel && handedOver.outcome
+        ? { level: handedOver.levelLabel, outcome: handedOver.outcome }
+        : null
     if (game.loadPgn(handedOverPgn)) {
       setMode('game')
       setReplayPly(0)
@@ -125,7 +137,7 @@ export default function CoachPage() {
         : colour === 'b'
           ? analysis.summary.accuracyBlack
           : null
-    recordCoachAnalysis({ battleAccuracy })
+    recordCoachAnalysis({ battleAccuracy, battle: reviewedBattle.current ?? undefined })
   }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)

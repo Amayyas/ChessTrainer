@@ -112,7 +112,16 @@ export default function BattlePage() {
                   onClick={() =>
                     // The colour travels with the game: the coach grades only
                     // the side the player actually chose, never the engine's.
-                    navigate(ROUTES.coach, { state: { pgn: game.pgn, playerColor } })
+                    navigate(ROUTES.coach, {
+                      state: {
+                        pgn: game.pgn,
+                        playerColor,
+                        // The level and the result travel too: 60% against
+                        // Maître and 60% against Novice are not the same 60%.
+                        levelLabel: level.label,
+                        outcome: result?.outcome,
+                      },
+                    })
                   }
                 >
                   Analyser dans le Coach
