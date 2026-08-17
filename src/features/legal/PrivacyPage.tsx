@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/UI'
-import { LegalPlaceholderNotice, Section, TODO } from '@/features/legal/shared'
+import { Section } from '@/features/legal/shared'
+import { isMonitoringEnabled } from '@/lib/monitoring'
 import { ROUTES } from '@/routes'
 
 /**
@@ -16,8 +17,6 @@ export default function PrivacyPage() {
         title="Politique de confidentialité"
         subtitle="Ce que l'application enregistre, pourquoi, et comment tout effacer."
       />
-
-      <LegalPlaceholderNotice />
 
       <Section title="En bref">
         <p>
@@ -79,10 +78,35 @@ export default function PrivacyPage() {
           servent à rien d'autre. Aucune n'est transmise à un tiers à des fins commerciales.
         </p>
         <p>
-          Elles sont conservées tant que votre compte existe. Elles sont hébergées par Supabase,
-          dans la région <TODO>région de votre projet Supabase</TODO>.
+          Elles sont conservées tant que votre compte existe. Elles sont hébergées par Supabase dans
+          l'Union européenne (Irlande) et ne quittent pas ce territoire.
         </p>
       </Section>
+
+      {/* Rendered only when reporting is actually configured, so this document
+          can never claim a processor the deployed app does not use. */}
+      {isMonitoringEnabled && (
+        <Section title="Signalement des erreurs">
+          <p>
+            Quand l'application rencontre une erreur, un rapport technique est envoyé
+            automatiquement à <strong>Sentry</strong>, qui héberge ces rapports dans l'Union
+            européenne. Cela nous permet de corriger les pannes sans attendre qu'un joueur les
+            signale.
+          </p>
+          <p>
+            <strong>Ce que contient un rapport</strong> : le message d'erreur et sa trace technique,
+            l'adresse de la page concernée, votre navigateur et votre système d'exploitation, ainsi
+            que les dernières actions techniques qui ont précédé l'erreur — navigation, clics,
+            requêtes envoyées.
+          </p>
+          <p>
+            <strong>Ce qu'il ne contient pas</strong> : ni votre adresse IP, ni votre identifiant de
+            compte, ni votre adresse e-mail, ni enregistrement de votre session. L'application ne
+            mesure pas non plus votre audience ni vos performances&nbsp;: seules les erreurs sont
+            transmises.
+          </p>
+        </Section>
+      )}
 
       <Section title="Vos droits">
         <p>
@@ -96,7 +120,10 @@ export default function PrivacyPage() {
         <p>
           Vous disposez également des droits d'accès, de rectification, de portabilité et
           d'opposition prévus par le RGPD. Pour les exercer, écrivez à{' '}
-          <TODO>adresse e-mail de contact</TODO>.
+          <a className="font-semibold text-ebene underline" href="mailto:contact@chesstrainer.fr">
+            contact@chesstrainer.fr
+          </a>
+          .
         </p>
         <p>
           Vous pouvez enfin introduire une réclamation auprès de la CNIL, l'autorité française de

@@ -1,5 +1,5 @@
 import { PageHeader } from '@/components/UI'
-import { LegalPlaceholderNotice, Section, TODO } from '@/features/legal/shared'
+import { Section } from '@/features/legal/shared'
 
 /**
  * Legal notice, which French law requires of any published website. The
@@ -11,26 +11,27 @@ export default function LegalPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader title="Mentions légales" subtitle="Éditeur, hébergement et contact." />
 
-      <LegalPlaceholderNotice />
-
       <Section title="Éditeur du site">
         <p>
-          ChessTrainer AI est édité par <TODO>nom ou raison sociale</TODO>.
+          ChessTrainer AI est édité par <strong>Amayyas Aouadene</strong>.
         </p>
         <p>
-          Statut : <TODO>particulier, auto-entrepreneur, association…</TODO>
+          Statut : particulier, publiant à titre non professionnel
           <br />
-          Contact : <TODO>adresse e-mail</TODO>
+          Contact :{' '}
+          <a className="font-semibold text-ebene underline" href="mailto:contact@chesstrainer.fr">
+            contact@chesstrainer.fr
+          </a>
           <br />
-          Directeur de la publication : <TODO>nom</TODO>
+          Directeur de la publication : Amayyas Aouadene
         </p>
       </Section>
 
       <Section title="Hébergement">
         <p>
-          L'application est hébergée par <TODO>hébergeur de l'application</TODO>. Les comptes et les
-          données de jeu sont hébergés par Supabase, dans la région{' '}
-          <TODO>région de votre projet Supabase</TODO>.
+          L'application est hébergée par <strong>Netlify, Inc.</strong>, San Francisco, Californie,
+          États-Unis. Les comptes et les données de jeu sont hébergés par <strong>Supabase</strong>,
+          dans l'Union européenne (Irlande).
         </p>
       </Section>
 
