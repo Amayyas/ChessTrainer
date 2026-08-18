@@ -1,0 +1,60 @@
+name: CodeQL
+
+# Static analysis of the app's own TypeScript. It reads the source rather than a
+# build, so nothing here needs to install dependencies or compile.
+#
+# Worth being clear about what this does not cover, so it is not mistaken for
+# more than it is: the database is where this project's real security lives —
+# the Row Level Security policies and the score-validation functions — and none
+# of that is TypeScript. CodeQL will not read supabase/migrations.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # New rules ship regularly, and code that was clean last month can stop being
+  # so without anyone touching it. A weekly pass catches that; the PR runs alone
+  # never would.
+  #
+  # Not on the hour: GitHub queues scheduled workflows, and the top of the hour
+  # is when everyone else asks too. A run dropped under load would quietly
+  # defeat the only reason this schedule exists.
+  schedule:
+    - cron: '37 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      # Writing the findings back to the Security tab is the point of the job.
+      security-events: write
+      # Both are read by the CodeQL action itself, not by anything here.
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          # No build: for TypeScript CodeQL analyses the sources directly, so
+          # asking for one would only add minutes and a chance to fail.
+          build-mode: none
+          # security-extended adds rules the default set leaves out. The cost is
+          # more findings to read, which is the right trade for a codebase this
+          # size — a false positive here is a minute, a missed one is public.
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
