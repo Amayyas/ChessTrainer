@@ -281,7 +281,11 @@ export const useProgressionStore = create<ProgressionState>()(
               // Only a reviewed battle carries an accuracy. A game played in the
               // coach itself passes null and moves no statistic: both sides are
               // the player's there, moves can be taken back and hints asked for.
-              if (battleAccuracy === null) return stats
+              // The metadata is required too, and by the same test the history
+              // below uses. Moving the mean without adding the entry would put
+              // two figures on the profile that disagree with each other, and
+              // no way to tell which of them is wrong.
+              if (battleAccuracy === null || !battle) return stats
               // Running mean, so one weak game does not erase the history.
               const samples = stats.battleAccuracySamples + 1
               const previous = stats.battleAccuracy ?? battleAccuracy

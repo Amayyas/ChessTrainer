@@ -5,6 +5,9 @@ import { EMPTY_STATS, useProgressionStore } from '@/store/useProgressionStore'
 
 const store = () => useProgressionStore.getState()
 
+/** The metadata a battle handover carries; distinct times keep entries apart. */
+const review = (playedAt: string) => ({ level: 'Maître', outcome: 'win' as const, playedAt })
+
 describe('useProgressionStore', () => {
   beforeEach(() => {
     window.localStorage.clear()
@@ -51,10 +54,10 @@ describe('useProgressionStore', () => {
   })
 
   it('averages reviewed battle accuracy as a running mean', () => {
-    store().recordCoachAnalysis({ battleAccuracy: 80 })
+    store().recordCoachAnalysis({ battleAccuracy: 80, battle: review('2026-08-18T10:00:00.000Z') })
     expect(store().stats.battleAccuracy).toBe(80)
 
-    store().recordCoachAnalysis({ battleAccuracy: 60 })
+    store().recordCoachAnalysis({ battleAccuracy: 60, battle: review('2026-08-18T11:00:00.000Z') })
     expect(store().stats.battleAccuracy).toBe(70)
     expect(store().stats.battleAccuracySamples).toBe(2)
   })
@@ -63,6 +66,25 @@ describe('useProgressionStore', () => {
     store().recordCoachAnalysis({ battleAccuracy: null })
     expect(store().stats.battleAccuracy).toBeNull()
     expect(store().xp).toBe(XP_REWARDS.coachGameAnalysed)
+  })
+
+  it('moves neither figure when the handover is incomplete', () => {
+    // The mean and the history must advance on the same condition. Moving one
+    // without the other puts two numbers on the profile that disagree, with
+    // nothing to say which is wrong.
+    store().recordCoachAnalysis({ battleAccuracy: 74 })
+    expect(store().stats.battleAccuracySamples).toBe(0)
+    expect(store().stats.battleAccuracy).toBeNull()
+    expect(store().accuracyHistory).toHaveLength(0)
+  })
+
+  it('moves both when it is complete', () => {
+    store().recordCoachAnalysis({
+      battleAccuracy: 74,
+      battle: { level: 'Maître', outcome: 'win', playedAt: '2026-08-18T10:00:00.000Z' },
+    })
+    expect(store().stats.battleAccuracySamples).toBe(1)
+    expect(store().accuracyHistory).toHaveLength(1)
   })
 
   it('still counts the daily challenge for a game that carries no accuracy', () => {
@@ -75,8 +97,8 @@ describe('useProgressionStore', () => {
   })
 
   it('keeps the running mean inside 0-100', () => {
-    store().recordCoachAnalysis({ battleAccuracy: 100 })
-    store().recordCoachAnalysis({ battleAccuracy: 0 })
+    store().recordCoachAnalysis({ battleAccuracy: 100, battle: review('2026-08-18T10:00:00.000Z') })
+    store().recordCoachAnalysis({ battleAccuracy: 0, battle: review('2026-08-18T11:00:00.000Z') })
     const { battleAccuracy } = store().stats
     expect(battleAccuracy).toBeGreaterThanOrEqual(0)
     expect(battleAccuracy).toBeLessThanOrEqual(100)
