@@ -281,6 +281,14 @@ accepts merges from PRs whose CI is green.
 | Build & bundle budget    | Production build, then size-budget check                   |
 | Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
 
+[`codeql.yml`](.github/workflows/codeql.yml) runs separately, on the same
+triggers plus a weekly pass — new rules ship regularly, and code that was clean
+last month can stop being so untouched. It is not a required check.
+
+It reads the app's TypeScript. The database is where this project's real
+security lives — the Row Level Security policies and the score validation — and
+none of that is TypeScript, so CodeQL never sees it.
+
 ### Size budgets
 
 Defined in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs),
