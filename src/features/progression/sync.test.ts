@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { rowToSnapshot, snapshotKey, snapshotToRow } from '@/features/progression/sync'
+import { emptyCounters } from '@/features/progression/challenges'
 import { EMPTY_PROGRESS as EMPTY_PUZZLE_PROGRESS } from '@/features/puzzle/dailySet'
 import type { ProgressionRow } from '@/lib/supabase'
 import { EMPTY_STATS, type ProgressionSnapshot } from '@/store/useProgressionStore'
@@ -13,6 +14,8 @@ function row(overrides: Partial<ProgressionRow> = {}): ProgressionRow {
     hunt_scores: {},
     puzzle_progress: {},
     accuracy_history: [],
+    daily_counters: {},
+    activity_feed: [],
     updated_at: '2026-07-22T00:00:00Z',
     ...overrides,
   }
@@ -61,6 +64,8 @@ describe('snapshotToRow', () => {
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
       accuracyHistory: [],
+      daily: emptyCounters('2026-08-17'),
+      activities: [],
     }
     expect(snapshotToRow('u9', snapshot)).toEqual({
       user_id: 'u9',
@@ -70,6 +75,8 @@ describe('snapshotToRow', () => {
       hunt_scores: {},
       puzzle_progress: EMPTY_PUZZLE_PROGRESS,
       accuracy_history: [],
+      daily_counters: emptyCounters('2026-08-17'),
+      activity_feed: [],
     })
   })
 })
@@ -83,6 +90,8 @@ describe('snapshotKey', () => {
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
       accuracyHistory: [],
+      daily: emptyCounters('2026-08-17'),
+      activities: [],
     }
     const b: ProgressionSnapshot = {
       xp: 1,
@@ -91,6 +100,8 @@ describe('snapshotKey', () => {
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
       accuracyHistory: [],
+      daily: emptyCounters('2026-08-17'),
+      activities: [],
     }
     expect(snapshotKey(a)).toBe(snapshotKey(b))
   })
@@ -103,6 +114,8 @@ describe('snapshotKey', () => {
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
       accuracyHistory: [],
+      daily: emptyCounters('2026-08-17'),
+      activities: [],
     }
     expect(snapshotKey({ ...base, xp: 2 })).not.toBe(snapshotKey(base))
   })
@@ -165,6 +178,8 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       huntScores: { q: [entry] },
       puzzleProgress: { lastSolvedDay: '2026-08-12', streak: 3, bestStreak: 5, totalSolved: 11 },
       accuracyHistory: [],
+      daily: emptyCounters('2026-08-17'),
+      activities: [],
     })
     expect(rowOut.hunt_scores).toEqual({ q: [entry] })
     expect(rowOut.puzzle_progress).toMatchObject({ streak: 3, totalSolved: 11 })
@@ -267,5 +282,40 @@ describe('normalising the accuracy history', () => {
   it('reads a missing or malformed document as empty', () => {
     expect(rowToSnapshot(row({ accuracy_history: null })).accuracyHistory).toEqual([])
     expect(rowToSnapshot(row({ accuracy_history: 'nope' })).accuracyHistory).toEqual([])
+  })
+})
+
+describe('normalising the day and the feed', () => {
+  it('keeps counters that name a valid day', () => {
+    const counters = { day: '2026-08-18', battleWins: 1, puzzlesSolved: 3, huntScore: 890 }
+    const daily = rowToSnapshot(row({ daily_counters: counters })).daily
+    expect(daily.day).toBe('2026-08-18')
+    expect(daily.puzzlesSolved).toBe(3)
+    expect(daily.huntScore).toBe(890)
+    // A field the row never carried still lands on its known shape.
+    expect(daily.coachAnalyses).toBe(0)
+  })
+
+  it('starts the day again when the row names no valid one', () => {
+    // Counters without a day cannot be placed in time, so they are worth nothing.
+    expect(rowToSnapshot(row({ daily_counters: { battleWins: 9 } })).daily.battleWins).toBe(0)
+    expect(rowToSnapshot(row({ daily_counters: { day: 'hier' } })).daily.day).not.toBe('hier')
+  })
+
+  it('refuses counts that are not counts', () => {
+    const nonsense = { day: '2026-08-18', battleWins: -3, puzzlesSolved: 1.5, huntScore: NaN }
+    const daily = rowToSnapshot(row({ daily_counters: nonsense })).daily
+    expect(daily.battleWins).toBe(0)
+    expect(daily.puzzlesSolved).toBe(0)
+    expect(daily.huntScore).toBe(0)
+  })
+
+  it('returns the feed newest first and drops what is not an entry', () => {
+    const older = { id: 'a', kind: 'hunt', label: 'Manche', xp: 10, at: '2026-08-17T10:00:00Z' }
+    const newer = { id: 'b', kind: 'battle', label: 'Victoire', xp: 40, at: '2026-08-18T10:00:00Z' }
+    const feed = rowToSnapshot(
+      row({ activity_feed: [older, null, { id: 'c' }, { ...newer, kind: 'inventé' }, newer] }),
+    ).activities
+    expect(feed.map((entry) => entry.id)).toEqual(['b', 'a'])
   })
 })

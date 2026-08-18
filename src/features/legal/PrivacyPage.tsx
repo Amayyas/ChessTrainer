@@ -46,6 +46,12 @@ export default function PrivacyPage() {
           enregistrée. Elle sert uniquement à vérifier qu'un score soumis correspond à une partie
           réellement jouée.
         </p>
+        <p>
+          <strong>Votre journée et votre activité récente</strong> : l'avancement de vos challenges
+          du jour, et la liste de vos douze dernières actions dans l'application (mode joué, points
+          gagnés, date). Ces informations suivent votre compte afin que vous les retrouviez sur vos
+          autres appareils.
+        </p>
       </Section>
 
       <Section title="Ce qui est visible par les autres">

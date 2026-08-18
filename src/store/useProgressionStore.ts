@@ -7,11 +7,22 @@ import {
   mergeHistories,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
-import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
+import {
+  countersForToday,
+  emptyCounters,
+  mergeCounters,
+  type DailyCounters,
+} from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { EMPTY_PROGRESS, dayKey, type PuzzleProgress } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 
-export type ActivityKind = 'battle' | 'puzzle' | 'hunt' | 'coach'
+/**
+ * The runtime list is the source of truth and the type follows it, as the hunt
+ * champions already do. Declared the other way round, a new kind would compile
+ * everywhere while the guard that reads rows back silently dropped it.
+ */
+export const ACTIVITY_KINDS = ['battle', 'puzzle', 'hunt', 'coach'] as const
+export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
 
 export interface Activity {
   id: string
@@ -60,6 +71,30 @@ export const EMPTY_STATS: ProgressionStats = {
 /** How many recent activities the dashboard keeps. */
 const ACTIVITY_LIMIT = 12
 
+/**
+ * Two views of the same feed, reconciled.
+ *
+ * Entries carry their own identity, so the same event seen from two devices is
+ * one line rather than two. Replacing outright would drop whatever was earned
+ * while the server copy was in flight — the same loss the accuracy history had.
+ */
+export function mergeActivities(
+  local: readonly Activity[],
+  server: readonly Activity[],
+): Activity[] {
+  // Keyed on more than the id: entries written before ids became collision-proof
+  // combined a millisecond with a per-process counter, so two devices could mint
+  // the same one. Two genuinely different events would then be merged into one.
+  const seen = new Map<string, Activity>()
+  for (const entry of [...local, ...server]) {
+    const key = `${entry.id}|${entry.at}|${entry.kind}|${entry.label}`
+    if (!seen.has(key)) seen.set(key, entry)
+  }
+  return [...seen.values()]
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, ACTIVITY_LIMIT)
+}
+
 export interface BattleOutcomeInput {
   outcome: 'win' | 'loss' | 'draw'
   byCheckmate: boolean
@@ -82,6 +117,10 @@ export interface ProgressionSnapshot {
   puzzleProgress: PuzzleProgress
   /** One entry per reviewed battle, newest first. */
   accuracyHistory: AccuracyEntry[]
+  /** The day's challenge counters. */
+  daily: DailyCounters
+  /** The recent activity feed, newest first. */
+  activities: Activity[]
 }
 
 interface ProgressionState {
@@ -157,7 +196,19 @@ function blankProgress() {
 }
 
 let activitySeq = 0
+/**
+ * Unique across devices, not merely within this tab.
+ *
+ * The old form combined the millisecond with a counter that restarts in every
+ * process, so two devices could mint the same id — and the feed, which merges by
+ * id, would then discard one of two genuinely different events. randomUUID is
+ * available wherever this app runs; the counter form remains as a fallback and
+ * is still fine for telling apart entries made in one session.
+ */
 function activityId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
   activitySeq += 1
   return `${Date.now().toString(36)}-${activitySeq}`
 }
@@ -182,9 +233,8 @@ export const useProgressionStore = create<ProgressionState>()(
       ) =>
         set((state) => {
           const stats = updateStats(state.stats)
-          const today = dayKey()
           // A new calendar day wipes the counters the challenges read.
-          const base = state.daily.day === today ? state.daily : emptyCounters(today)
+          const base = countersForToday(state.daily)
 
           // Badges are granted here rather than by each mode, so a stat can
           // never move without its badges being reconsidered.
@@ -328,7 +378,16 @@ export const useProgressionStore = create<ProgressionState>()(
         setPuzzleProgress: (update) =>
           set((state) => ({ puzzleProgress: update(state.puzzleProgress) })),
 
-        hydrate: ({ xp, stats, unlockedBadges, huntScores, puzzleProgress, accuracyHistory }) =>
+        hydrate: ({
+          xp,
+          stats,
+          unlockedBadges,
+          huntScores,
+          puzzleProgress,
+          accuracyHistory,
+          daily,
+          activities,
+        }) =>
           // The server copy replaces the synced fields outright, rather than
           // being summed in, so signing in on a second device shows the account
           // as it is and never double counts. Badges arriving this way are
@@ -346,6 +405,16 @@ export const useProgressionStore = create<ProgressionState>()(
             // would be dropped here, and the pull then marks the server copy
             // as synchronised — so it would never be sent at all.
             accuracyHistory: mergeHistories(get().accuracyHistory, accuracyHistory),
+            // Counters are not a log, and they are not a total either. Taking
+            // the server copy outright loses an increment made here before the
+            // pull landed — a same-device loss, not the cross-device race this
+            // row already accepts. Each counter only ever rises within a day,
+            // so the higher of the two is never behind either side and never
+            // double counts. Simultaneous play still under-counts, which is
+            // the trade-off already made everywhere in this row.
+            daily: mergeCounters(get().daily, daily),
+            // The feed is a log, and merges like one.
+            activities: mergeActivities(get().activities, activities),
           }),
 
         adoptOwner: (ownerId) =>
