@@ -50,6 +50,7 @@ export default function CoachPage() {
     playerColor?: Color
     levelLabel?: string
     outcome?: BattleOutcome
+    playedAt?: string
   } | null
   const handedOverPgn = handedOver?.pgn
   /**
@@ -58,17 +59,35 @@ export default function CoachPage() {
    * player's, moves can be taken back and hints asked for, so nothing measured
    * here would say anything about how well they actually play.
    */
-  const reviewedColor = useRef<Color | null>(null)
-  /** The level faced and how it ended, kept for the history entry. */
-  const reviewedBattle = useRef<{ level: string; outcome: BattleOutcome } | null>(null)
+  /**
+   * The battle under review, tied to the exact game it describes.
+   *
+   * Keyed by PGN on purpose. Held loose, this metadata outlived the game it came
+   * from: switching to free analysis, loading a FEN or starting a fresh game
+   * left it in place, and the next game to finish was recorded with the previous
+   * battle's colour, level and outcome — the very thing this feature exists to
+   * prevent.
+   */
+  const reviewed = useRef<{
+    pgn: string
+    color: Color
+    level: string
+    outcome: BattleOutcome
+    playedAt: string
+  } | null>(null)
   const loadedPgn = useRef<string | null>(null)
   useEffect(() => {
     if (!handedOverPgn || loadedPgn.current === handedOverPgn) return
     loadedPgn.current = handedOverPgn
-    reviewedColor.current = handedOver?.playerColor ?? null
-    reviewedBattle.current =
-      handedOver?.levelLabel && handedOver.outcome
-        ? { level: handedOver.levelLabel, outcome: handedOver.outcome }
+    reviewed.current =
+      handedOver?.playerColor && handedOver.levelLabel && handedOver.outcome
+        ? {
+            pgn: handedOverPgn,
+            color: handedOver.playerColor,
+            level: handedOver.levelLabel,
+            outcome: handedOver.outcome,
+            playedAt: handedOver.playedAt ?? new Date().toISOString(),
+          }
         : null
     if (game.loadPgn(handedOverPgn)) {
       setMode('game')
@@ -119,10 +138,20 @@ export default function CoachPage() {
   const recordCoachAnalysis = useProgressionStore((state) => state.recordCoachAnalysis)
   const recordedGame = useRef<string | null>(null)
   useEffect(() => {
-    if (!game.status.isOver || game.sanHistory.length === 0) {
-      if (game.sanHistory.length === 0) recordedGame.current = null
+    if (game.sanHistory.length === 0) {
+      recordedGame.current = null
       return
     }
+
+    // This game is a battle under review only while it still is that game.
+    const review = reviewed.current?.pgn === game.pgn ? reviewed.current : null
+
+    // A battle can end without the board ending: resignation and timeout both
+    // hand over a position with legal moves left. Requiring a terminal position
+    // meant those games — which carry a perfectly good result — were never
+    // recorded at all.
+    if (!game.status.isOver && review === null) return
+
     // Wait for the whole game. Stockfish works through it position by position,
     // and the summary read too early is built from the few moves done so far —
     // which is how a game once recorded 100%, off a single mate.
@@ -130,14 +159,18 @@ export default function CoachPage() {
     if (recordedGame.current === game.pgn) return
 
     recordedGame.current = game.pgn
-    const colour = reviewedColor.current
     const battleAccuracy =
-      colour === 'w'
-        ? analysis.summary.accuracyWhite
-        : colour === 'b'
-          ? analysis.summary.accuracyBlack
-          : null
-    recordCoachAnalysis({ battleAccuracy, battle: reviewedBattle.current ?? undefined })
+      review === null
+        ? null
+        : review.color === 'w'
+          ? analysis.summary.accuracyWhite
+          : analysis.summary.accuracyBlack
+    recordCoachAnalysis({
+      battleAccuracy,
+      battle: review
+        ? { level: review.level, outcome: review.outcome, playedAt: review.playedAt }
+        : undefined,
+    })
   }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)

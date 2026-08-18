@@ -88,8 +88,13 @@ export default function AccuracyHistory({ entries }: { entries: readonly Accurac
       <Sparkline entries={entries} />
 
       <ul className="mt-3 divide-y divide-ebene/10">
-        {entries.slice(0, 10).map((entry) => (
-          <li key={entry.playedAt} className="flex items-center justify-between gap-3 py-2 text-sm">
+        {entries.slice(0, 10).map((entry, index) => (
+          // The timestamp alone is not unique: two games can land in the same
+          // millisecond, and a hydrated row can carry a duplicate.
+          <li
+            key={`${entry.playedAt}-${index}`}
+            className="flex items-center justify-between gap-3 py-2 text-sm"
+          >
             <span className="text-ardoise">{dateFormat.format(new Date(entry.playedAt))}</span>
             <span className="min-w-0 flex-1 truncate text-ardoise">
               {entry.level} — {OUTCOME_LABEL[entry.outcome]}

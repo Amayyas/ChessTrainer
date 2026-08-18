@@ -17,6 +17,13 @@ export default function BattlePage() {
   const battle = useBattleGame()
   const navigate = useNavigate()
   const { game, clock, level, playerColor, phase, result } = battle
+
+  // Stamped the moment the game ends, so reviewing it later does not move it.
+  const endedAt = useRef<string | null>(null)
+  useEffect(() => {
+    if (result && endedAt.current === null) endedAt.current = new Date().toISOString()
+    if (!result) endedAt.current = null
+  }, [result])
   const recordBattle = useProgressionStore((state) => state.recordBattle)
 
   // Award XP once, when the game ends.

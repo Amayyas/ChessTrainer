@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { earnedBadgeIds } from '@/features/progression/badges'
 import type { Scoreboard } from '@/features/hunt/scoring'
-import { appendEntry, type AccuracyEntry } from '@/features/progression/accuracyHistory'
+import {
+  appendEntry,
+  mergeHistories,
+  type AccuracyEntry,
+} from '@/features/progression/accuracyHistory'
 import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
 import { EMPTY_PROGRESS, dayKey, type PuzzleProgress } from '@/features/puzzle/dailySet'
@@ -111,7 +115,7 @@ interface ProgressionState {
   recordCoachAnalysis: (input: {
     battleAccuracy: number | null
     /** Present only for a battle handed over for review. */
-    battle?: Omit<AccuracyEntry, 'playedAt' | 'accuracy'>
+    battle?: Omit<AccuracyEntry, 'accuracy'>
   }) => void
   unlockBadges: (ids: string[]) => void
   acknowledgeBadges: () => void
@@ -169,7 +173,7 @@ function activityId(): string {
  */
 export const useProgressionStore = create<ProgressionState>()(
   persist(
-    (set) => {
+    (set, get) => {
       const award = (
         xp: number,
         activity: Omit<Activity, 'id' | 'xp' | 'at'>,
@@ -296,7 +300,6 @@ export const useProgressionStore = create<ProgressionState>()(
           if (battleAccuracy !== null && battle) {
             set((state) => ({
               accuracyHistory: appendEntry(state.accuracyHistory, {
-                playedAt: new Date().toISOString(),
                 accuracy: battleAccuracy,
                 ...battle,
               }),
@@ -333,7 +336,12 @@ export const useProgressionStore = create<ProgressionState>()(
             unlockedBadges,
             huntScores,
             puzzleProgress: { ...EMPTY_PROGRESS, ...puzzleProgress },
-            accuracyHistory,
+            // Merged, not replaced. The fields above are totals, where the
+            // server copy must win or a second device would double count.
+            // This one is a log: a game reviewed while the pull was in flight
+            // would be dropped here, and the pull then marks the server copy
+            // as synchronised — so it would never be sent at all.
+            accuracyHistory: mergeHistories(get().accuracyHistory, accuracyHistory),
           }),
 
         adoptOwner: (ownerId) =>

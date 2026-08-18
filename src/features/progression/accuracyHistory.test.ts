@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   appendEntry,
   HISTORY_LIMIT,
+  mergeHistories,
   recentTrend,
+  sortNewestFirst,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
 
@@ -53,5 +55,51 @@ describe('recentTrend', () => {
   it('reports a decline as a negative delta', () => {
     const history = [...Array(5).fill(entry(50)), ...Array(5).fill(entry(75))]
     expect(recentTrend(history)?.delta).toBe(-25)
+  })
+})
+
+describe('sortNewestFirst', () => {
+  it('restores the order every reader here depends on', () => {
+    // A row from an older write, a merge, or a tampered client carries no
+    // ordering guarantee, and an out-of-order array would silently plot and
+    // compare the wrong games.
+    const shuffled = [entry(60, 2), entry(80, 5), entry(70, 3)]
+    expect(sortNewestFirst(shuffled).map((e) => e.accuracy)).toEqual([80, 70, 60])
+  })
+})
+
+describe('mergeHistories', () => {
+  it('keeps an entry the server has not seen yet', () => {
+    // The bug this covers: hydration replaced the log outright, so a game
+    // reviewed while the pull was in flight was dropped — and the pull then
+    // marked the server copy as synchronised, so it was never sent either.
+    const local = [entry(90, 9)]
+    const server = [entry(60, 2), entry(70, 3)]
+    expect(mergeHistories(local, server).map((e) => e.accuracy)).toEqual([90, 70, 60])
+  })
+
+  it('counts the same game seen twice as one', () => {
+    const shared = entry(75, 4)
+    expect(mergeHistories([shared], [shared])).toHaveLength(1)
+  })
+
+  it('stays bounded and newest first', () => {
+    // Distinct instants, or the deduplication would rightly collapse them and
+    // the bound would never be reached.
+    const at = (minute: number): AccuracyEntry => ({
+      playedAt: new Date(Date.UTC(2026, 7, 1, 0, minute)).toISOString(),
+      accuracy: 50,
+      level: 'Novice',
+      outcome: 'win',
+    })
+    const older = Array.from({ length: 80 }, (_, i) => at(i))
+    const newer = Array.from({ length: 80 }, (_, i) => at(i + 80))
+
+    const merged = mergeHistories(newer, older)
+    expect(merged).toHaveLength(HISTORY_LIMIT)
+    const times = merged.map((e) => Date.parse(e.playedAt))
+    expect([...times].sort((a, b) => b - a)).toEqual(times)
+    // The bound keeps the newest, not whichever happened to be first.
+    expect(merged[0]!.playedAt).toBe(at(159).playedAt)
   })
 })

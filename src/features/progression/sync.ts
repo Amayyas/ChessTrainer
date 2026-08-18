@@ -1,6 +1,10 @@
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import type { HuntScoreEntry, Scoreboard } from '@/features/hunt/scoring'
-import { HISTORY_LIMIT, type AccuracyEntry } from '@/features/progression/accuracyHistory'
+import {
+  MAX_LEVEL_LENGTH,
+  sortNewestFirst,
+  type AccuracyEntry,
+} from '@/features/progression/accuracyHistory'
 import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 import type { ProgressionRow } from '@/lib/supabase'
 import {
@@ -116,15 +120,18 @@ function isAccuracyEntry(value: unknown): value is AccuracyEntry {
     isTimestamp(entry.playedAt) &&
     isAccuracy(entry.accuracy) &&
     typeof entry.level === 'string' &&
+    entry.level.length <= MAX_LEVEL_LENGTH &&
     OUTCOMES.includes(entry.outcome as BattleOutcome)
   )
 }
 
 function normaliseAccuracyHistory(value: unknown): AccuracyEntry[] {
   if (!Array.isArray(value)) return []
-  // Trimmed on the way in as well as out: a row written by an older or tampered
-  // client must not be able to make every later save unbounded.
-  return value.filter(isAccuracyEntry).slice(0, HISTORY_LIMIT)
+  // Sorted as well as trimmed. The trend and the chart both read this newest
+  // first, which is what appendEntry produces locally — but a row from an older
+  // write, a merge, or a tampered client carries no such guarantee, and an
+  // out-of-order array would silently plot and compare the wrong games.
+  return sortNewestFirst(value.filter(isAccuracyEntry))
 }
 
 /** The account's server copy, shaped for the store's `hydrate`. */
