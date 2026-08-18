@@ -19,6 +19,33 @@ export function countersForToday(counters: DailyCounters, day: string = dayKey()
   return counters.day === day ? counters : emptyCounters(day)
 }
 
+/**
+ * Two tallies of the same day, reconciled.
+ *
+ * Each counter only ever rises while the day lasts, so the higher of the two is
+ * never behind either side and never double counts — which taking one outright
+ * would (losing the other's work) and summing would (on any re-sync).
+ *
+ * Days that disagree are not two views of one tally: whichever is today wins,
+ * and if neither is, the day starts again.
+ */
+export function mergeCounters(
+  local: DailyCounters,
+  server: DailyCounters,
+  day: string = dayKey(),
+): DailyCounters {
+  const a = countersForToday(local, day)
+  const b = countersForToday(server, day)
+  return {
+    day,
+    battleWins: Math.max(a.battleWins, b.battleWins),
+    puzzlesSolved: Math.max(a.puzzlesSolved, b.puzzlesSolved),
+    huntScore: Math.max(a.huntScore, b.huntScore),
+    huntCaptures: Math.max(a.huntCaptures, b.huntCaptures),
+    coachAnalyses: Math.max(a.coachAnalyses, b.coachAnalyses),
+  }
+}
+
 export function emptyCounters(day: string = dayKey()): DailyCounters {
   return { day, battleWins: 0, puzzlesSolved: 0, huntScore: 0, huntCaptures: 0, coachAnalyses: 0 }
 }

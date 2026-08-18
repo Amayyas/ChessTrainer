@@ -341,6 +341,21 @@ describe('legacy keys are cleared whichever version is migrated', () => {
 describe('hydrating the day and the feed', () => {
   beforeEach(() => useProgressionStore.getState().reset())
 
+  it('keeps an increment made before the pull landed', () => {
+    // A same-device loss, distinct from the cross-device race this row accepts:
+    // a genuine local action, taken before any conflicting write, was erased by
+    // the server copy and then persisted stale.
+    store().recordHunt({ score: 500, captures: 4, championLabel: 'Dame' })
+    store().hydrate({ ...blank(), daily: { ...emptyCounters(dayKey()), huntScore: 200 } })
+    expect(store().daily.huntScore).toBe(500)
+  })
+
+  it("takes the account's figure when it is ahead of this device", () => {
+    store().recordHunt({ score: 200, captures: 2, championLabel: 'Dame' })
+    store().hydrate({ ...blank(), daily: { ...emptyCounters(dayKey()), huntScore: 900 } })
+    expect(store().daily.huntScore).toBe(900)
+  })
+
   it("takes the account's counters when they are today's", () => {
     // The point of the whole change: a different browser must not empty the day.
     const today = dayKey()
@@ -359,6 +374,25 @@ describe('hydrating the day and the feed', () => {
     })
     expect(store().daily.huntScore).toBe(0)
     expect(store().daily.day).toBe(dayKey())
+  })
+
+  it('keeps two different events that happen to share an id', () => {
+    // Ids used to combine a millisecond with a per-process counter, so two
+    // devices could mint the same one. Merging on the id alone then discarded a
+    // genuinely different event.
+    store().hydrate({
+      ...blank(),
+      activities: [
+        { id: 'x', kind: 'battle', label: 'Victoire', xp: 40, at: '2026-08-18T10:00:00Z' },
+      ],
+    })
+    store().hydrate({
+      ...blank(),
+      activities: [
+        { id: 'x', kind: 'puzzle', label: 'Puzzle', xp: 10, at: '2026-08-18T11:00:00Z' },
+      ],
+    })
+    expect(store().activities).toHaveLength(2)
   })
 
   it('merges the feed rather than replacing it', () => {

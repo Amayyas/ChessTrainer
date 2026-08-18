@@ -8,7 +8,7 @@ import {
 } from '@/features/progression/accuracyHistory'
 import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 import type { ProgressionRow } from '@/lib/supabase'
-import type { Activity, ActivityKind } from '@/store/useProgressionStore'
+import { ACTIVITY_KINDS, type Activity, type ActivityKind } from '@/store/useProgressionStore'
 import {
   EMPTY_STATS,
   type ProgressionSnapshot,
@@ -153,8 +153,6 @@ function normaliseCounters(value: unknown): DailyCounters {
   return counters
 }
 
-const ACTIVITY_KINDS: readonly ActivityKind[] = ['battle', 'puzzle', 'hunt', 'coach']
-
 function isActivity(value: unknown): value is Activity {
   if (typeof value !== 'object' || value === null) return false
   const entry = value as Record<string, unknown>
@@ -165,8 +163,12 @@ function isActivity(value: unknown): value is Activity {
     ACTIVITY_KINDS.includes(entry.kind as ActivityKind) &&
     typeof entry.label === 'string' &&
     entry.label.length <= 200 &&
-    typeof entry.xp === 'number' &&
-    Number.isFinite(entry.xp) &&
+    // A real award: whole and not negative. Locally these always are, but this
+    // comes back from a column any client can write, and "-50 XP" would be
+    // displayed as readily as any other number.
+    isCount(entry.xp) &&
+    typeof entry.at === 'string' &&
+    entry.at.length <= 40 &&
     isTimestamp(entry.at)
   )
 }
