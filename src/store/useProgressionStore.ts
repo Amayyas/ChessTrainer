@@ -7,9 +7,13 @@ import {
   mergeHistories,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
-import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
+import {
+  countersForToday,
+  emptyCounters,
+  type DailyCounters,
+} from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { EMPTY_PROGRESS, dayKey, type PuzzleProgress } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 
 export type ActivityKind = 'battle' | 'puzzle' | 'hunt' | 'coach'
 
@@ -60,6 +64,24 @@ export const EMPTY_STATS: ProgressionStats = {
 /** How many recent activities the dashboard keeps. */
 const ACTIVITY_LIMIT = 12
 
+/**
+ * Two views of the same feed, reconciled.
+ *
+ * Entries carry their own identity, so the same event seen from two devices is
+ * one line rather than two. Replacing outright would drop whatever was earned
+ * while the server copy was in flight — the same loss the accuracy history had.
+ */
+export function mergeActivities(
+  local: readonly Activity[],
+  server: readonly Activity[],
+): Activity[] {
+  const byId = new Map<string, Activity>()
+  for (const entry of [...local, ...server]) if (!byId.has(entry.id)) byId.set(entry.id, entry)
+  return [...byId.values()]
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, ACTIVITY_LIMIT)
+}
+
 export interface BattleOutcomeInput {
   outcome: 'win' | 'loss' | 'draw'
   byCheckmate: boolean
@@ -82,6 +104,10 @@ export interface ProgressionSnapshot {
   puzzleProgress: PuzzleProgress
   /** One entry per reviewed battle, newest first. */
   accuracyHistory: AccuracyEntry[]
+  /** The day's challenge counters. */
+  daily: DailyCounters
+  /** The recent activity feed, newest first. */
+  activities: Activity[]
 }
 
 interface ProgressionState {
@@ -182,9 +208,8 @@ export const useProgressionStore = create<ProgressionState>()(
       ) =>
         set((state) => {
           const stats = updateStats(state.stats)
-          const today = dayKey()
           // A new calendar day wipes the counters the challenges read.
-          const base = state.daily.day === today ? state.daily : emptyCounters(today)
+          const base = countersForToday(state.daily)
 
           // Badges are granted here rather than by each mode, so a stat can
           // never move without its badges being reconsidered.
@@ -328,7 +353,16 @@ export const useProgressionStore = create<ProgressionState>()(
         setPuzzleProgress: (update) =>
           set((state) => ({ puzzleProgress: update(state.puzzleProgress) })),
 
-        hydrate: ({ xp, stats, unlockedBadges, huntScores, puzzleProgress, accuracyHistory }) =>
+        hydrate: ({
+          xp,
+          stats,
+          unlockedBadges,
+          huntScores,
+          puzzleProgress,
+          accuracyHistory,
+          daily,
+          activities,
+        }) =>
           // The server copy replaces the synced fields outright, rather than
           // being summed in, so signing in on a second device shows the account
           // as it is and never double counts. Badges arriving this way are
@@ -346,6 +380,12 @@ export const useProgressionStore = create<ProgressionState>()(
             // would be dropped here, and the pull then marks the server copy
             // as synchronised — so it would never be sent at all.
             accuracyHistory: mergeHistories(get().accuracyHistory, accuracyHistory),
+            // Counters are not a log: they are this account's tally for the
+            // day, so the server copy stands — guarded, because a set left
+            // over from yesterday counts for nothing towards today.
+            daily: countersForToday(daily),
+            // The feed is a log, and merges like one.
+            activities: mergeActivities(get().activities, activities),
           }),
 
         adoptOwner: (ownerId) =>

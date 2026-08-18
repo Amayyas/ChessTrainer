@@ -1,9 +1,22 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { XP_REWARDS, huntXp } from '@/features/progression/levels'
-import { EMPTY_PROGRESS } from '@/features/puzzle/dailySet'
+import { emptyCounters } from '@/features/progression/challenges'
+import { EMPTY_PROGRESS, dayKey } from '@/features/puzzle/dailySet'
 import { EMPTY_STATS, useProgressionStore } from '@/store/useProgressionStore'
 
 const store = () => useProgressionStore.getState()
+
+/** An empty server snapshot, so each test names only the field it is about. */
+const blank = () => ({
+  xp: 0,
+  stats: EMPTY_STATS,
+  unlockedBadges: [],
+  huntScores: {},
+  puzzleProgress: EMPTY_PROGRESS,
+  accuracyHistory: [],
+  daily: emptyCounters(),
+  activities: [],
+})
 
 /** The metadata a battle handover carries; distinct times keep entries apart. */
 const review = (playedAt: string) => ({ level: 'Maître', outcome: 'win' as const, playedAt })
@@ -322,5 +335,44 @@ describe('legacy keys are cleared whichever version is migrated', () => {
     )
     await useProgressionStore.persist.rehydrate()
     expect(legacyKeysGone()).toBe(true)
+  })
+})
+
+describe('hydrating the day and the feed', () => {
+  beforeEach(() => useProgressionStore.getState().reset())
+
+  it("takes the account's counters when they are today's", () => {
+    // The point of the whole change: a different browser must not empty the day.
+    const today = dayKey()
+    store().hydrate({
+      ...blank(),
+      daily: { ...emptyCounters(today), huntScore: 890, battleWins: 1 },
+    })
+    expect(store().daily.huntScore).toBe(890)
+    expect(store().daily.battleWins).toBe(1)
+  })
+
+  it('ignores counters left over from another day', () => {
+    store().hydrate({
+      ...blank(),
+      daily: { ...emptyCounters('2026-01-01'), huntScore: 890 },
+    })
+    expect(store().daily.huntScore).toBe(0)
+    expect(store().daily.day).toBe(dayKey())
+  })
+
+  it('merges the feed rather than replacing it', () => {
+    // A game finished while the pull was in flight must survive it.
+    store().recordHunt({ score: 100, captures: 2, championLabel: 'Dame' })
+    const localId = store().activities[0]!.id
+    store().hydrate({
+      ...blank(),
+      activities: [
+        { id: 'serveur-1', kind: 'battle', label: 'Victoire', xp: 40, at: '2026-08-17T10:00:00Z' },
+      ],
+    })
+    const ids = store().activities.map((entry) => entry.id)
+    expect(ids).toContain(localId)
+    expect(ids).toContain('serveur-1')
   })
 })

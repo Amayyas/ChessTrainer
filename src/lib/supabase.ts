@@ -67,5 +67,9 @@ export interface ProgressionRow {
   puzzle_progress: unknown
   /** One entry per reviewed battle, newest first, as one JSON document. */
   accuracy_history: unknown
+  /** The day's challenge counters, as one JSON document. */
+  daily_counters: unknown
+  /** The recent activity feed, newest first, as one JSON document. */
+  activity_feed: unknown
   updated_at: string
 }

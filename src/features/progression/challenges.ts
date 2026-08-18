@@ -10,6 +10,15 @@ export interface DailyCounters {
   coachAnalyses: number
 }
 
+/**
+ * The counters as they apply today. A set carried over from yesterday — off the
+ * server, or out of storage after midnight — counts for nothing towards today's
+ * challenges, and saying so in one place keeps every reader honest.
+ */
+export function countersForToday(counters: DailyCounters, day: string = dayKey()): DailyCounters {
+  return counters.day === day ? counters : emptyCounters(day)
+}
+
 export function emptyCounters(day: string = dayKey()): DailyCounters {
   return { day, battleWins: 0, puzzlesSolved: 0, huntScore: 0, huntCaptures: 0, coachAnalyses: 0 }
 }
@@ -123,7 +132,7 @@ export function challengeProgress(
   day: string = dayKey(),
 ): ChallengeProgress[] {
   // Yesterday's counters must not count towards today's challenges.
-  const fresh = counters.day === day ? counters : emptyCounters(day)
+  const fresh = countersForToday(counters, day)
   return dailyChallenges(day).map((challenge) => {
     const progress = Math.min(challenge.target, challenge.progressOf(fresh))
     return { challenge, progress, isComplete: progress >= challenge.target }

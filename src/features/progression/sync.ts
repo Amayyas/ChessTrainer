@@ -1,5 +1,6 @@
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import type { HuntScoreEntry, Scoreboard } from '@/features/hunt/scoring'
+import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
 import {
   MAX_LEVEL_LENGTH,
   sortNewestFirst,
@@ -7,6 +8,7 @@ import {
 } from '@/features/progression/accuracyHistory'
 import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
 import type { ProgressionRow } from '@/lib/supabase'
+import type { Activity, ActivityKind } from '@/store/useProgressionStore'
 import {
   EMPTY_STATS,
   type ProgressionSnapshot,
@@ -134,6 +136,54 @@ function normaliseAccuracyHistory(value: unknown): AccuracyEntry[] {
   return sortNewestFirst(value.filter(isAccuracyEntry))
 }
 
+/** Counters read from an untrusted document, every field folded onto a known shape. */
+function normaliseCounters(value: unknown): DailyCounters {
+  const base = emptyCounters()
+  if (typeof value !== 'object' || value === null) return base
+  const raw = value as Record<string, unknown>
+  // The day is what makes the rest meaningful; without a valid one the counters
+  // cannot be placed in time, so they are worth nothing and start again.
+  if (!isDayKey(raw.day)) return base
+  const counters: DailyCounters = { ...base, day: raw.day }
+  for (const key of Object.keys(base) as (keyof DailyCounters)[]) {
+    if (key === 'day') continue
+    const count = raw[key]
+    if (isCount(count)) counters[key] = count
+  }
+  return counters
+}
+
+const ACTIVITY_KINDS: readonly ActivityKind[] = ['battle', 'puzzle', 'hunt', 'coach']
+
+function isActivity(value: unknown): value is Activity {
+  if (typeof value !== 'object' || value === null) return false
+  const entry = value as Record<string, unknown>
+  return (
+    typeof entry.id === 'string' &&
+    entry.id.length > 0 &&
+    entry.id.length <= 64 &&
+    ACTIVITY_KINDS.includes(entry.kind as ActivityKind) &&
+    typeof entry.label === 'string' &&
+    entry.label.length <= 200 &&
+    typeof entry.xp === 'number' &&
+    Number.isFinite(entry.xp) &&
+    isTimestamp(entry.at)
+  )
+}
+
+function normaliseActivities(value: unknown): Activity[] {
+  if (!Array.isArray(value)) return []
+  // Sorted as well as filtered: the dashboard shows this newest first, and a row
+  // from an older write or a merge carries no such guarantee.
+  return value
+    .filter(isActivity)
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, ACTIVITY_FEED_LIMIT)
+}
+
+/** Matches the store's own bound; a row must not be able to lift it. */
+const ACTIVITY_FEED_LIMIT = 12
+
 /** The account's server copy, shaped for the store's `hydrate`. */
 export function rowToSnapshot(row: ProgressionRow): ProgressionSnapshot {
   return {
@@ -143,6 +193,8 @@ export function rowToSnapshot(row: ProgressionRow): ProgressionSnapshot {
     huntScores: normaliseHuntScores(row.hunt_scores),
     puzzleProgress: normalisePuzzleProgress(row.puzzle_progress),
     accuracyHistory: normaliseAccuracyHistory(row.accuracy_history),
+    daily: normaliseCounters(row.daily_counters),
+    activities: normaliseActivities(row.activity_feed),
   }
 }
 
@@ -159,6 +211,8 @@ export function snapshotToRow(
     hunt_scores: snapshot.huntScores,
     puzzle_progress: snapshot.puzzleProgress,
     accuracy_history: snapshot.accuracyHistory,
+    daily_counters: snapshot.daily,
+    activity_feed: snapshot.activities,
   }
 }
 
