@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { earnedBadgeIds } from '@/features/progression/badges'
 import type { Scoreboard } from '@/features/hunt/scoring'
+import {
+  appendEntry,
+  mergeHistories,
+  type AccuracyEntry,
+} from '@/features/progression/accuracyHistory'
 import { emptyCounters, type DailyCounters } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
 import { EMPTY_PROGRESS, dayKey, type PuzzleProgress } from '@/features/puzzle/dailySet'
@@ -75,12 +80,16 @@ export interface ProgressionSnapshot {
   huntScores: Scoreboard
   /** Daily puzzle streak and totals. */
   puzzleProgress: PuzzleProgress
+  /** One entry per reviewed battle, newest first. */
+  accuracyHistory: AccuracyEntry[]
 }
 
 interface ProgressionState {
   xp: number
   stats: ProgressionStats
   daily: DailyCounters
+  /** One entry per reviewed battle, newest first. Synced with the account. */
+  accuracyHistory: AccuracyEntry[]
   activities: Activity[]
   unlockedBadges: string[]
   /** Badges unlocked but not yet shown to the player. */
@@ -103,7 +112,11 @@ interface ProgressionState {
   recordBattle: (input: BattleOutcomeInput) => void
   recordPuzzle: (input: { flawless: boolean; streak: number }) => void
   recordHunt: (input: { score: number; captures: number; championLabel: string }) => void
-  recordCoachAnalysis: (input: { battleAccuracy: number | null }) => void
+  recordCoachAnalysis: (input: {
+    battleAccuracy: number | null
+    /** Present only for a battle handed over for review. */
+    battle?: Omit<AccuracyEntry, 'accuracy'>
+  }) => void
   unlockBadges: (ids: string[]) => void
   acknowledgeBadges: () => void
   /** Replaces the synced fields with an account's server copy on sign-in. */
@@ -134,6 +147,7 @@ function blankProgress() {
     xp: 0,
     stats: EMPTY_STATS,
     daily: emptyCounters(),
+    accuracyHistory: [],
     activities: [] as Activity[],
     unlockedBadges: [] as string[],
     pendingBadges: [] as string[],
@@ -159,7 +173,7 @@ function activityId(): string {
  */
 export const useProgressionStore = create<ProgressionState>()(
   persist(
-    (set) => {
+    (set, get) => {
       const award = (
         xp: number,
         activity: Omit<Activity, 'id' | 'xp' | 'at'>,
@@ -259,7 +273,7 @@ export const useProgressionStore = create<ProgressionState>()(
           )
         },
 
-        recordCoachAnalysis: ({ battleAccuracy }) => {
+        recordCoachAnalysis: ({ battleAccuracy, battle }) => {
           award(
             XP_REWARDS.coachGameAnalysed,
             { kind: 'coach', label: 'Partie analysée dans le Coach' },
@@ -267,7 +281,11 @@ export const useProgressionStore = create<ProgressionState>()(
               // Only a reviewed battle carries an accuracy. A game played in the
               // coach itself passes null and moves no statistic: both sides are
               // the player's there, moves can be taken back and hints asked for.
-              if (battleAccuracy === null) return stats
+              // The metadata is required too, and by the same test the history
+              // below uses. Moving the mean without adding the entry would put
+              // two figures on the profile that disagree with each other, and
+              // no way to tell which of them is wrong.
+              if (battleAccuracy === null || !battle) return stats
               // Running mean, so one weak game does not erase the history.
               const samples = stats.battleAccuracySamples + 1
               const previous = stats.battleAccuracy ?? battleAccuracy
@@ -279,6 +297,18 @@ export const useProgressionStore = create<ProgressionState>()(
             },
             (counters) => ({ ...counters, coachAnalyses: counters.coachAnalyses + 1 }),
           )
+
+          // Kept apart from the running mean above: the mean answers "how well
+          // do I play", the history answers "am I getting better", and only the
+          // second of those can be acted on.
+          if (battleAccuracy !== null && battle) {
+            set((state) => ({
+              accuracyHistory: appendEntry(state.accuracyHistory, {
+                accuracy: battleAccuracy,
+                ...battle,
+              }),
+            }))
+          }
         },
 
         unlockBadges: (ids) =>
@@ -298,7 +328,7 @@ export const useProgressionStore = create<ProgressionState>()(
         setPuzzleProgress: (update) =>
           set((state) => ({ puzzleProgress: update(state.puzzleProgress) })),
 
-        hydrate: ({ xp, stats, unlockedBadges, huntScores, puzzleProgress }) =>
+        hydrate: ({ xp, stats, unlockedBadges, huntScores, puzzleProgress, accuracyHistory }) =>
           // The server copy replaces the synced fields outright, rather than
           // being summed in, so signing in on a second device shows the account
           // as it is and never double counts. Badges arriving this way are
@@ -310,6 +340,12 @@ export const useProgressionStore = create<ProgressionState>()(
             unlockedBadges,
             huntScores,
             puzzleProgress: { ...EMPTY_PROGRESS, ...puzzleProgress },
+            // Merged, not replaced. The fields above are totals, where the
+            // server copy must win or a second device would double count.
+            // This one is a log: a game reviewed while the pull was in flight
+            // would be dropped here, and the pull then marks the server copy
+            // as synchronised — so it would never be sent at all.
+            accuracyHistory: mergeHistories(get().accuracyHistory, accuracyHistory),
           }),
 
         adoptOwner: (ownerId) =>

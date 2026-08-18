@@ -12,6 +12,7 @@ function row(overrides: Partial<ProgressionRow> = {}): ProgressionRow {
     unlocked_badges: [],
     hunt_scores: {},
     puzzle_progress: {},
+    accuracy_history: [],
     updated_at: '2026-07-22T00:00:00Z',
     ...overrides,
   }
@@ -59,6 +60,7 @@ describe('snapshotToRow', () => {
       unlockedBadges: ['hunter'],
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
+      accuracyHistory: [],
     }
     expect(snapshotToRow('u9', snapshot)).toEqual({
       user_id: 'u9',
@@ -67,6 +69,7 @@ describe('snapshotToRow', () => {
       unlocked_badges: ['hunter'],
       hunt_scores: {},
       puzzle_progress: EMPTY_PUZZLE_PROGRESS,
+      accuracy_history: [],
     })
   })
 })
@@ -79,6 +82,7 @@ describe('snapshotKey', () => {
       unlockedBadges: [],
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
+      accuracyHistory: [],
     }
     const b: ProgressionSnapshot = {
       xp: 1,
@@ -86,6 +90,7 @@ describe('snapshotKey', () => {
       unlockedBadges: [],
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
+      accuracyHistory: [],
     }
     expect(snapshotKey(a)).toBe(snapshotKey(b))
   })
@@ -97,6 +102,7 @@ describe('snapshotKey', () => {
       unlockedBadges: [],
       huntScores: {},
       puzzleProgress: EMPTY_PUZZLE_PROGRESS,
+      accuracyHistory: [],
     }
     expect(snapshotKey({ ...base, xp: 2 })).not.toBe(snapshotKey(base))
   })
@@ -158,6 +164,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       unlockedBadges: [],
       huntScores: { q: [entry] },
       puzzleProgress: { lastSolvedDay: '2026-08-12', streak: 3, bestStreak: 5, totalSolved: 11 },
+      accuracyHistory: [],
     })
     expect(rowOut.hunt_scores).toEqual({ q: [entry] })
     expect(rowOut.puzzle_progress).toMatchObject({ streak: 3, totalSolved: 11 })
@@ -228,5 +235,37 @@ describe('dates and champion keys in a stored hunt board', () => {
     expect(read('2026-13-45')).toBeNull()
     expect(read('2026-08-12T10:00:00Z')).toBeNull()
     expect(read('2026-08-12')).toBe('2026-08-12')
+  })
+})
+
+describe('normalising the accuracy history', () => {
+  const good = {
+    playedAt: '2026-08-17T12:00:00.000Z',
+    accuracy: 72,
+    level: 'Maître',
+    outcome: 'win',
+  }
+
+  it('returns it newest first whatever order it arrives in', () => {
+    const older = { ...good, playedAt: '2026-08-10T12:00:00.000Z', accuracy: 50 }
+    const history = rowToSnapshot(row({ accuracy_history: [older, good] })).accuracyHistory
+    expect(history.map((entry) => entry.accuracy)).toEqual([72, 50])
+  })
+
+  it('drops an entry whose level string is absurdly long', () => {
+    // Uncapped, a tampered row would ride along in every future save and sit in
+    // localStorage forever.
+    const bloated = { ...good, level: 'x'.repeat(500) }
+    expect(rowToSnapshot(row({ accuracy_history: [bloated] })).accuracyHistory).toEqual([])
+  })
+
+  it('drops entries that are not entries at all', () => {
+    const rubbish = [null, 42, {}, { ...good, accuracy: 'beaucoup' }, { ...good, outcome: 'nope' }]
+    expect(rowToSnapshot(row({ accuracy_history: rubbish })).accuracyHistory).toEqual([])
+  })
+
+  it('reads a missing or malformed document as empty', () => {
+    expect(rowToSnapshot(row({ accuracy_history: null })).accuracyHistory).toEqual([])
+    expect(rowToSnapshot(row({ accuracy_history: 'nope' })).accuracyHistory).toEqual([])
   })
 })

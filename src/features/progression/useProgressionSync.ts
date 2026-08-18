@@ -11,8 +11,9 @@ const MAX_PULL_ATTEMPTS = 4
 const PULL_RETRY_MS = 500
 
 function currentSnapshot(): ProgressionSnapshot {
-  const { xp, stats, unlockedBadges, huntScores, puzzleProgress } = useProgressionStore.getState()
-  return { xp, stats, unlockedBadges, huntScores, puzzleProgress }
+  const { xp, stats, unlockedBadges, huntScores, puzzleProgress, accuracyHistory } =
+    useProgressionStore.getState()
+  return { xp, stats, unlockedBadges, huntScores, puzzleProgress, accuracyHistory }
 }
 
 /**

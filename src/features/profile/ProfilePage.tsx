@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import AccuracyHistory from '@/features/progression/AccuracyHistory'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
 import { levelFromXp } from '@/features/progression/levels'
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const xp = useProgressionStore((state) => state.xp)
   const stats = useProgressionStore((state) => state.stats)
   const unlocked = useProgressionStore((state) => state.unlockedBadges)
+  const accuracyHistory = useProgressionStore((state) => state.accuracyHistory)
   const isReady = useAuthStore((state) => state.isReady)
   const session = useAuthStore((state) => state.session)
   const authProfile = useAuthStore((state) => state.profile)
@@ -205,6 +207,8 @@ export default function ProfilePage() {
               </>
             )}
           </Card>
+
+          <AccuracyHistory entries={accuracyHistory} />
 
           <Card>
             <LevelBar progress={progress} />

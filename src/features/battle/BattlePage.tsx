@@ -17,6 +17,13 @@ export default function BattlePage() {
   const battle = useBattleGame()
   const navigate = useNavigate()
   const { game, clock, level, playerColor, phase, result } = battle
+
+  // Stamped the moment the game ends, so reviewing it later does not move it.
+  const endedAt = useRef<string | null>(null)
+  useEffect(() => {
+    if (result && endedAt.current === null) endedAt.current = new Date().toISOString()
+    if (!result) endedAt.current = null
+  }, [result])
   const recordBattle = useProgressionStore((state) => state.recordBattle)
 
   // Award XP once, when the game ends.
@@ -112,7 +119,16 @@ export default function BattlePage() {
                   onClick={() =>
                     // The colour travels with the game: the coach grades only
                     // the side the player actually chose, never the engine's.
-                    navigate(ROUTES.coach, { state: { pgn: game.pgn, playerColor } })
+                    navigate(ROUTES.coach, {
+                      state: {
+                        pgn: game.pgn,
+                        playerColor,
+                        // The level and the result travel too: 60% against
+                        // Maître and 60% against Novice are not the same 60%.
+                        levelLabel: level.label,
+                        outcome: result?.outcome,
+                      },
+                    })
                   }
                 >
                   Analyser dans le Coach
