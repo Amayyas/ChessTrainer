@@ -271,8 +271,13 @@ Run `npm run ci` before every commit: it is the same sequence as the remote CI.
 ## Continuous integration
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull
-request and every push to `main`. The `main` branch is protected: it only
-accepts merges from PRs whose CI is green.
+request and every push to `main`. The `main` branch is protected, and four of
+these jobs are required to pass before a merge: **Quality**, **Unit tests**,
+**Build & bundle budget** and **Database policies**.
+
+Required checks are matched **by name**. Renaming one of those jobs does not
+weaken the gate, it jams it: the old name never reports again and every pull
+request stays blocked until the protection is updated to match.
 
 | Job                      | Contents                                                   |
 | ------------------------ | ---------------------------------------------------------- |
