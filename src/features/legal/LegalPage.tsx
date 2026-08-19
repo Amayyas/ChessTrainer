@@ -37,9 +37,22 @@ export default function LegalPage() {
 
       <Section title="Propriété intellectuelle">
         <p>
-          Le code source de ChessTrainer AI est publié sur GitHub. Le moteur d'analyse Stockfish est
-          un logiciel libre distribué sous licence GPL v3&nbsp;; sa licence complète est fournie
-          avec l'application.
+          ChessTrainer AI est un logiciel libre, publié sous licence <strong>GNU AGPL v3</strong>.
+          Son code source complet est disponible sur{' '}
+          <a
+            className="font-semibold text-ebene underline"
+            href="https://github.com/Amayyas/ChessTrainer"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+          . Si vous utilisez une version modifiée de cette application, son éditeur est tenu de vous
+          en fournir également les sources.
+        </p>
+        <p>
+          Le moteur d'analyse Stockfish est un logiciel libre distinct, distribué sous licence GPL
+          v3&nbsp;; sa licence complète est fournie avec l'application.
         </p>
       </Section>
 
