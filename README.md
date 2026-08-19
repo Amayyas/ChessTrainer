@@ -200,8 +200,8 @@ npx supabase db push
 ```
 
 Check it worked under **Table Editor**: `profiles`, `scores`, `hunt_rounds`,
-`puzzle_progress`, `achievements` and `progression` should be listed, each
-marked _RLS enabled_.
+`achievements` and `progression` should be listed, each marked _RLS enabled_.
+Puzzle progress is a column on `progression`, not a table of its own.
 
 ### 3. Set the URLs
 
@@ -279,6 +279,7 @@ accepts merges from PRs whose CI is green.
 | Quality (Node 22 and 24) | `format:check`, `lint`, `typecheck`                        |
 | Unit tests               | Vitest + coverage, published as an artifact                |
 | Build & bundle budget    | Production build, then size-budget check                   |
+| Database policies        | Row Level Security and the score RPCs, on a real Postgres  |
 | Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
 
 [`codeql.yml`](.github/workflows/codeql.yml) runs separately, on the same
@@ -305,6 +306,24 @@ standing risk, so a regression is made visible on the PR that introduces it.
 its static imports only. The lazily loaded route chunks are reported for
 visibility but do not count against it, since the first paint never downloads
 them.
+
+### Database policies
+
+Everything that stops one player reading another's data, or posting a score they
+never earned, lives in `supabase/migrations` — and nothing else in this
+repository can see it. CodeQL does not read SQL, and the browser tests only
+exercise code the database has already let through.
+
+`npm run test:rls` runs the policies rather than reading them: a real Postgres,
+the real migrations applied in order, and assertions written from the attacker's
+side. `npm run db:test` brings up the database for it locally, which needs
+Docker.
+
+The little of Supabase the migrations lean on — `auth.uid()`, `auth.users`, the
+`anon` and `authenticated` roles — is recreated by
+[`supabase/tests/bootstrap.sql`](supabase/tests/bootstrap.sql). The policies
+themselves are never copied: they are applied from the same files a deployment
+gets.
 
 ### Lighthouse thresholds
 
