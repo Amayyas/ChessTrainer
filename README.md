@@ -278,7 +278,7 @@ accepts merges from PRs whose CI is green.
 | ------------------------ | ---------------------------------------------------------- |
 | Quality (Node 22 and 24) | `format:check`, `lint`, `typecheck`                        |
 | Unit tests               | Vitest + coverage, published as an artifact                |
-| Build & bundle budget    | Production build, then size-budget check                   |
+| Build & bundle budget    | Production build with reporting on, then size-budget check |
 | Database policies        | Row Level Security and the score RPCs, on a real Postgres  |
 | Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
 
@@ -301,6 +301,11 @@ standing risk, so a regression is made visible on the PR that introduces it.
 | Initial JavaScript           | 200 kB |
 | CSS                          | 50 kB  |
 | Stockfish (loaded on demand) | 5 MB   |
+
+The build here sets `VITE_SENTRY_DSN`, because production does. Without it the
+guard in `monitoring.ts` is statically false, the dynamic import is dropped as
+dead code, and the whole Sentry chunk vanishes — 27 kB that every player
+downloads and that the budget never saw.
 
 "Initial JavaScript" is read from the Vite build manifest — the entry chunk and
 its static imports only. The lazily loaded route chunks are reported for
@@ -350,6 +355,13 @@ matters is the rewrite: without it a direct hit on `/coach` asks the CDN for a
 file that does not exist and gets a 404, and only a link shared or reloaded
 would ever reveal it, since navigating from the home page never touches the
 server.
+
+`chesstrainer-ai.netlify.app` redirects to the domain rather than serving the
+app a second time. `localStorage` is scoped per origin, so a second live address
+means a second, silently divergent guest progression for anyone who bookmarked
+it — and duplicate pages for search engines. The redirect sits before the SPA
+rewrite in [`netlify.toml`](netlify.toml), which matches any host and would
+otherwise swallow it.
 
 It must be served from the **root of a domain**. The engine is loaded from an
 absolute path (`/stockfish/stockfish.js`), so a deployment under a sub-path

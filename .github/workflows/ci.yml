@@ -149,7 +149,17 @@ jobs:
 
       - run: npm ci
 
+      # Built as production is built, or the budget guards the wrong thing. With
+      # no DSN the guard in monitoring.ts is statically false, the dynamic
+      # import is dropped as dead code, and the Sentry chunk this measures never
+      # exists — some 27 kB that ships to every player and that CI never saw.
+      #
+      # The value is deliberately not a real DSN: nothing here runs the app, so
+      # only its presence matters, and a working one would invite CI failures
+      # into the project's issue list.
       - name: Production build
+        env:
+          VITE_SENTRY_DSN: https://ci@o0.ingest.de.sentry.io/0
         run: npm run build
 
       - name: Bundle size budget
