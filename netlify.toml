@@ -7,6 +7,19 @@
   command = "npm run build"
   publish = "dist"
 
+# One address for one app. The netlify.app name kept serving the whole site
+# after the domain went live, which is worse than untidy: localStorage is scoped
+# per origin, so anyone who bookmarked it during setup keeps a second, silently
+# divergent guest progression — and search engines see the same pages twice.
+#
+# Before the rewrite below, which matches any host and would otherwise swallow
+# this.
+[[redirects]]
+  from = "https://chesstrainer-ai.netlify.app/*"
+  to = "https://chesstrainer.fr/:splat"
+  status = 301
+  force = true
+
 # Client-side routing. Without this, a direct hit on /coach — a shared link, a
 # bookmark, a page reload — asks the CDN for a file that does not exist and
 # gets a 404, so the app never starts. Navigating from the home page hides the
