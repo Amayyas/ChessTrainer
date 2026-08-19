@@ -391,11 +391,15 @@ licence ships alongside the binary in
 Copyright © 2026 Amayyas Aouadene. Released under the
 **[GNU AGPL v3](LICENSE)**.
 
-Read it, learn from it, fork it. The one condition that matters: if you run a
-modified version as a public service, the modifications have to be published
-too. That is the difference between AGPL and GPL, and it is the whole reason
-for choosing it — a chess trainer is something you deploy rather than
-something you ship.
+Read it, learn from it, fork it. The condition that matters is section 13: if
+you modify it and let anyone reach it over a network — publicly or not — you
+have to offer those users the complete corresponding source, build and install
+scripts included, at no charge. Not a diff, and not only when the service is
+public.
+
+That is the difference between AGPL and GPL, and the whole reason for choosing
+it: a chess trainer is deployed rather than shipped, so GPL's obligation, which
+triggers on distributing a binary, would never fire at all.
 
 Stockfish keeps its own GPL v3 licence, unchanged, and the npm dependencies
 keep theirs. The engine is a separate program the app talks to over UCI in a
