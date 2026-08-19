@@ -7,7 +7,7 @@ an account.
 [![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.12-5FA04E)](.nvmrc)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
-[![Licence](https://img.shields.io/badge/licence-all%20rights%20reserved-9E9E9E)](#licence)
+[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-C9A84C)](LICENSE)
 
 A chess trainer that analyses your games with Stockfish, explains what each move
 was worth, and turns practice into something you actually come back to.
@@ -388,12 +388,15 @@ licence ships alongside the binary in
 
 ## Licence
 
-Copyright © 2026 Amayyas. **All rights reserved.**
+Copyright © 2026 Amayyas Aouadene. Released under the
+**[GNU AGPL v3](LICENSE)**.
 
-The source is published so it can be read, but no licence is granted: you may
-not copy, modify, redistribute or reuse it without written permission. This is
-the default state of an unlicensed repository, stated here so it is a decision
-rather than an omission — the licensing terms are still being settled.
+Read it, learn from it, fork it. The one condition that matters: if you run a
+modified version as a public service, the modifications have to be published
+too. That is the difference between AGPL and GPL, and it is the whole reason
+for choosing it — a chess trainer is something you deploy rather than
+something you ship.
 
-This applies to the application's own code. Stockfish keeps its own GPL v3
-licence, and the npm dependencies keep theirs.
+Stockfish keeps its own GPL v3 licence, unchanged, and the npm dependencies
+keep theirs. The engine is a separate program the app talks to over UCI in a
+Web Worker, not a library it links against.
