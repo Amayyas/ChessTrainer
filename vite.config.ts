@@ -21,9 +21,19 @@ function siteUrl(mode: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
+  // Read through loadEnv rather than process.env: Vite does not populate
+  // process.env from .env files while it is evaluating this config, so a token
+  // placed in .env as documented would be read as absent. loadEnv reads those
+  // files and still lets a real environment variable win, which is how Netlify
+  // provides it.
+  //
+  // The SENTRY_ prefix does not expose anything to the browser — that is
+  // envPrefix's job, and it remains VITE_. These stay build-only.
+  const env = loadEnv(mode, process.cwd(), 'SENTRY_')
+
   // Uploading maps needs a token. Without one — every local build, every fork,
   // every CI run — none of this happens and nothing about the output changes.
-  const authToken = process.env.SENTRY_AUTH_TOKEN
+  const authToken = env.SENTRY_AUTH_TOKEN
 
   return {
     plugins: [
@@ -44,12 +54,12 @@ export default defineConfig(({ mode }) => {
         ? [
             sentryVitePlugin({
               authToken,
-              org: process.env.SENTRY_ORG ?? 'amayyas',
-              project: process.env.SENTRY_PROJECT ?? 'chesstrainer',
+              org: env.SENTRY_ORG ?? 'amayyas',
+              project: env.SENTRY_PROJECT ?? 'chesstrainer',
               // The organisation lives in the EU region, and the default here is
               // the US one — a mismatch fails the upload rather than silently
               // sending data across, but it fails every build until it is set.
-              url: process.env.SENTRY_URL ?? 'https://de.sentry.io',
+              url: env.SENTRY_URL ?? 'https://de.sentry.io',
               sourcemaps: {
                 // Deleted once uploaded. Emitting them is necessary; serving them
                 // is not, and a stray .map in dist would be published.
