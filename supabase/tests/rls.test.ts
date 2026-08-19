@@ -97,8 +97,11 @@ afterEach(async () => {
 
 describe('what a visitor without an account can reach', () => {
   it('reads the public profile of a player, since the leaderboard shows it', async () => {
-    const rows = await asAnon<{ count: string }>('select count(*) from profiles')
-    expect(rows[0]).toBeDefined()
+    // Asserted on a named row, not on count(*). An aggregate returns a row even
+    // when the policy has filtered every profile away, so the count form passed
+    // whatever the policy said — a test that could not fail.
+    const rows = await asAnon<{ id: string }>('select id from profiles where id = $1', [alice])
+    expect(rows).toHaveLength(1)
   })
 
   it("cannot read anyone's progression", async () => {
@@ -266,31 +269,109 @@ describe('the score a round is allowed to claim', () => {
 
   it('refuses more points than the captures could have earned', async () => {
     const round = await openRound(60)
-    await refused(() =>
+    const error = await refused(() =>
       asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 999999, 1]),
     )
+    expect(error.message).toMatch(/not reachable with/i)
   })
 
   it('refuses a round finished too fast to have been played', async () => {
     const round = await openRound(1)
-    await refused(() =>
+    const error = await refused(() =>
       asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 600, 5]),
     )
+    expect(error.message).toMatch(/faster than it can be played/i)
   })
 
   it('refuses a round belonging to someone else', async () => {
     const round = await openRound(60)
-    await refused(() =>
+    const error = await refused(() =>
       asUser(bob, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 100, 2]),
     )
+    expect(error.message).toMatch(/no open round of yours/i)
+  })
+
+  it('refuses a champion that is not one of the four', async () => {
+    const round = await openRound(60)
+    const error = await refused(() =>
+      asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'k', 100, 2]),
+    )
+    expect(error.message).toMatch(/unknown champion/i)
+  })
+
+  it('refuses a negative score or a negative capture count', async () => {
+    for (const [score, captures] of [
+      [-1, 2],
+      [100, -2],
+    ]) {
+      const round = await openRound(60)
+      const error = await refused(() =>
+        asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', score, captures]),
+      )
+      expect(error.message).toMatch(/negative score or capture count/i)
+    }
+  })
+
+  it('refuses more captures than a sixty-second round can hold', async () => {
+    const round = await openRound(60)
+    const error = await refused(() =>
+      asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 100, 151]),
+    )
+    expect(error.message).toMatch(/sixty-second round allows/i)
+  })
+
+  it('refuses more captures than the elapsed seconds allow', async () => {
+    // Distinct from the cap above: a round open for ten seconds cannot have
+    // produced a hundred captures, even though a hundred is under the ceiling.
+    const round = await openRound(10)
+    const error = await refused(() =>
+      asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 100, 100]),
+    )
+    expect(error.message).toMatch(/seconds allow/i)
   })
 
   it('refuses to bank the same round twice', async () => {
     const round = await openRound(60)
     await asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 300, 3])
-    await refused(() =>
+    const error = await refused(() =>
       asUser(alice, 'select submit_hunt_score($1, $2, $3, $4)', [round, 'q', 300, 3]),
     )
+    expect(error.message).toMatch(/no open round of yours/i)
+  })
+})
+
+describe('badges', () => {
+  it('lets a player unlock one for themselves', async () => {
+    await asUser(alice, 'insert into achievements (user_id, badge_id) values ($1, $2)', [
+      alice,
+      'first-mate',
+    ])
+    await db.query('set local role postgres')
+    const { rows } = await db.query(
+      'select count(*)::int as n from achievements where user_id=$1',
+      [alice],
+    )
+    expect(rows[0].n).toBe(1)
+  })
+
+  it('refuses to award one to somebody else', async () => {
+    // An entire RLS-protected table was outside this suite: weakening its
+    // owner-only check would have let one player decorate another's profile
+    // without a single test noticing.
+    const error = await refused(() =>
+      asUser(alice, 'insert into achievements (user_id, badge_id) values ($1, $2)', [
+        bob,
+        'first-mate',
+      ]),
+    )
+    expect(error.message).toMatch(/row-level security/i)
+  })
+
+  it('refuses one from a visitor with no account', async () => {
+    const error = await refused(() =>
+      asAnon('insert into achievements (user_id, badge_id) values ($1, $2)', [alice, 'first-mate']),
+    )
+    expect(error.message).toMatch(/permission denied/i)
   })
 })
 
