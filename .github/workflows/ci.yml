@@ -86,6 +86,56 @@ jobs:
           path: coverage/
           retention-days: 7
 
+  policies:
+    name: Database policies
+    runs-on: ubuntu-latest
+
+    # The policies are the only security in this project that nothing else
+    # covers, so they are tested against a real Postgres rather than read.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: chesstrainer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The bootstrap supplies the little of Supabase the migrations lean on —
+      # auth.uid(), auth.users, the two roles. Everything after it is the real
+      # migrations, in the order a fresh project would apply them: the tests
+      # have to run against what a deployment gets, not a copy of it.
+      - name: Apply schema
+        env:
+          PGPASSWORD: test
+        run: |
+          psql -h localhost -U postgres -d chesstrainer -v ON_ERROR_STOP=1 \
+            -q -f supabase/tests/bootstrap.sql
+          for file in supabase/migrations/*.sql; do
+            echo "applying $(basename "$file")"
+            psql -h localhost -U postgres -d chesstrainer -v ON_ERROR_STOP=1 -q -f "$file"
+          done
+
+      - name: Policy tests
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:5432/chesstrainer
+        run: npm run test:rls
+
   build:
     name: Build & bundle budget
     runs-on: ubuntu-latest

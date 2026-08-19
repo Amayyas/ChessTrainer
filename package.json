@@ -19,7 +19,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "size": "node scripts/check-bundle-size.mjs",
-    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && vite build && npm run size"
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && vite build && npm run size",
+    "test:rls": "vitest run --config vitest.rls.config.ts",
+    "db:test": "bash scripts/rls-db.sh"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
@@ -42,6 +44,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",
     "@types/node": "^22.9.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.0.5",
@@ -53,6 +56,7 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^15.12.0",
     "jsdom": "^25.0.1",
+    "pg": "^8.23.0",
     "postcss": "^8.5.26",
     "prettier": "^3.9.6",
     "puppeteer-core": "^25.7.0",
