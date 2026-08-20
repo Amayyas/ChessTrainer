@@ -50,6 +50,13 @@ export interface CoachAnalysis {
   analysisAt: (fen: string) => PositionInsight
 }
 
+/**
+ * How many times a position is re-submitted after the engine declines it.
+ * Refusals are usually transient, so one is worth retrying; a position that
+ * fails repeatedly is not worth starving the rest of the game for.
+ */
+const MAX_REFUSALS = 3
+
 function turnOf(fen: string): Color {
   return fen.split(' ')[1] === 'b' ? 'b' : 'w'
 }
@@ -89,8 +96,39 @@ export function useCoachAnalysis(
   const { isReady, isAnalyzing, analyze } = useStockfish({ enabled, depth })
   const [cache, setCache] = useState<Map<string, PositionAnalysis>>(new Map())
   const pending = useRef(new Set<string>())
+  /**
+   * Positions the engine declined to analyse, and how many times.
+   *
+   * State rather than a ref, deliberately: a refusal caches nothing, so if it
+   * changed no state the effect below would never run again and the analysis
+   * would stop dead on the first one — silently, since a half-analysed game
+   * looks the same as one still in progress.
+   */
+  const [refusals, setRefusals] = useState<Map<string, number>>(new Map())
+  const seenHistory = useRef<UseChessGame['history']>([])
 
   const { fen } = game
+
+  /**
+   * Forget the refusals when the board stops being the game we were following.
+   *
+   * The counts are meant to stop one dead position from starving the others,
+   * not to condemn it for the life of the page — and the coach keeps this hook
+   * mounted across reset() and loadPgn(). Since the starting position belongs
+   * to every game, three refusals there would otherwise leave every later game
+   * in the session unanalysable, long after the engine recovered.
+   *
+   * Cached evaluations are deliberately kept: a position's eval does not depend
+   * on the game that reached it, so re-analysing it would be waste.
+   */
+  useEffect(() => {
+    const previous = seenHistory.current
+    const isContinuation =
+      game.history.length >= previous.length &&
+      previous.every((move, index) => game.history[index]?.after === move.after)
+    seenHistory.current = game.history
+    if (!isContinuation) setRefusals(new Map())
+  }, [game.history])
 
   // For each played move, the FEN reached by the best move in its start position.
   const bestReplyFens = useMemo(() => {
@@ -124,10 +162,13 @@ export function useCoachAnalysis(
     if (!enabled || !isReady) return
     let target: string | undefined
     for (const candidate of desiredFens) {
-      if (!cache.has(candidate) && !pending.current.has(candidate)) {
-        target = candidate
-        break
-      }
+      if (cache.has(candidate) || pending.current.has(candidate)) continue
+      // Give up on a position after a few refusals rather than blocking the
+      // ones queued behind it. Its move stays ungraded, so the summary stays
+      // incomplete and the game is not recorded — which is the honest outcome.
+      if ((refusals.get(candidate) ?? 0) >= MAX_REFUSALS) continue
+      target = candidate
+      break
     }
     if (!target) return
 
@@ -137,7 +178,17 @@ export function useCoachAnalysis(
 
     analyze(fenToAnalyze).then((result) => {
       pending.current.delete(fenToAnalyze)
-      if (!active || !result) return
+      if (!active) return
+      if (!result) {
+        // Counting the refusal is what lets the queue move on: nothing was
+        // cached, so this is the only state change that will re-run the effect.
+        setRefusals((previous) => {
+          const next = new Map(previous)
+          next.set(fenToAnalyze, (previous.get(fenToAnalyze) ?? 0) + 1)
+          return next
+        })
+        return
+      }
       setCache((previous) => {
         if (previous.has(fenToAnalyze)) return previous
         const next = new Map(previous)
@@ -153,7 +204,7 @@ export function useCoachAnalysis(
     return () => {
       active = false
     }
-  }, [desiredFens, cache, enabled, isReady, analyze])
+  }, [desiredFens, cache, refusals, enabled, isReady, analyze])
 
   const current = cache.get(fen) ?? null
   const bestMove = useMemo(() => uciToSquares(current?.bestMoveUci ?? null), [current])

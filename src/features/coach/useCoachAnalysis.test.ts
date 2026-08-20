@@ -25,9 +25,15 @@ interface Entry {
 let fixture = new Map<string, Entry>()
 /** FENs whose analysis never resolves, standing in for work still in flight. */
 let stalled = new Set<string>()
+/** FENs the engine declines outright, returning null rather than an analysis. */
+let refused = new Set<string>()
+/** How many times each FEN was submitted. */
+let calls = new Map<string, number>()
 
 const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
+  calls.set(fen, (calls.get(fen) ?? 0) + 1)
   if (stalled.has(fen)) return new Promise<never>(() => {})
+  if (refused.has(fen)) return null
   const entry = fixture.get(fen) ?? { bestMoveUci: '(none)', whiteCp: 0 }
   // The engine reports from the side to move; the hook converts back.
   const sign = fen.split(' ')[1] === 'b' ? -1 : 1
@@ -67,7 +73,6 @@ interface MoveSpec {
  */
 function buildGame(specs: MoveSpec[]): { game: UseChessGame; baselines: string[] } {
   const chess = new Chess()
-  fixture = new Map()
   // The "after the best move" position for each played move, in move order.
   const baselines: string[] = []
 
@@ -101,6 +106,8 @@ function renderAnalysis(game: UseChessGame) {
 beforeEach(() => {
   fixture = new Map()
   stalled = new Set()
+  refused = new Set()
+  calls = new Map()
   analyze.mockClear()
 })
 
@@ -191,5 +198,52 @@ describe('useCoachAnalysis and checkmate', () => {
     // just below full marks rather than to it.
     expect(result.current.summary.accuracyBlack).toBeGreaterThan(90)
     expect(result.current.qualities.at(-1)).toBe('excellent')
+  })
+})
+
+describe('useCoachAnalysis when the engine refuses a position', () => {
+  it('moves on to the rest of the game instead of stopping there', async () => {
+    // The bug this covers: a refusal caches nothing, and clearing the pending
+    // set changes no state — so nothing re-ran the effect and the analysis
+    // stopped dead on the first refusal. Silently, because a game abandoned
+    // half-analysed is indistinguishable from one still being analysed.
+    const { game, baselines } = buildGame(LOPSIDED)
+    refused = new Set([game.history[0]!.after])
+
+    const { result } = renderAnalysis(game)
+    // The last baseline sits far behind the refusal in the queue, so it is only
+    // reached if the refusal stopped blocking it.
+    await waitFor(() => expect(calls.get(baselines.at(-1)!)).toBeGreaterThan(0))
+
+    // Retried, since a refusal is usually transient — but not without end.
+    expect(calls.get(game.history[0]!.after)).toBe(3)
+    // The refused move cannot be graded, so the game must not be recorded.
+    expect(result.current.summary.isComplete).toBe(false)
+  })
+})
+
+describe('useCoachAnalysis when the game is replaced', () => {
+  it('gives an exhausted position another chance in the next game', async () => {
+    // The coach keeps this hook mounted across reset() and loadPgn(), and the
+    // starting position belongs to every game. Counts that outlive the game
+    // would therefore condemn every later game in the session, long after the
+    // engine recovered.
+    const first = buildGame(LOPSIDED)
+    const start = first.game.history[0]!.before
+    refused = new Set([start])
+
+    const { rerender } = renderHook(
+      (game: UseChessGame) => useCoachAnalysis(game, { enabled: true }),
+      { initialProps: first.game },
+    )
+    await waitFor(() => expect(calls.get(start)).toBe(3))
+
+    const second = buildGame([
+      { san: 'd4', best: 'e4', baselineCp: 20, afterCp: 15 },
+      { san: 'd5', best: 'Nf6', baselineCp: -10, afterCp: 25 },
+    ])
+    rerender(second.game)
+
+    await waitFor(() => expect(calls.get(start)).toBeGreaterThan(3))
   })
 })
