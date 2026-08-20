@@ -197,7 +197,7 @@ describe('useCoachAnalysis and checkmate', () => {
     // Black's mate scores 100; its other move lost 10cp, which rounds the pair
     // just below full marks rather than to it.
     expect(result.current.summary.accuracyBlack).toBeGreaterThan(90)
-    expect(result.current.qualities.at(-1)).toBe('excellent')
+    expect(result.current.qualities.at(-1)).toBe('best')
   })
 })
 

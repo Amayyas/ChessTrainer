@@ -40,7 +40,7 @@ describe('winningChances', () => {
 
 describe('classifyMove', () => {
   it('applies the documented thresholds', () => {
-    expect(classifyMove(0)).toBe('excellent')
+    expect(classifyMove(0)).toBe('best')
     expect(classifyMove(10)).toBe('excellent')
     expect(classifyMove(25)).toBe('good')
     expect(classifyMove(60)).toBe('inaccuracy')
@@ -48,12 +48,24 @@ describe('classifyMove', () => {
     expect(classifyMove(400)).toBe('blunder')
   })
 
-  it('treats a missed mate as a blunder regardless of centipawn loss', () => {
-    expect(classifyMove(5, true)).toBe('blunder')
+  it('separates the top tier from a move that is merely close to it', () => {
+    // The whole point of the tier: giving up nothing is the engine's own move,
+    // and it should not read the same as one a centipawn short of it.
+    expect(classifyMove(0)).toBe('best')
+    expect(classifyMove(1)).toBe('excellent')
   })
 
-  it('never treats a negative loss as worse than excellent', () => {
-    expect(classifyMove(-50)).toBe('excellent')
+  it('treats a missed mate as a blunder regardless of centipawn loss', () => {
+    expect(classifyMove(5, true)).toBe('blunder')
+    // Including one that gave up nothing on the board: the mate it let slip is
+    // the loss, and it must not be promoted to the top tier.
+    expect(classifyMove(0, true)).toBe('blunder')
+  })
+
+  it('never treats a negative loss as worse than the top tier', () => {
+    // Two searches of the same position can disagree by a centipawn, which
+    // would otherwise let a move score better than perfect.
+    expect(classifyMove(-50)).toBe('best')
   })
 })
 

@@ -35,7 +35,7 @@ export function winningChances(whiteCp: number): number {
   return 1 / (1 + Math.exp(-0.00368208 * whiteCp))
 }
 
-export type MoveQuality = 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'
+export type MoveQuality = 'best' | 'excellent' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'
 
 export interface MoveQualityMeta {
   /** Chess annotation symbol shown next to the move. */
@@ -47,8 +47,11 @@ export interface MoveQualityMeta {
 }
 
 export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
+  // Cyan rather than a deeper green: the top two tiers sit next to each other in
+  // the move list, and two shades of the same hue would not tell them apart.
+  best: { symbol: '!!', label: 'Meilleur coup', color: 'text-cyan-700' },
   excellent: { symbol: '!', label: 'Excellent', color: 'text-emerald-600' },
-  good: { symbol: '', label: 'Bon coup', color: 'text-ardoise' },
+  good: { symbol: '✓', label: 'Bon coup', color: 'text-ardoise' },
   inaccuracy: { symbol: '?!', label: 'Imprécision', color: 'text-amber-500' },
   mistake: { symbol: '?', label: 'Erreur', color: 'text-orange-600' },
   blunder: { symbol: '??', label: 'Gaffe', color: 'text-red-600' },
@@ -56,13 +59,19 @@ export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
 
 /**
  * Classifies a played move from how many centipawns it lost against the best
- * move: excellent ≤10, good ≤30, inaccuracy ≤80,
+ * move: best 0, excellent ≤10, good ≤30, inaccuracy ≤80,
  * mistake ≤200, blunder beyond — or immediately a blunder if it let a forced
  * mate slip.
+ *
+ * The top tier is the only one that is not a chosen threshold. Losing nothing
+ * at all means the move is the one the engine would have played, or one it
+ * rates identically — so it is measured rather than decided, and finding it
+ * gets its own mark instead of reading the same as a move ten centipawns off.
  */
 export function classifyMove(centipawnLoss: number, missedMate = false): MoveQuality {
   if (missedMate) return 'blunder'
   const loss = Math.max(0, centipawnLoss)
+  if (loss === 0) return 'best'
   if (loss <= 10) return 'excellent'
   if (loss <= 30) return 'good'
   if (loss <= 80) return 'inaccuracy'

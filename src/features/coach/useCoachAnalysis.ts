@@ -240,7 +240,8 @@ export function useCoachAnalysis(
 
   const qualities = useMemo(() => {
     return game.history.map((move) => {
-      if (move.san.includes('#')) return 'excellent'
+      // Mate ends the game; nothing outranks it.
+      if (move.san.includes('#')) return 'best'
       const result = evalMove(move)
       return result === null ? null : classifyMove(result.loss)
     })
