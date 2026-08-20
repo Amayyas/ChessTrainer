@@ -197,7 +197,7 @@ describe('useCoachAnalysis and checkmate', () => {
     // Black's mate scores 100; its other move lost 10cp, which rounds the pair
     // just below full marks rather than to it.
     expect(result.current.summary.accuracyBlack).toBeGreaterThan(90)
-    expect(result.current.qualities.at(-1)).toBe('excellent')
+    expect(result.current.qualities.at(-1)).toBe('best')
   })
 })
 
@@ -245,5 +245,38 @@ describe('useCoachAnalysis when the game is replaced', () => {
     rerender(second.game)
 
     await waitFor(() => expect(calls.get(start)).toBeGreaterThan(3))
+  })
+})
+
+describe('useCoachAnalysis and the top tier', () => {
+  it('awards it to the move the engine chose', async () => {
+    const { game } = buildGame([{ san: 'e4', best: 'e4', baselineCp: 30, afterCp: 30 }])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('best')
+  })
+
+  it('withholds it from a different move whose position evaluates higher', async () => {
+    // Losses are clamped at zero, so a move the engine did not choose reads as
+    // a zero loss whenever its separately searched position comes out ahead of
+    // the baseline. A zero loss therefore cannot stand in for "the engine's
+    // move" — this one is good, not best.
+    const { game } = buildGame([{ san: 'e4', best: 'd4', baselineCp: 10, afterCp: 60 }])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('excellent')
+  })
+
+  it('withholds it from a slower mate than the one the engine saw', async () => {
+    // Every forced mate collapses to the same score, so keeping mate in ten
+    // scores exactly like finding mate in one. Identifying the chosen move is
+    // what keeps the two apart.
+    const { game } = buildGame([{ san: 'e4', best: 'd4', baselineCp: 10000, afterCp: 10000 }])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('excellent')
   })
 })

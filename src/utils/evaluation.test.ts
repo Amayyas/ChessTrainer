@@ -42,17 +42,40 @@ describe('classifyMove', () => {
   it('applies the documented thresholds', () => {
     expect(classifyMove(0)).toBe('excellent')
     expect(classifyMove(10)).toBe('excellent')
+    expect(classifyMove(15)).toBe('veryGood')
     expect(classifyMove(25)).toBe('good')
     expect(classifyMove(60)).toBe('inaccuracy')
     expect(classifyMove(150)).toBe('mistake')
     expect(classifyMove(400)).toBe('blunder')
   })
 
+  it('never awards the top tier from a loss alone', () => {
+    // A zero loss does not identify the engine's move: losses are clamped at
+    // zero, and every forced mate collapses to one score. The coach compares
+    // against the chosen move instead.
+    expect(classifyMove(0)).not.toBe('best')
+    expect(classifyMove(-50)).not.toBe('best')
+  })
+
+  it('splits the approving band at its boundaries', () => {
+    // Three tiers now share the 0–30 range, so the edges are where a
+    // one-centipawn drift changes the mark a player sees.
+    expect(classifyMove(20)).toBe('veryGood')
+    expect(classifyMove(21)).toBe('good')
+    expect(classifyMove(30)).toBe('good')
+    expect(classifyMove(31)).toBe('inaccuracy')
+  })
+
   it('treats a missed mate as a blunder regardless of centipawn loss', () => {
     expect(classifyMove(5, true)).toBe('blunder')
+    // Including one that gave up nothing on the board: the mate it let slip is
+    // the loss, and it must not be promoted to the top tier.
+    expect(classifyMove(0, true)).toBe('blunder')
   })
 
   it('never treats a negative loss as worse than excellent', () => {
+    // Two searches of one position can disagree by a centipawn, which would
+    // otherwise let a move score better than perfect.
     expect(classifyMove(-50)).toBe('excellent')
   })
 })
