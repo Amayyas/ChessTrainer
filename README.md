@@ -397,6 +397,21 @@ counts against the initial bundle budget. Native `error` and `unhandledrejection
 listeners are installed synchronously and buffer whatever happens in the
 meantime, so startup is not a blind spot.
 
+Source maps are uploaded when `SENTRY_AUTH_TOKEN` is set, so a stack trace names
+a file and a line rather than `index-BQu1muf7.js` and a column. They are built as
+`hidden` — written for the upload, no `sourceMappingURL` comment, deleted once
+sent — because a map that is generated and never removed is a map that gets
+served. Without the token none of this happens and the output is unchanged.
+
+Nothing secret leaves with them: this code is AGPL and readable on GitHub. What
+the upload buys is Sentry resolving minified frames, nothing more. A failed
+upload warns and lets the build through, since losing resolution is not worth
+losing a deploy.
+
+Note the missing `VITE_` prefix on those variables. It is deliberate: they are
+read by the build, and anything prefixed `VITE_` is written into the bundle and
+served to every visitor — which is the last thing an auth token should be.
+
 No IP address, no account identifier and no session recording are collected, and
 tracing is stripped at build time rather than merely disabled at runtime. The SDK
 is imported by destructuring rather than as a namespace: a namespace import
