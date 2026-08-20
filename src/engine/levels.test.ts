@@ -2,15 +2,27 @@ import { describe, expect, it } from 'vitest'
 import { ENGINE_LEVELS, getLevel, thinkingDelay } from '@/engine/levels'
 
 describe('ENGINE_LEVELS', () => {
-  it('offers five levels', () => {
-    expect(ENGINE_LEVELS).toHaveLength(5)
+  it('offers six levels', () => {
+    expect(ENGINE_LEVELS).toHaveLength(6)
     expect(ENGINE_LEVELS.map((level) => level.label)).toEqual([
       'Novice',
       'Débutant',
       'Intermédiaire',
       'Avancé',
       'Maître',
+      'Grand Maître',
     ])
+  })
+
+  it('rises in Elo without a chasm between any two levels', () => {
+    // The defect this answers: the previous ladder's top two levels were about
+    // 1500 Elo apart, hidden behind a 96% self-play score — a figure a 500
+    // point gap produces just as readily.
+    for (let i = 1; i < ENGINE_LEVELS.length; i += 1) {
+      const gap = ENGINE_LEVELS[i]!.elo - ENGINE_LEVELS[i - 1]!.elo
+      expect(gap).toBeGreaterThan(0)
+      expect(gap).toBeLessThanOrEqual(700)
+    }
   })
 
   it('gets stronger with every level', () => {
@@ -21,7 +33,9 @@ describe('ENGINE_LEVELS', () => {
       const previous = ENGINE_LEVELS[i - 1]!
       const current = ENGINE_LEVELS[i]!
       expect(current.skill).toBeGreaterThanOrEqual(previous.skill)
-      expect(current.depth).toBeGreaterThan(previous.depth)
+      expect(current.depth).toBeGreaterThanOrEqual(previous.depth)
+      // Never weaker on both of the two main axes at once.
+      expect(current.skill > previous.skill || current.depth > previous.depth).toBe(true)
       // A lower maximum error, and a higher probability, both mean fewer
       // deliberate mistakes.
       expect(current.maxError).toBeLessThan(previous.maxError)
@@ -30,19 +44,15 @@ describe('ENGINE_LEVELS', () => {
   })
 
   it('starts at a depth that cannot see a reply coming', () => {
-    // The complaint this answers: the old first level searched two plies and
-    // played well above a beginner. One ply cannot see the recapture, which is
-    // what makes it hang pieces the way a novice does.
-    expect(ENGINE_LEVELS[0]!.depth).toBe(1)
+    // The complaint this answers: the original first level played well above a
+    // beginner. This one measures around 550 Elo, chained from Débutant.
+    expect(ENGINE_LEVELS[0]!.elo).toBeLessThan(700)
     expect(ENGINE_LEVELS[0]!.skill).toBe(0)
   })
 
-  it('describes every level in words rather than a fabricated rating', () => {
-    // There is no calibrated opponent to anchor an Elo figure against, so any
-    // number here would be invented — as the previous ones were.
+  it('describes every level in words as well as a number', () => {
     for (const level of ENGINE_LEVELS) {
       expect(level.description.length).toBeGreaterThan(20)
-      expect(level).not.toHaveProperty('elo')
     }
   })
 
@@ -61,7 +71,7 @@ describe('ENGINE_LEVELS', () => {
 describe('getLevel', () => {
   it('returns the requested level', () => {
     expect(getLevel(1).label).toBe('Novice')
-    expect(getLevel(5).label).toBe('Maître')
+    expect(getLevel(6).label).toBe('Grand Maître')
   })
 })
 

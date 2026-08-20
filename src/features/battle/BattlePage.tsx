@@ -63,7 +63,7 @@ export default function BattlePage() {
     <div>
       <PageHeader
         title="Affrontement"
-        subtitle={`Niveau ${level.id} — ${level.label} · ${level.description}`}
+        subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
         actions={
           battle.isThinking ? (
             <span className="flex items-center gap-2 text-sm text-ardoise">
