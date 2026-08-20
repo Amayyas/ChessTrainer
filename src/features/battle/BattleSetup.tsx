@@ -63,7 +63,7 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
               <span className="block">
                 Niveau {level.id} — {level.label}
               </span>
-              <span className="text-xs text-ardoise">~{level.elo} Elo</span>
+              <span className="text-xs text-ardoise">{level.description}</span>
             </OptionButton>
           ))}
         </div>
