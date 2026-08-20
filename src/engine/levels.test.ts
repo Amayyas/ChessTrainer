@@ -43,11 +43,15 @@ describe('ENGINE_LEVELS', () => {
     }
   })
 
-  it('starts at a depth that cannot see a reply coming', () => {
+  it('starts well below beginner strength', () => {
     // The complaint this answers: the original first level played well above a
     // beginner. This one measures around 550 Elo, chained from Débutant.
-    expect(ENGINE_LEVELS[0]!.elo).toBeLessThan(700)
-    expect(ENGINE_LEVELS[0]!.skill).toBe(0)
+    const novice = ENGINE_LEVELS[0]!
+    expect(novice.elo).toBeLessThan(700)
+    expect(novice.skill).toBe(0)
+    // And searches no deeper than anything else on the ladder, which is what
+    // stops it seeing a recapture coming.
+    expect(novice.depth).toBe(Math.min(...ENGINE_LEVELS.map((level) => level.depth)))
   })
 
   it('describes every level in words as well as a number', () => {
