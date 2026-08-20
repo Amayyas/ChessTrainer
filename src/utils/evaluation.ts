@@ -62,6 +62,23 @@ export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
 }
 
 /**
+ * Every tier, strongest first.
+ *
+ * Kept beside the table rather than derived from it: the legend renders in this
+ * order, and a tier added to MOVE_QUALITY but forgotten here would simply go
+ * unexplained rather than break anything. A test holds the two together.
+ */
+export const MOVE_QUALITY_ORDER = [
+  'best',
+  'excellent',
+  'veryGood',
+  'good',
+  'inaccuracy',
+  'mistake',
+  'blunder',
+] as const satisfies readonly MoveQuality[]
+
+/**
  * Classifies a played move from how many centipawns it lost against the best
  * move: best 0, excellent ≤10, very good ≤20, good ≤30, inaccuracy ≤80,
  * mistake ≤200, blunder beyond — or immediately a blunder if it let a forced

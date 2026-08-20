@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   centipawnLoss,
   classifyMove,
+  MOVE_QUALITY,
+  MOVE_QUALITY_ORDER,
   moveAccuracy,
   toWhiteEval,
   winningChances,
@@ -35,6 +37,19 @@ describe('winningChances', () => {
   it('rises with White advantage and falls with Black advantage', () => {
     expect(winningChances(300)).toBeGreaterThan(0.6)
     expect(winningChances(-300)).toBeLessThan(0.4)
+  })
+})
+
+describe('MOVE_QUALITY_ORDER', () => {
+  it('covers every tier exactly once', () => {
+    // The legend renders from this list, so a tier added to MOVE_QUALITY and
+    // forgotten here would ship with no explanation and nothing would complain.
+    expect([...MOVE_QUALITY_ORDER].sort()).toEqual(Object.keys(MOVE_QUALITY).sort())
+  })
+
+  it('runs strongest to weakest', () => {
+    expect(MOVE_QUALITY_ORDER[0]).toBe('best')
+    expect(MOVE_QUALITY_ORDER.at(-1)).toBe('blunder')
   })
 })
 

@@ -2,6 +2,7 @@ import { Chess } from 'chess.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
+import QualityLegend from '@/features/coach/QualityLegend'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
@@ -330,6 +331,9 @@ export default function CoachPage() {
                 qualities={analysis.qualities}
                 activeIndex={inReplay ? replayPly - 1 : undefined}
               />
+              <div className="mt-2">
+                <QualityLegend />
+              </div>
             </div>
 
             {inReplay ? (
