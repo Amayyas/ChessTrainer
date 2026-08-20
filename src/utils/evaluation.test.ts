@@ -40,7 +40,7 @@ describe('winningChances', () => {
 
 describe('classifyMove', () => {
   it('applies the documented thresholds', () => {
-    expect(classifyMove(0)).toBe('best')
+    expect(classifyMove(0)).toBe('excellent')
     expect(classifyMove(10)).toBe('excellent')
     expect(classifyMove(15)).toBe('veryGood')
     expect(classifyMove(25)).toBe('good')
@@ -49,11 +49,12 @@ describe('classifyMove', () => {
     expect(classifyMove(400)).toBe('blunder')
   })
 
-  it('separates the top tier from a move that is merely close to it', () => {
-    // The whole point of the tier: giving up nothing is the engine's own move,
-    // and it should not read the same as one a centipawn short of it.
-    expect(classifyMove(0)).toBe('best')
-    expect(classifyMove(1)).toBe('excellent')
+  it('never awards the top tier from a loss alone', () => {
+    // A zero loss does not identify the engine's move: losses are clamped at
+    // zero, and every forced mate collapses to one score. The coach compares
+    // against the chosen move instead.
+    expect(classifyMove(0)).not.toBe('best')
+    expect(classifyMove(-50)).not.toBe('best')
   })
 
   it('splits the approving band at its boundaries', () => {
@@ -72,10 +73,10 @@ describe('classifyMove', () => {
     expect(classifyMove(0, true)).toBe('blunder')
   })
 
-  it('never treats a negative loss as worse than the top tier', () => {
-    // Two searches of the same position can disagree by a centipawn, which
-    // would otherwise let a move score better than perfect.
-    expect(classifyMove(-50)).toBe('best')
+  it('never treats a negative loss as worse than excellent', () => {
+    // Two searches of one position can disagree by a centipawn, which would
+    // otherwise let a move score better than perfect.
+    expect(classifyMove(-50)).toBe('excellent')
   })
 })
 

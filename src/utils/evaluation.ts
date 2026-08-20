@@ -67,15 +67,15 @@ export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
  * mistake ≤200, blunder beyond — or immediately a blunder if it let a forced
  * mate slip.
  *
- * The top tier is the only one that is not a chosen threshold. Losing nothing
- * at all means the move is the one the engine would have played, or one it
- * rates identically — so it is measured rather than decided, and finding it
- * gets its own mark instead of reading the same as a move ten centipawns off.
+ * Never returns 'best'. A zero loss does not identify the engine's own move:
+ * losses are clamped at zero, so a different move whose position happens to
+ * evaluate higher also reads as zero, and every forced mate collapses to the
+ * same score, so preserving mate in ten scores the same as mate in one. The
+ * caller compares against the engine's chosen move instead.
  */
 export function classifyMove(centipawnLoss: number, missedMate = false): MoveQuality {
   if (missedMate) return 'blunder'
   const loss = Math.max(0, centipawnLoss)
-  if (loss === 0) return 'best'
   if (loss <= 10) return 'excellent'
   if (loss <= 20) return 'veryGood'
   if (loss <= 30) return 'good'

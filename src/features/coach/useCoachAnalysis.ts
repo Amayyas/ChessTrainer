@@ -242,10 +242,18 @@ export function useCoachAnalysis(
     return game.history.map((move) => {
       // Mate ends the game; nothing outranks it.
       if (move.san.includes('#')) return 'best'
+      // The engine's own move is identified, not inferred from a zero loss.
+      // Losses are clamped at zero, so a different move whose position happens
+      // to evaluate higher also reads as zero; and every forced mate collapses
+      // to one score, so keeping mate in ten would score like finding mate in
+      // one. Only the move the engine actually chose earns the top mark.
+      const before = cache.get(move.before)
+      const playedUci = `${move.from}${move.to}${move.promotion ?? ''}`
+      if (before?.bestMoveUci === playedUci) return 'best'
       const result = evalMove(move)
       return result === null ? null : classifyMove(result.loss)
     })
-  }, [game.history, evalMove])
+  }, [game.history, cache, evalMove])
 
   const summary = useMemo<GameSummary>(() => {
     const whiteAccuracies: number[] = []
