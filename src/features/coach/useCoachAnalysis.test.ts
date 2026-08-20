@@ -73,7 +73,6 @@ interface MoveSpec {
  */
 function buildGame(specs: MoveSpec[]): { game: UseChessGame; baselines: string[] } {
   const chess = new Chess()
-  fixture = new Map()
   // The "after the best move" position for each played move, in move order.
   const baselines: string[] = []
 
@@ -220,5 +219,31 @@ describe('useCoachAnalysis when the engine refuses a position', () => {
     expect(calls.get(game.history[0]!.after)).toBe(3)
     // The refused move cannot be graded, so the game must not be recorded.
     expect(result.current.summary.isComplete).toBe(false)
+  })
+})
+
+describe('useCoachAnalysis when the game is replaced', () => {
+  it('gives an exhausted position another chance in the next game', async () => {
+    // The coach keeps this hook mounted across reset() and loadPgn(), and the
+    // starting position belongs to every game. Counts that outlive the game
+    // would therefore condemn every later game in the session, long after the
+    // engine recovered.
+    const first = buildGame(LOPSIDED)
+    const start = first.game.history[0]!.before
+    refused = new Set([start])
+
+    const { rerender } = renderHook(
+      (game: UseChessGame) => useCoachAnalysis(game, { enabled: true }),
+      { initialProps: first.game },
+    )
+    await waitFor(() => expect(calls.get(start)).toBe(3))
+
+    const second = buildGame([
+      { san: 'd4', best: 'e4', baselineCp: 20, afterCp: 15 },
+      { san: 'd5', best: 'Nf6', baselineCp: -10, afterCp: 25 },
+    ])
+    rerender(second.game)
+
+    await waitFor(() => expect(calls.get(start)).toBeGreaterThan(3))
   })
 })

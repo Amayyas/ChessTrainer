@@ -105,8 +105,30 @@ export function useCoachAnalysis(
    * looks the same as one still in progress.
    */
   const [refusals, setRefusals] = useState<Map<string, number>>(new Map())
+  const seenHistory = useRef<UseChessGame['history']>([])
 
   const { fen } = game
+
+  /**
+   * Forget the refusals when the board stops being the game we were following.
+   *
+   * The counts are meant to stop one dead position from starving the others,
+   * not to condemn it for the life of the page — and the coach keeps this hook
+   * mounted across reset() and loadPgn(). Since the starting position belongs
+   * to every game, three refusals there would otherwise leave every later game
+   * in the session unanalysable, long after the engine recovered.
+   *
+   * Cached evaluations are deliberately kept: a position's eval does not depend
+   * on the game that reached it, so re-analysing it would be waste.
+   */
+  useEffect(() => {
+    const previous = seenHistory.current
+    const isContinuation =
+      game.history.length >= previous.length &&
+      previous.every((move, index) => game.history[index]?.after === move.after)
+    seenHistory.current = game.history
+    if (!isContinuation) setRefusals(new Map())
+  }, [game.history])
 
   // For each played move, the FEN reached by the best move in its start position.
   const bestReplyFens = useMemo(() => {
