@@ -42,6 +42,7 @@ describe('classifyMove', () => {
   it('applies the documented thresholds', () => {
     expect(classifyMove(0)).toBe('best')
     expect(classifyMove(10)).toBe('excellent')
+    expect(classifyMove(15)).toBe('veryGood')
     expect(classifyMove(25)).toBe('good')
     expect(classifyMove(60)).toBe('inaccuracy')
     expect(classifyMove(150)).toBe('mistake')
@@ -53,6 +54,15 @@ describe('classifyMove', () => {
     // and it should not read the same as one a centipawn short of it.
     expect(classifyMove(0)).toBe('best')
     expect(classifyMove(1)).toBe('excellent')
+  })
+
+  it('splits the approving band at its boundaries', () => {
+    // Three tiers now share the 0–30 range, so the edges are where a
+    // one-centipawn drift changes the mark a player sees.
+    expect(classifyMove(20)).toBe('veryGood')
+    expect(classifyMove(21)).toBe('good')
+    expect(classifyMove(30)).toBe('good')
+    expect(classifyMove(31)).toBe('inaccuracy')
   })
 
   it('treats a missed mate as a blunder regardless of centipawn loss', () => {
