@@ -15,6 +15,15 @@
  * described by what they do instead, which is both honest and more use to
  * someone choosing one.
  *
+ * The weakening applies at every depth here, including the two levels whose
+ * cap sits below `1 + Skill Level`. Stockfish 11 also picks a weakened move at
+ * the end of the search, not only when the loop reaches that depth. Verified
+ * rather than assumed: on one middlegame position, 30 searches at depth 5 with
+ * Skill Level 20 returned the same move 30 times, while the same depth with
+ * Avancé's settings returned five different moves and the engine's own choice
+ * only 3 times. Do not remove maxError or errorProbability from these levels on
+ * the theory that they are inert.
+ *
  * The ladder below was measured the same way, 14 games per pairing, alternating
  * colours: each level beats the one under it between 61% and 96% of the time,
  * and none of them wins everything. Those percentages carry hundreds of Elo of
