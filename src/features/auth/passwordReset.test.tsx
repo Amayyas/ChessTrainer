@@ -5,17 +5,38 @@ import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
 import { useAuthStore } from '@/store/useAuthStore'
 
+// No environment is configured under test, so the real client is null. A stand
+// in lets the store's own actions run instead of only their mocked doubles.
+// vi.hoisted, because vi.mock is lifted above ordinary declarations and would
+// otherwise reference these before they exist.
+const { resetPasswordForEmail, updateUser } = vi.hoisted(() => ({
+  resetPasswordForEmail: vi.fn(),
+  updateUser: vi.fn(),
+}))
+
 vi.mock('@/lib/supabase', async () => {
   const actual = await vi.importActual<typeof import('@/lib/supabase')>('@/lib/supabase')
-  return { ...actual, isSupabaseConfigured: true }
+  return {
+    ...actual,
+    isSupabaseConfigured: true,
+    supabase: { auth: { resetPasswordForEmail, updateUser } },
+  }
 })
 
 function renderPage(page: React.ReactElement) {
   return render(<MemoryRouter>{page}</MemoryRouter>)
 }
 
+// The store is a module singleton, so a mocked action installed by one test
+// would otherwise still be in place for the next one and make the suite
+// order-dependent. Snapshot it once, restore it whole before each test.
+const initialState = useAuthStore.getState()
+
 beforeEach(() => {
-  useAuthStore.setState({ error: null, session: null, isReady: true })
+  useAuthStore.setState(initialState, true)
+  useAuthStore.setState({ error: null, session: null, isReady: true, isRecovering: false })
+  resetPasswordForEmail.mockReset()
+  updateUser.mockReset()
 })
 
 describe('ForgotPasswordPage', () => {
@@ -46,10 +67,7 @@ describe('ForgotPasswordPage', () => {
 describe('ResetPasswordPage', () => {
   it('refuses two passwords that do not match, before any request', () => {
     const update = vi.fn()
-    useAuthStore.setState({
-      updatePassword: update,
-      session: { user: { id: 'u1' } } as never,
-    })
+    useAuthStore.setState({ updatePassword: update, isRecovering: true })
 
     renderPage(<ResetPasswordPage />)
     fireEvent.change(screen.getByLabelText('Nouveau mot de passe'), {
@@ -63,13 +81,47 @@ describe('ResetPasswordPage', () => {
   })
 
   it('explains an expired link instead of failing on submit', () => {
-    // Recovery links expire and are single use. Without the session the token
-    // creates, the form would only fail once the player had typed a password
+    // Recovery links expire and are single use. Without the flag the token
+    // raises, the form would only fail once the player had typed a password
     // twice.
-    useAuthStore.setState({ isReady: true, session: null })
+    useAuthStore.setState({ isReady: true, isRecovering: false })
     renderPage(<ResetPasswordPage />)
 
     expect(screen.getByRole('alert').textContent).toContain("Ce lien n'est plus valide")
     expect(screen.queryByLabelText('Nouveau mot de passe')).not.toBeInTheDocument()
+  })
+
+  it('stays shut for someone merely signed in', () => {
+    // A session alone must not admit anyone: everybody signed in has one, so
+    // gating on it would publish a change-password screen to every visitor —
+    // including Google accounts that have no password to change.
+    useAuthStore.setState({
+      isReady: true,
+      isRecovering: false,
+      session: { user: { id: 'u1' } } as never,
+    })
+    renderPage(<ResetPasswordPage />)
+
+    expect(screen.queryByLabelText('Nouveau mot de passe')).not.toBeInTheDocument()
+  })
+})
+
+describe('requestPasswordReset', () => {
+  it('surfaces a real failure instead of confirming a mail that never left', async () => {
+    // Supabase already answers an unknown address with success, so anything
+    // that comes back is a genuine failure — a bad redirect URL, a
+    // misconfigured key. An earlier version filtered on the word "invalid" and
+    // would have shown a confirmation for exactly those.
+    resetPasswordForEmail.mockResolvedValue({ error: { message: 'Invalid redirect URL' } })
+
+    const ok = await initialState.requestPasswordReset('joueur@example.com')
+
+    expect(ok).toBe(false)
+    expect(useAuthStore.getState().error).not.toBeNull()
+  })
+
+  it('confirms when the request goes through', async () => {
+    resetPasswordForEmail.mockResolvedValue({ error: null })
+    await expect(initialState.requestPasswordReset('joueur@example.com')).resolves.toBe(true)
   })
 })

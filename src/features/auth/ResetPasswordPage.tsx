@@ -12,14 +12,15 @@ const MIN_LENGTH = 6
  * Where the recovery link lands.
  *
  * The link carries a token that the Supabase client exchanges for a session on
- * load, so by the time this renders the visitor is signed in and can set a
- * password. Arriving without that session — an expired link, or the address
- * typed by hand — has to say so rather than fail on submit.
+ * load, which raises a recovery flag in the store. That flag is what admits
+ * someone here, not the mere presence of a session: everyone already signed in
+ * has one of those, and gating on it would hand every visitor a hidden
+ * change-password page — including Google accounts with no password to change.
  */
 export default function ResetPasswordPage() {
   const updatePassword = useAuthStore((state) => state.updatePassword)
   const isReady = useAuthStore((state) => state.isReady)
-  const session = useAuthStore((state) => state.session)
+  const isRecovering = useAuthStore((state) => state.isRecovering)
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
@@ -54,7 +55,7 @@ export default function ResetPasswordPage() {
         </Link>
       }
     >
-      {isReady && !session ? (
+      {isReady && !isRecovering ? (
         <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Ce lien n'est plus valide. Les liens de récupération expirent au bout d'une heure et ne
           servent qu'une fois&nbsp;:{' '}
