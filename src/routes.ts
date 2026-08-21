@@ -9,6 +9,8 @@ export const ROUTES = {
   profile: '/profile',
   login: '/login',
   register: '/register',
+  forgotPassword: '/mot-de-passe-oublie',
+  resetPassword: '/nouveau-mot-de-passe',
   legal: '/mentions-legales',
   privacy: '/confidentialite',
 } as const

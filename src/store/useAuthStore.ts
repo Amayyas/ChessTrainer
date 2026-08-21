@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { isSupabaseConfigured, supabase, type AvatarPiece, type Profile } from '@/lib/supabase'
+import { ROUTES } from '@/routes'
 
 interface AuthState {
   /** False until the stored session has been read, so guards do not flash. */
@@ -30,6 +31,14 @@ interface AuthState {
   signIn: (input: { email: string; password: string }) => Promise<boolean>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  /**
+   * Emails a recovery link. Resolves true whether or not the address has an
+   * account: telling the difference would turn this form into a way to test
+   * which addresses are registered here.
+   */
+  requestPasswordReset: (email: string) => Promise<boolean>
+  /** Sets a new password for the session the recovery link opened. */
+  updatePassword: (password: string) => Promise<boolean>
   updateProfile: (patch: { username?: string; avatar_piece?: AvatarPiece }) => Promise<boolean>
   /** Erases the account and everything filed under it. Irreversible. */
   deleteAccount: () => Promise<boolean>
@@ -150,6 +159,32 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       options: { redirectTo: `${window.location.origin}/profile` },
     })
     if (error) set({ error: friendlyError(error.message) })
+  },
+
+  requestPasswordReset: async (email) => {
+    if (!supabase) return false
+    set({ error: null })
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}${ROUTES.resetPassword}`,
+    })
+    // A rejected address is reported as success on purpose; only a transport
+    // failure is worth telling the player about.
+    if (error && !/user not found|invalid/i.test(error.message)) {
+      set({ error: friendlyError(error.message) })
+      return false
+    }
+    return true
+  },
+
+  updatePassword: async (password) => {
+    if (!supabase) return false
+    set({ error: null })
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) {
+      set({ error: friendlyError(error.message) })
+      return false
+    }
+    return true
   },
 
   signOut: async () => {

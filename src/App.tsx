@@ -20,6 +20,8 @@ const LeaderboardPage = lazy(() => import('@/features/leaderboard/LeaderboardPag
 const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'))
 const NotFoundPage = lazy(() => import('@/features/NotFoundPage'))
 const LegalPage = lazy(() => import('@/features/legal/LegalPage'))
 const PrivacyPage = lazy(() => import('@/features/legal/PrivacyPage'))
@@ -92,6 +94,22 @@ export default function App() {
           element={
             <Suspense fallback={<RouteFallback />}>
               <RegisterPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.forgotPassword}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ForgotPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path={ROUTES.resetPassword}
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <ResetPasswordPage />
             </Suspense>
           }
         />
