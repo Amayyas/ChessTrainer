@@ -27,11 +27,7 @@ interface AuthState {
   deleteError: string | null
 
   initialise: () => () => void
-  signUp: (input: {
-    email: string
-    password: string
-    username: string
-  }) => Promise<SignUpOutcome>
+  signUp: (input: { email: string; password: string; username: string }) => Promise<SignUpOutcome>
   signIn: (input: { email: string; password: string }) => Promise<boolean>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
