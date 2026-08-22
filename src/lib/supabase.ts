@@ -11,6 +11,28 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
  */
 export const isSupabaseConfigured = Boolean(url && anonKey)
 
+/**
+ * The kind of link this page was opened with, read from the URL fragment.
+ *
+ * Read here, before createClient, because the client consumes the fragment and
+ * clears it — this is the only moment it can be seen. It is what tells a
+ * recovery link apart from a confirmation link once both have become an
+ * ordinary session.
+ *
+ * It matters because Supabase does not always land on the address we asked for:
+ * a redirect target it does not recognise falls back to the project's Site URL,
+ * which drops the visitor on the home page with a spent token and nothing to
+ * use it on.
+ */
+function readAuthLinkType(): 'recovery' | 'signup' | null {
+  if (typeof window === 'undefined') return null
+  const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const type = fragment.get('type')
+  return type === 'recovery' || type === 'signup' ? type : null
+}
+
+export const authLinkType = readAuthLinkType()
+
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url!, anonKey!, {
       auth: {

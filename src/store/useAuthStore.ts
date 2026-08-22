@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { isSupabaseConfigured, supabase, type AvatarPiece, type Profile } from '@/lib/supabase'
+import { ROUTES } from '@/routes'
 
 interface AuthState {
   /** False until the stored session has been read, so guards do not flash. */
@@ -26,16 +27,44 @@ interface AuthState {
   deleteError: string | null
 
   initialise: () => () => void
-  signUp: (input: { email: string; password: string; username: string }) => Promise<boolean>
+  signUp: (input: { email: string; password: string; username: string }) => Promise<SignUpOutcome>
   signIn: (input: { email: string; password: string }) => Promise<boolean>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  /**
+   * Emails a recovery link. Resolves true whether or not the address has an
+   * account: telling the difference would turn this form into a way to test
+   * which addresses are registered here.
+   */
+  requestPasswordReset: (email: string) => Promise<boolean>
+  /** Sets a new password for the session the recovery link opened. */
+  updatePassword: (password: string) => Promise<boolean>
+  /**
+   * True only between a recovery link opening a session and the new password
+   * being set.
+   *
+   * Presence of a session is not enough to authorise the reset screen: everyone
+   * already signed in has one, so gating on that alone would give every visitor
+   * a hidden change-password page — including accounts that sign in through
+   * Google and have no password to change.
+   */
+  isRecovering: boolean
   updateProfile: (patch: { username?: string; avatar_piece?: AvatarPiece }) => Promise<boolean>
   /** Erases the account and everything filed under it. Irreversible. */
   deleteAccount: () => Promise<boolean>
   clearDeleteError: () => void
   clearError: () => void
 }
+
+/**
+ * What became of a sign-up.
+ *
+ * Whether a session comes back depends on a project setting: with email
+ * confirmation on, the account exists but nobody is signed in until the link is
+ * followed. Sending everyone to their profile regardless is how a new player
+ * ended up looking at the guest screen straight after registering.
+ */
+export type SignUpOutcome = 'signed-in' | 'awaiting-confirmation' | 'failed'
 
 /** Supabase messages are technical and in English; these are for the player. */
 function friendlyError(message: string): string {
@@ -60,6 +89,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   profile: null,
   error: null,
   deleteError: null,
+  isRecovering: false,
 
   initialise: () => {
     // Captured once so the closures below keep the non-null narrowing.
@@ -99,7 +129,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({ isReady: true })
     })
 
-    const { data: subscription } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = client.auth.onAuthStateChange((event, session) => {
+      // The only signal that this session came from a recovery link rather than
+      // an ordinary sign-in.
+      if (event === 'PASSWORD_RECOVERY') set({ isRecovering: true })
       // Drop the profile as soon as the account changes. The fetch below is
       // asynchronous and deliberately keeps what it has when it fails, so
       // without this the previous player's name and avatar would stay on screen
@@ -115,20 +148,24 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   signUp: async ({ email, password, username }) => {
-    if (!supabase) return false
+    if (!supabase) return 'failed'
     set({ error: null })
     // The username travels in the metadata; a database trigger creates the
     // profile, so an account can never exist without one.
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: {
+        data: { username },
+        emailRedirectTo: `${window.location.origin}${ROUTES.profile}`,
+      },
     })
     if (error) {
       set({ error: friendlyError(error.message) })
-      return false
+      return 'failed'
     }
-    return true
+    // No session means the project asks for the address to be confirmed first.
+    return data.session ? 'signed-in' : 'awaiting-confirmation'
   },
 
   signIn: async ({ email, password }) => {
@@ -150,6 +187,36 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       options: { redirectTo: `${window.location.origin}/profile` },
     })
     if (error) set({ error: friendlyError(error.message) })
+  },
+
+  requestPasswordReset: async (email) => {
+    if (!supabase) return false
+    set({ error: null })
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}${ROUTES.resetPassword}`,
+    })
+    // No filtering on the message: Supabase already answers an unknown address
+    // with success, so anything that comes back here is a real failure — a bad
+    // redirect URL, a misconfigured key, a network problem. Swallowing those
+    // would show a confirmation for an email that was never sent.
+    if (error) {
+      set({ error: friendlyError(error.message) })
+      return false
+    }
+    return true
+  },
+
+  updatePassword: async (password) => {
+    if (!supabase) return false
+    set({ error: null })
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) {
+      set({ error: friendlyError(error.message) })
+      return false
+    }
+    // Spent: the link worked once and must not leave the screen reachable.
+    set({ isRecovering: false })
+    return true
   },
 
   signOut: async () => {

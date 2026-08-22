@@ -63,6 +63,12 @@ export default function LoginPage() {
         <Button type="submit" fullWidth isLoading={isSubmitting}>
           Se connecter
         </Button>
+        <Link
+          to={ROUTES.forgotPassword}
+          className="text-center text-sm text-ardoise underline-offset-2 hover:text-ebene hover:underline"
+        >
+          Mot de passe oublié ?
+        </Link>
       </form>
     </AuthLayout>
   )
