@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
+import RegisterPage from '@/features/auth/RegisterPage'
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -123,5 +124,39 @@ describe('requestPasswordReset', () => {
   it('confirms when the request goes through', async () => {
     resetPasswordForEmail.mockResolvedValue({ error: null })
     await expect(initialState.requestPasswordReset('joueur@example.com')).resolves.toBe(true)
+  })
+})
+
+describe('RegisterPage', () => {
+  it('sends the player to their profile only when a session came back', async () => {
+    const signUp = vi.fn().mockResolvedValue('signed-in')
+    useAuthStore.setState({ signUp })
+
+    renderPage(<RegisterPage />)
+    fireEvent.change(screen.getByLabelText('Pseudo'), { target: { value: 'amamas' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.com' } })
+    fireEvent.change(screen.getByLabelText(/Mot de passe/), { target: { value: 'motdepasse' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }))
+
+    await waitFor(() => expect(signUp).toHaveBeenCalled())
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('asks the player to confirm their address instead of showing a guest profile', async () => {
+    // The bug this covers: the page navigated to the profile whatever came
+    // back. With email confirmation on there is no session yet, so a player who
+    // had just registered was shown the guest screen — "Vous jouez en invité" —
+    // seconds after creating an account.
+    useAuthStore.setState({ signUp: vi.fn().mockResolvedValue('awaiting-confirmation') })
+
+    renderPage(<RegisterPage />)
+    fireEvent.change(screen.getByLabelText('Pseudo'), { target: { value: 'amamas' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.com' } })
+    fireEvent.change(screen.getByLabelText(/Mot de passe/), { target: { value: 'motdepasse' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }))
+
+    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument())
+    expect(screen.getByRole('status').textContent).toContain('a@example.com')
+    expect(screen.queryByRole('button', { name: 'Créer mon compte' })).not.toBeInTheDocument()
   })
 })

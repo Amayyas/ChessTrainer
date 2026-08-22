@@ -27,7 +27,11 @@ interface AuthState {
   deleteError: string | null
 
   initialise: () => () => void
-  signUp: (input: { email: string; password: string; username: string }) => Promise<boolean>
+  signUp: (input: {
+    email: string
+    password: string
+    username: string
+  }) => Promise<SignUpOutcome>
   signIn: (input: { email: string; password: string }) => Promise<boolean>
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
@@ -55,6 +59,16 @@ interface AuthState {
   clearDeleteError: () => void
   clearError: () => void
 }
+
+/**
+ * What became of a sign-up.
+ *
+ * Whether a session comes back depends on a project setting: with email
+ * confirmation on, the account exists but nobody is signed in until the link is
+ * followed. Sending everyone to their profile regardless is how a new player
+ * ended up looking at the guest screen straight after registering.
+ */
+export type SignUpOutcome = 'signed-in' | 'awaiting-confirmation' | 'failed'
 
 /** Supabase messages are technical and in English; these are for the player. */
 function friendlyError(message: string): string {
@@ -138,20 +152,24 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   signUp: async ({ email, password, username }) => {
-    if (!supabase) return false
+    if (!supabase) return 'failed'
     set({ error: null })
     // The username travels in the metadata; a database trigger creates the
     // profile, so an account can never exist without one.
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { username } },
+      options: {
+        data: { username },
+        emailRedirectTo: `${window.location.origin}${ROUTES.profile}`,
+      },
     })
     if (error) {
       set({ error: friendlyError(error.message) })
-      return false
+      return 'failed'
     }
-    return true
+    // No session means the project asks for the address to be confirmed first.
+    return data.session ? 'signed-in' : 'awaiting-confirmation'
   },
 
   signIn: async ({ email, password }) => {
