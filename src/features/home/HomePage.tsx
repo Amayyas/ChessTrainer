@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@/components/UI'
+import { ENGINE_LEVELS } from '@/engine/levels'
 import type { BadgeVariant } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
 import { challengeProgress } from '@/features/progression/challenges'
@@ -23,6 +24,14 @@ interface ModeCard {
   badgeVariant: BadgeVariant
 }
 
+/**
+ * Read from the ladder rather than written out. This card still said "cinq
+ * niveaux, de 800 à 2200 Elo" after the ladder had grown to six levels with
+ * measured figures: copy that restates data drifts from it silently.
+ */
+const BATTLE_FLOOR = ENGINE_LEVELS[0]!.elo
+const BATTLE_CEILING = ENGINE_LEVELS[ENGINE_LEVELS.length - 1]!.elo
+
 const MODES: ModeCard[] = [
   {
     to: ROUTES.coach,
@@ -36,8 +45,8 @@ const MODES: ModeCard[] = [
     to: ROUTES.battle,
     glyph: '♜',
     title: 'Affrontement',
-    description: "Défiez l'IA sur cinq niveaux, de 800 à 2200 Elo.",
-    badge: '5 niveaux',
+    description: `Défiez l'IA sur ${ENGINE_LEVELS.length} niveaux, de ${BATTLE_FLOOR} à ${BATTLE_CEILING} Elo.`,
+    badge: `${ENGINE_LEVELS.length} niveaux`,
     badgeVariant: 'neutral',
   },
   {
