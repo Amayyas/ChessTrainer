@@ -35,14 +35,19 @@ function discoveryFiles(mode: string): Plugin {
   return {
     name: 'discovery-files',
     generateBundle() {
-      const urls = INDEXABLE_ROUTES.map((path) => `  <url><loc>${site}${path}</loc></url>`).join(
-        '\n',
-      )
-      this.emitFile({
-        type: 'asset',
-        fileName: 'sitemap.xml',
-        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
-      })
+      // No domain, no sitemap: <loc> must be absolute, so emitting one from a
+      // build with VITE_SITE_URL unset — which is every local build and every
+      // fork — would publish a file no crawler can read.
+      if (site) {
+        const urls = INDEXABLE_ROUTES.map((path) => `  <url><loc>${site}${path}</loc></url>`).join(
+          '\n',
+        )
+        this.emitFile({
+          type: 'asset',
+          fileName: 'sitemap.xml',
+          source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+        })
+      }
       // Everything is public; the only thing worth saying is where the sitemap
       // is. Named only when a domain is configured, since a relative sitemap
       // reference is not valid.

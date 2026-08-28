@@ -20,6 +20,13 @@ describe('INDEXABLE_ROUTES', () => {
     expect(INDEXABLE_ROUTES).toContain(ROUTES.home)
     expect(INDEXABLE_ROUTES).toContain(ROUTES.battle)
     expect(INDEXABLE_ROUTES).toContain(ROUTES.privacy)
+    expect(INDEXABLE_ROUTES).toContain(ROUTES.coach)
+  })
+
+  it('leaves out the leaderboard, which requires an account', () => {
+    // RequireAuth redirects a crawler to the sign-in screen, so listing it
+    // would advertise a page no search engine can read.
+    expect(INDEXABLE_ROUTES).not.toContain(ROUTES.leaderboard)
   })
 
   it('leaves out everything behind an account or an email link', () => {

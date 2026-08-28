@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import DocumentHead from '@/features/seo/DocumentHead'
 import { ROUTES } from '@/routes'
-import { PAGE_META } from '@/seo'
+import { NOT_FOUND_META, PAGE_META } from '@/seo'
 
 function renderAt(path: string) {
   return render(
@@ -35,5 +35,32 @@ describe('DocumentHead', () => {
     // every page is a duplicate of it.
     renderAt(ROUTES.coach)
     expect(document.querySelector('link[rel="canonical"]')).toBeNull()
+  })
+
+  it('marks a page the sitemap leaves out as noindex', () => {
+    // Leaving it out of the sitemap only declines to invite crawlers. A page
+    // found through a link or a referrer still needs to be told to stay out.
+    renderAt(ROUTES.login)
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'noindex, follow',
+    )
+  })
+
+  it('lifts the directive again on a public page', () => {
+    const { unmount } = renderAt(ROUTES.login)
+    expect(document.querySelector('meta[name="robots"]')).not.toBeNull()
+    unmount()
+    renderAt(ROUTES.coach)
+    expect(document.querySelector('meta[name="robots"]')).toBeNull()
+  })
+
+  it('names an address that matches no route', () => {
+    // Otherwise a mistyped URL keeps the title of wherever the visitor came
+    // from, and a direct visit wears the home page's.
+    renderAt('/cette-page-nexiste-pas')
+    expect(document.title).toBe(NOT_FOUND_META.title)
+    expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
+      'noindex, follow',
+    )
   })
 })

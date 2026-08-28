@@ -30,7 +30,9 @@ export const PAGE_META: Record<RoutePath, PageMeta> = {
   [ROUTES.battle]: { title: `Affrontement — défiez l'IA · ${SUFFIX}`, indexable: true },
   [ROUTES.puzzle]: { title: `Puzzles tactiques · ${SUFFIX}`, indexable: true },
   [ROUTES.hunt]: { title: `Chasse aux Pièces · ${SUFFIX}`, indexable: true },
-  [ROUTES.leaderboard]: { title: `Classement mondial · ${SUFFIX}`, indexable: true },
+  // Behind RequireAuth: a crawler following this is redirected to the sign-in
+  // screen, so listing it would advertise a page no search engine can read.
+  [ROUTES.leaderboard]: { title: `Classement mondial · ${SUFFIX}`, indexable: false },
   [ROUTES.legal]: { title: `Mentions légales · ${SUFFIX}`, indexable: true },
   [ROUTES.privacy]: { title: `Politique de confidentialité · ${SUFFIX}`, indexable: true },
   // Nothing below is worth a search result: they need an account, or a link
@@ -41,6 +43,15 @@ export const PAGE_META: Record<RoutePath, PageMeta> = {
   [ROUTES.forgotPassword]: { title: `Mot de passe oublié · ${SUFFIX}`, indexable: false },
   [ROUTES.resetPassword]: { title: `Nouveau mot de passe · ${SUFFIX}`, indexable: false },
 }
+
+/**
+ * What to show for an address that matches no route.
+ *
+ * Without it the previous page's title stays on screen, so a mistyped URL wears
+ * the name of wherever the visitor came from — and a direct visit wears the home
+ * page's.
+ */
+export const NOT_FOUND_META: PageMeta = { title: `Page introuvable · ${SUFFIX}`, indexable: false }
 
 /** The pages a sitemap should list, in route order. */
 export const INDEXABLE_ROUTES: RoutePath[] = (Object.keys(PAGE_META) as RoutePath[]).filter(
