@@ -7,6 +7,7 @@ import HomePage from '@/features/home/HomePage'
 import { useProgressionSync } from '@/features/progression/useProgressionSync'
 import { ROUTES } from '@/routes'
 import AuthLinkLanding from '@/features/auth/AuthLinkLanding'
+import DocumentHead from '@/features/seo/DocumentHead'
 import { useAuthStore } from '@/store/useAuthStore'
 
 // The home route stays eager so the landing paint — the one Lighthouse measures
@@ -41,6 +42,8 @@ export default function App() {
       {/* Redirects an emailed link to the screen it was for, wherever Supabase
           happened to land it. Renders nothing. */}
       <AuthLinkLanding />
+      {/* Keeps the title and canonical in step with the route. Renders nothing. */}
+      <DocumentHead />
       <Routes>
         <Route element={<AppLayout />}>
           <Route path={ROUTES.home} element={<HomePage />} />

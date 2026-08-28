@@ -3,6 +3,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin'
 import react from '@vitejs/plugin-react'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
+import { INDEXABLE_ROUTES } from './src/seo'
 
 /**
  * Absolute URLs for the social preview tags.
@@ -17,6 +18,41 @@ function siteUrl(mode: string): Plugin {
   return {
     name: 'site-url',
     transformIndexHtml: (html) => html.split('__SITE_URL__').join(value),
+  }
+}
+
+/**
+ * robots.txt and sitemap.xml, generated rather than committed.
+ *
+ * Both must state the real domain, and neither can be a static file in public/
+ * without repeating a value that already lives in the environment. Without them
+ * the SPA rewrite answers both addresses with index.html and HTTP 200, so a
+ * crawler asking for the sitemap is handed a web page and a submission to
+ * Search Console fails.
+ */
+function discoveryFiles(mode: string): Plugin {
+  const site = (loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL ?? '').replace(/\/$/, '')
+  return {
+    name: 'discovery-files',
+    generateBundle() {
+      const urls = INDEXABLE_ROUTES.map((path) => `  <url><loc>${site}${path}</loc></url>`).join(
+        '\n',
+      )
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+      })
+      // Everything is public; the only thing worth saying is where the sitemap
+      // is. Named only when a domain is configured, since a relative sitemap
+      // reference is not valid.
+      const sitemap = site ? `Sitemap: ${site}/sitemap.xml\n` : ''
+      this.emitFile({
+        type: 'asset',
+        fileName: 'robots.txt',
+        source: `User-agent: *\nAllow: /\n${sitemap}`,
+      })
+    },
   }
 }
 
@@ -39,6 +75,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       siteUrl(mode),
+      discoveryFiles(mode),
       /**
        * Source maps for the error reports.
        *
