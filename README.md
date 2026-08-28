@@ -25,11 +25,19 @@ against the best line, and the best continuation drawn as an arrow. Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
 Finished games can be replayed move by move.
 
-**Battle** — five levels of opposition, labelled 800 to 2200 Elo. Those are
-target strengths, not measured ratings: the Stockfish 11 build shipped here
-exposes `Skill Level` rather than `UCI_Elo`, so the levels combine skill,
-allowed error and a search-depth cap on the weakest ones — which is the only way
-down to genuine novice strength.
+**Battle** — six levels of opposition, roughly 550 to 2450 Elo. The Stockfish 11
+build shipped here exposes `Skill Level` rather than `UCI_Elo`, so the levels
+combine skill, allowed error and a search-depth cap on the weakest ones, which is
+the only way down to genuine novice strength.
+
+Those figures are measured rather than claimed: each level was played against
+Stockfish 18 with `UCI_LimitStrength`, a calibrated opponent the shipped build
+cannot provide for itself. Only scores between 25% and 75% count, since outside
+that band the Elo formula stops discriminating — a 96% result is produced by a
+500 point gap and a 1500 point gap alike, which is how an earlier version of the
+ladder hid a chasm between its top two levels. `UCI_Elo` bottoms out at 1320, so
+the weakest level is chained from the one above it by self-play and is the least
+certain of the six. Treat every number as ±150.
 
 **Puzzles** — tactical positions to solve, tracked so you resume where you left
 off.

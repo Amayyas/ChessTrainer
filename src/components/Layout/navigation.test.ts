@@ -4,9 +4,16 @@ import { ROUTES } from '@/routes'
 
 describe('navigation', () => {
   it('exposes one entry per navigable route', () => {
-    // Reached from a guard, a link or the footer, never from the menu: the auth
-    // screens and the two legal documents.
-    const offMenu: string[] = [ROUTES.login, ROUTES.register, ROUTES.legal, ROUTES.privacy]
+    // Reached from a guard, a link or an email, never from the menu: the auth
+    // screens, the two recovery screens and the two legal documents.
+    const offMenu: string[] = [
+      ROUTES.login,
+      ROUTES.register,
+      ROUTES.forgotPassword,
+      ROUTES.resetPassword,
+      ROUTES.legal,
+      ROUTES.privacy,
+    ]
     const navigable = Object.values(ROUTES).filter((route) => !offMenu.includes(route))
     expect(NAV_ITEMS.map((item) => item.path).sort()).toEqual(navigable.sort())
   })

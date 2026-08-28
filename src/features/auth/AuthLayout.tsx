@@ -9,10 +9,18 @@ interface AuthLayoutProps {
   subtitle: string
   children: ReactNode
   footer: ReactNode
+  /** The recovery screens have nothing to offer a Google account. */
+  showGoogle?: boolean
 }
 
 /** Shell shared by the sign-in and sign-up screens. */
-export default function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+export default function AuthLayout({
+  title,
+  subtitle,
+  children,
+  footer,
+  showGoogle = true,
+}: AuthLayoutProps) {
   const error = useAuthStore((state) => state.error)
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle)
 
@@ -52,15 +60,19 @@ export default function AuthLayout({ title, subtitle, children, footer }: AuthLa
 
       {children}
 
-      <div className="flex items-center gap-3 text-xs text-ardoise">
-        <span className="h-px flex-1 bg-ebene/10" />
-        ou
-        <span className="h-px flex-1 bg-ebene/10" />
-      </div>
+      {showGoogle && (
+        <>
+          <div className="flex items-center gap-3 text-xs text-ardoise">
+            <span className="h-px flex-1 bg-ebene/10" />
+            ou
+            <span className="h-px flex-1 bg-ebene/10" />
+          </div>
 
-      <Button variant="outline" fullWidth onClick={() => void signInWithGoogle()}>
-        Continuer avec Google
-      </Button>
+          <Button variant="outline" fullWidth onClick={() => void signInWithGoogle()}>
+            Continuer avec Google
+          </Button>
+        </>
+      )}
 
       <p className="text-center text-sm text-ardoise">{footer}</p>
     </Card>
