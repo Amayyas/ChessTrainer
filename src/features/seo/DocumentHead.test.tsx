@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import DocumentHead from '@/features/seo/DocumentHead'
 import { ROUTES } from '@/routes'
 import { NOT_FOUND_META, PAGE_META } from '@/seo'
@@ -30,11 +30,35 @@ describe('DocumentHead', () => {
   })
 
   it('writes no canonical when no domain is configured', () => {
-    // Tests run without VITE_SITE_URL. A relative canonical is not a valid one,
-    // and a canonical left pointing at the home page would tell a search engine
-    // every page is a duplicate of it.
+    // The test environment pins VITE_SITE_URL empty, so this is a property of
+    // the code rather than of whoever's .env happens to be on disk. A relative
+    // canonical is not a valid one, and one left pointing at the home page would
+    // tell a search engine every page is a duplicate of it.
     renderAt(ROUTES.coach)
     expect(document.querySelector('link[rel="canonical"]')).toBeNull()
+  })
+
+  it('points the canonical at the current page once a domain is set', async () => {
+    // The other half of the branch above, and it had no test at all: the module
+    // reads the domain once at load, so covering it needs the environment
+    // stubbed and the module re-imported rather than merely re-rendered.
+    vi.stubEnv('VITE_SITE_URL', 'https://chesstrainer.test/')
+    vi.resetModules()
+    const { default: Reloaded } = await import('@/features/seo/DocumentHead')
+
+    render(
+      <MemoryRouter initialEntries={[ROUTES.battle]}>
+        <Reloaded />
+      </MemoryRouter>,
+    )
+
+    // The trailing slash on the configured domain is dropped, or the URL would
+    // carry two.
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://chesstrainer.test/battle',
+    )
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 
   it('marks a page the sitemap leaves out as noindex', () => {

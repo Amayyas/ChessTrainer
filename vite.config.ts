@@ -144,9 +144,15 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'jsdom',
-      // Tests always run as if no backend were configured: that is what CI sees
-      // (it holds no secrets) and it keeps them off the network entirely.
-      env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '' },
+      // Tests always run as if nothing were configured: that is what CI sees (it
+      // holds no secrets) and it keeps them off the network entirely.
+      //
+      // VITE_SITE_URL belongs here for a different reason. Vitest reads .env
+      // like any other Vite command, so without pinning it a developer who
+      // copied .env.example got a placeholder domain and a failing SEO test —
+      // on a machine where nothing was wrong. Anything a test asserts about must
+      // come from the test, not from the working copy it happens to run in.
+      env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '', VITE_SITE_URL: '' },
       setupFiles: ['./src/test/setup.ts'],
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       coverage: {

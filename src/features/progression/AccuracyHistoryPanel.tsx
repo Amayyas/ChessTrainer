@@ -58,7 +58,7 @@ function Sparkline({ entries }: { entries: readonly AccuracyEntry[] }) {
   )
 }
 
-export default function AccuracyHistory({ entries }: { entries: readonly AccuracyEntry[] }) {
+export default function AccuracyHistoryPanel({ entries }: { entries: readonly AccuracyEntry[] }) {
   if (entries.length === 0) {
     return (
       <Card>
