@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
-import AccuracyHistory from '@/features/progression/AccuracyHistory'
+import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
 import { levelFromXp } from '@/features/progression/levels'
@@ -208,7 +208,7 @@ export default function ProfilePage() {
             )}
           </Card>
 
-          <AccuracyHistory entries={accuracyHistory} />
+          <AccuracyHistoryPanel entries={accuracyHistory} />
 
           <Card>
             <LevelBar progress={progress} />
