@@ -91,3 +91,45 @@ describe('filename casing across src/', () => {
     expect(collisions(modules, (file) => `${file.dir}${stripExtension(file.name)}`)).toEqual([])
   })
 })
+
+/**
+ * The two checks above are only as good as this comparison, and one of them
+ * cannot be made to fail on the machine that needs it most: a case-insensitive
+ * filesystem will not hold `Widget.tsx` and `widget.tsx` at once, so there is no
+ * way to stage a real collision here and watch it go red. These feed the
+ * comparison a tree it cannot build on disk, so the detection is proven
+ * wherever the suite runs rather than only on Linux.
+ */
+describe('collisions', () => {
+  const file = (path: string): SourceFile => {
+    const cut = path.lastIndexOf('/')
+    return { path, dir: cut === -1 ? '' : path.slice(0, cut + 1), name: path.slice(cut + 1) }
+  }
+
+  it('reports names that differ only in casing', () => {
+    const found = collisions(['a/Widget.tsx', 'a/widget.tsx'].map(file), (entry) => entry.path)
+    expect(found).toEqual([['a/Widget.tsx', 'a/widget.tsx']])
+  })
+
+  it('reports a module specifier reachable by two files', () => {
+    const found = collisions(
+      ['a/accuracyHistory.ts', 'a/AccuracyHistory.tsx'].map(file),
+      (entry) => `${entry.dir}${stripExtension(entry.name)}`,
+    )
+    expect(found).toEqual([['a/AccuracyHistory.tsx', 'a/accuracyHistory.ts']])
+  })
+
+  it('leaves same-name files in different directories alone', () => {
+    expect(collisions(['a/index.ts', 'b/index.ts'].map(file), (entry) => entry.path)).toEqual([])
+  })
+
+  it('leaves a module and its test alone', () => {
+    // `levels.ts` and `levels.test.ts` share a prefix, not a specifier: nothing
+    // resolves `./levels` to the test file.
+    const found = collisions(
+      ['a/levels.ts', 'a/levels.test.ts'].map(file),
+      (entry) => `${entry.dir}${stripExtension(entry.name)}`,
+    )
+    expect(found).toEqual([])
+  })
+})
