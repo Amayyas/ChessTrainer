@@ -50,45 +50,57 @@ gh pr view <n> --json statusCheckRollup \
 A `NEUTRAL` or `SKIPPED` entry is not a failure. A missing entry is not a pass:
 a check that never started reads as absence, not as red.
 
-## 3. Unresolved review threads
+## 3. Review threads, in full
 
-`gh pr view` does not carry them. Ask GraphQL:
+`gh pr view` does not carry them. Ask GraphQL, and read every comment in every
+thread rather than the first of each: a thread's answer usually sits below its
+opening remark, and a resolved thread still records what was decided.
 
 ```bash
 gh api graphql -f owner=Amayyas -f repo=ChessTrainer -F number=<n> -f query='
 query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
-      reviewThreads(last:100){ nodes{ isResolved isOutdated path
-        comments(first:1){ nodes{ author{login} body } } } }
-      reviews(last:20){ nodes{ author{login} state submittedAt } }
+      reviewThreads(last:100){ nodes{ id isResolved isOutdated path
+        comments(first:50){ nodes{ databaseId author{login} createdAt body } } } }
     }
   }
-}' --jq '{unresolved: [.data.repository.pullRequest.reviewThreads.nodes[]
-    | select(.isResolved == false) | {path, who: .comments.nodes[0].author.login}],
-  reviews: [.data.repository.pullRequest.reviews.nodes[]
-    | {who: .author.login, state, submittedAt}]}'
+}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[]
+  | {path, resolved: .isResolved, outdated: .isOutdated, id,
+     messages: [.comments.nodes[] | {who: .author.login, at: .createdAt, id: .databaseId}]}]'
 ```
 
-Every thread must be resolved, including the ones GitHub marks outdated.
+Every thread must be resolved before the merge, including the ones GitHub marks
+outdated. The `id` of a thread and the `databaseId` of a comment are what you
+need to reply and resolve, so keep them.
 
-## 4. Has anything actually reviewed the current code?
+## 4. Has anything reviewed _this_ commit?
 
-The reviewer has changed once already, so do not look for one name. List every
-comment and review with its author and timestamp, then compare with the head
-commit:
+The reviewer has changed once already, so do not look for one name — and do not
+settle for a timestamp either. GitHub records the exact commit each review read;
+comparing that against the head is the direct question, where comparing dates is
+an inference that a rebase or a late push can invalidate.
 
 ```bash
-gh pr view <n> --json comments,reviews \
-  --jq '[(.comments[] | {kind: "comment", who: .author.login, at: .createdAt}),
-         (.reviews[]  | {kind: "review",  who: .author.login, at: .submittedAt})]
-        | sort_by(.at)'
-git log -1 --format='%H %cI %s' <headRefOid>
+gh api graphql -f owner=Amayyas -f repo=ChessTrainer -F number=<n> -f query='
+query($owner:String!,$repo:String!,$number:Int!){
+  repository(owner:$owner,name:$repo){
+    pullRequest(number:$number){
+      headRefOid
+      reviews(last:20){ nodes{ author{login} state submittedAt commit{oid} } }
+      comments(last:50){ nodes{ author{login} createdAt } }
+    }
+  }
+}' --jq '.data.repository.pullRequest as $pr | {head: $pr.headRefOid,
+  reviews: [$pr.reviews.nodes[] | {who: .author.login, state, at: .submittedAt,
+            commit: .commit.oid, current: (.commit.oid == $pr.headRefOid)}],
+  comments: [$pr.comments.nodes[] | {who: .author.login, at: .createdAt}]}'
 ```
 
-CodeRabbit reviews pull requests against `main`, posting a walkthrough comment
-and a review of its own. Anything older than the last push has not seen the
-current code.
+A review with `current: false` read an earlier commit. CodeRabbit reviews
+non-draft pull requests targeting `main`, posting a walkthrough comment and a
+review of its own; the comment list is there to catch a reviewer that only
+comments, and to show when nothing ran at all.
 
 **Silence is not a pass.** The previous reviewer spent its last pull requests
 answering with a billing notice instead of a review, which reads as "no
