@@ -19,9 +19,6 @@ These are not preferences. Breaking one means the work gets redone.
 - **No French anywhere in the repository** — code, comments, tests, README,
   commits, CI. The single exception is copy the player reads: UI strings, error
   messages and the legal pages stay in French, because the audience is French.
-- **Rewrite the full recap at the end of every reply**, in French, keeping it
-  current. Its shape is fixed: starting analysis, the dated plan, what remains,
-  observed corrections and limits, current state.
 
 ## Verification, which is the point
 
