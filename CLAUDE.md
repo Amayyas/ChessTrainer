@@ -51,14 +51,19 @@ through every unrelated session.
   typecheck, tests, build and the bundle size budget.
 - `main` is protected: checks must pass, the branch must be current, and every
   review thread must be resolved.
-- **Never call a PR ready without querying its state.** Check all four blocking
-  conditions — checks, approvals, branch freshness, unresolved threads — with
-  `gh pr view <n> --json mergeable,mergeStateStatus`. The automated review posts
-  _after_ the checks go green, so a reading taken the moment checks pass is
-  premature. Wait for a review newer than the last push, and confirm the state
-  is stable across more than one reading.
-- The automated reviewer has been right essentially every time. Verify each
-  finding rather than deferring to it, but expect it to be correct.
+- **Never call a PR ready without querying its state.** Run `/pr-ready`, which
+  checks all four blocking conditions — checks, approvals, branch freshness,
+  unresolved threads — and confirms the state is stable across more than one
+  reading. The automated review posts _after_ the checks go green, so a reading
+  taken the moment checks pass is premature.
+- The automated reviewer, Qodo, has been right essentially every time. Verify
+  each finding rather than deferring to it, but expect it to be correct.
+- **Qodo has been silent since 1 September 2026.** It now answers new pull
+  requests with `qodo:billing-blocked`: the trial ended and reviews are paused
+  until the workspace has credits. Waiting for a review newer than the last push
+  therefore waits forever. Until that is resolved, read the silence as one
+  signal missing, never as a passing grade — PR #59 has green checks and no
+  review at all.
 
 ## Deploy budget
 
