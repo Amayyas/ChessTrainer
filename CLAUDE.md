@@ -28,22 +28,22 @@ These are not preferences. Breaking one means the work gets redone.
 Two production bugs were found by the user, not by the test suite. The lesson
 stuck, and these follow from it.
 
-- **A test that has never failed proves nothing.** After writing one, break the
-  code it covers and watch it go red. Assert that the mutation's anchor exists
-  before applying it — an edit that silently matched nothing reads exactly like
-  a passing check.
-- **Commit before mutating.** `git checkout -- file` to undo a mutation also
-  erases an uncommitted fix. This has happened three times; use a file backup if
-  the work is not yet committed.
+- **A test that has never failed proves nothing.** Break the code it covers and
+  watch it go red.
 - **Measure rather than recall.** Claims about the engine, about bundle size,
   about what a service does — check them. Several confident statements in this
   project turned out to be backwards.
-- **Beware the censored measurement.** A 96% win rate is produced by a 500-point
-  Elo gap and by a 1500-point one alike. Outside roughly 25–75%, a score stops
-  discriminating; reading one as precise once hid a chasm in the difficulty
-  ladder for two releases.
+- **Beware the censored measurement.** Outside roughly 25–75%, a score stops
+  discriminating, and a check that cannot come out wrong is not a check. Give
+  every measurement a control that must fail, and read that control first.
 - **Never quote a commit hash without reading it back.** Fabricated hashes have
   reached PR comments twice.
+
+The mechanics behind the first two — the anchor check before a mutation, why to
+commit first, which runner covers which files, the band the Elo figures were
+measured in — live in `.claude/rules/`. Those files load when the code they
+govern is opened, so they are current where it matters without being carried
+through every unrelated session.
 
 ## Pull requests
 
