@@ -163,7 +163,3 @@ and out of scope when it was found. Stockfish stays single-threaded: the shipped
 package has no threaded build at all, so multithreading means replacing the
 engine, and a full coach analysis of a 40-move game measures 36 seconds on a
 desktop, which did not justify the risk.
-
-**Open:** a Dependabot PR whose lockfile is out of sync with its own
-`package.json`, so `npm ci` fails. Dev dependencies only, no security fix. It
-needs `npm install` on the branch before it can merge.
