@@ -19,6 +19,9 @@ cahier-des-charges.html
 supabase/.temp
 supabase/.branches
 
+# Claude Code, personal half — the shared half is committed
+.claude/settings.local.json
+
 # Local secrets — Google OAuth credentials, never committed
 supabase/.env
 client_secret_*.json
