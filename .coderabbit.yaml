@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+#
+# Automated review on pull requests. Free on CodeRabbit's public-repository
+# tier, which is what this repository is on.
+#
+# It replaces Qodo, whose trial ended on 1 September 2026 and which answered
+# every new pull request with a billing notice. The lesson kept from that: a
+# silent reviewer looks exactly like a clean one, so read an empty review as a
+# missing signal until something proves it ran.
+
+language: en-US
+
+tone_instructions: >-
+  Be concise and factual. Cite a file and line for any claim about behaviour
+  rather than inferring it from a name. When you find nothing, say so in one
+  line rather than filling the review.
+
+reviews:
+  profile: chill
+  # Never block a merge on the review's own verdict: the branch protection
+  # already requires every thread to be resolved, and a bot that requests
+  # changes turns a nit into a blocker.
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+
+  path_filters:
+    - '!public/stockfish/**'
+    - '!package-lock.json'
+    - '!dist/**'
+    - '!coverage/**'
+    - '!supabase/.temp/**'
+
+  path_instructions:
+    - path: '**/*.{ts,tsx,md,json,yml,yaml}'
+      instructions: >-
+        The repository is written in English — code, comments, tests, docs, CI.
+        The single exception is copy the player reads: UI strings, error
+        messages and the legal pages are French on purpose, because the
+        audience is French. Flag French anywhere else, and never flag it there.
+    - path: 'src/engine/**'
+      instructions: >-
+        The header of src/engine/levels.ts records how each Elo figure was
+        measured and what it is worth. Flag any change that restates those
+        figures instead of importing them, and any claim resting on a win rate
+        outside roughly 25-75%, where the score stops discriminating.
+    - path: 'src/**/*.test.{ts,tsx}'
+      instructions: >-
+        Flag a test that hardcodes a value it could derive from the data the
+        code exports: it drifts with the constant and catches nothing.
+    - path: 'supabase/**'
+      instructions: >-
+        Row-level security policies are verified by supabase/tests and by
+        nothing else. Flag a policy or migration change that arrives without a
+        test.
+
+  tools:
+    eslint:
+      enabled: true
+    # Half the user-facing strings are French while the review runs in English,
+    # so a prose checker reports the product, not a defect.
+    languagetool:
+      enabled: false
+
+chat:
+  auto_reply: true
