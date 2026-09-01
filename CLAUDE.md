@@ -99,6 +99,29 @@ are indexable — the sitemap is generated from it at build time.
 `npm run dev`, `npm run ci`, `npm run test:watch`, `npm run test:rls`,
 `npm run size`.
 
+### Configuration for this agent
+
+`.claude/` is part of the repository and follows its rules: English, formatted,
+reviewed. It holds four things.
+
+`settings.json` registers one `PostToolUse` hook, `hooks/format-edited-file.sh`,
+which runs Prettier over every file this agent edits and ESLint `--fix` over the
+JavaScript and TypeScript among it. About 0.35s per edit, and it removes the
+commonest way `npm run ci` fails on a change that is otherwise correct. It never
+reaches the network — the binaries come from `node_modules` — and exits quietly
+when it does not recognise what it was handed. Hooks declared in a project
+settings file only run once the workspace is trusted, which Claude Code asks
+about the first time it starts here.
+
+`rules/*.md` are instructions scoped to file paths through their `paths`
+frontmatter. They load when a matching file is opened rather than at startup,
+which is what keeps this file short.
+
+`skills/pr-ready/` is the `/pr-ready` command: it queries the four conditions
+that block a merge and reports each with its evidence.
+
+`settings.local.json`, if it exists, is personal and gitignored.
+
 ## Copy that restates data drifts from it
 
 The home page advertised "cinq niveaux, de 800 à 2200 Elo" for two releases
