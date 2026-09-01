@@ -20,6 +20,8 @@ import type { UseChessGame } from '@/hooks/useChessGame'
 interface Entry {
   bestMoveUci: string
   whiteCp: number
+  /** Set for a forced mate: White-relative distance, negative when Black mates. */
+  whiteMate?: number
 }
 
 let fixture = new Map<string, Entry>()
@@ -35,12 +37,14 @@ const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
   if (stalled.has(fen)) return new Promise<never>(() => {})
   if (refused.has(fen)) return null
   const entry = fixture.get(fen) ?? { bestMoveUci: '(none)', whiteCp: 0 }
-  // The engine reports from the side to move; the hook converts back.
+  // The engine reports from the side to move; the hook converts back. A mate
+  // and a centipawn score are mutually exclusive, as they are in real UCI.
   const sign = fen.split(' ')[1] === 'b' ? -1 : 1
+  const mate = entry.whiteMate
   return {
     bestMove: entry.bestMoveUci,
-    scoreCp: entry.whiteCp * sign,
-    scoreMate: null,
+    scoreCp: mate === undefined ? entry.whiteCp * sign : null,
+    scoreMate: mate === undefined ? null : mate * sign,
     depth: 14,
     pv: [],
   }
@@ -64,6 +68,9 @@ interface MoveSpec {
   baselineCp: number
   /** White-relative eval of the position the played move reaches. */
   afterCp: number
+  /** Mate distances, when the two positions are forced mates rather than scores. */
+  baselineMate?: number
+  afterMate?: number
 }
 
 /**
@@ -82,17 +89,26 @@ function buildGame(specs: MoveSpec[]): { game: UseChessGame; baselines: string[]
     const probe = new Chess(before)
     const best = probe.move(spec.best)
     baselines.push(probe.fen())
-    fixture.set(probe.fen(), { bestMoveUci: '(none)', whiteCp: spec.baselineCp })
+    fixture.set(probe.fen(), {
+      bestMoveUci: '(none)',
+      whiteCp: spec.baselineCp,
+      whiteMate: spec.baselineMate,
+    })
 
     // `before` is the previous move's `after`, so keep the eval already set for
     // it and only attach the best move the engine claims here.
     fixture.set(before, {
       bestMoveUci: `${best.from}${best.to}`,
       whiteCp: fixture.get(before)?.whiteCp ?? 0,
+      whiteMate: fixture.get(before)?.whiteMate,
     })
 
     chess.move(spec.san)
-    fixture.set(chess.fen(), { bestMoveUci: '(none)', whiteCp: spec.afterCp })
+    fixture.set(chess.fen(), {
+      bestMoveUci: '(none)',
+      whiteCp: spec.afterCp,
+      whiteMate: spec.afterMate,
+    })
   }
 
   const history = chess.history({ verbose: true })
@@ -270,13 +286,52 @@ describe('useCoachAnalysis and the top tier', () => {
   })
 
   it('withholds it from a slower mate than the one the engine saw', async () => {
-    // Every forced mate collapses to the same score, so keeping mate in ten
-    // scores exactly like finding mate in one. Identifying the chosen move is
-    // what keeps the two apart.
-    const { game } = buildGame([{ san: 'e4', best: 'd4', baselineCp: 10000, afterCp: 10000 }])
+    // The engine's line mates in one; the move played still mates, in three.
+    // Both positions carry the same centipawn score, so the distance is the
+    // only thing separating them — and the coach used to drop it, which scored
+    // mate in ten exactly like mate in one.
+    const { game } = buildGame([
+      { san: 'e4', best: 'd4', baselineCp: 10000, baselineMate: 1, afterCp: 10000, afterMate: 3 },
+    ])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('good')
+  })
+
+  it('penalises a slow mate without ever calling it an error', async () => {
+    // Ten moves late is still a won game, so the ladder stops at the mildest
+    // disapproving tier rather than accusing the player of losing something.
+    const { game } = buildGame([
+      { san: 'e4', best: 'd4', baselineCp: 10000, baselineMate: 1, afterCp: 10000, afterMate: 11 },
+    ])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('inaccuracy')
+    expect(result.current.summary.mistakes).toBe(0)
+    expect(result.current.summary.blunders).toBe(0)
+  })
+
+  it('keeps the approving tier for a mate found at the engine’s own speed', async () => {
+    const { game } = buildGame([
+      { san: 'e4', best: 'd4', baselineCp: 10000, baselineMate: 2, afterCp: 10000, afterMate: 2 },
+    ])
     const { result } = renderAnalysis(game)
     await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
 
     expect(result.current.qualities[0]).toBe('excellent')
+  })
+
+  it('still calls a mate traded away for a winning position a blunder', async () => {
+    // The other half of the change: a mate given up is not a slow mate, and the
+    // ±MATE_CP gap must keep saying so.
+    const { game } = buildGame([
+      { san: 'e4', best: 'd4', baselineCp: 10000, baselineMate: 1, afterCp: 300 },
+    ])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.qualities[0]).not.toBeNull())
+
+    expect(result.current.qualities[0]).toBe('blunder')
   })
 })

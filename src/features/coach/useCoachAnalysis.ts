@@ -5,6 +5,7 @@ import { useStockfish } from '@/engine/useStockfish'
 import type { UseChessGame } from '@/hooks/useChessGame'
 import type { Color, Square } from '@/utils/chess'
 import {
+  centipawnLoss,
   classifyMove,
   moveAccuracy,
   toWhiteEval,
@@ -213,6 +214,11 @@ export function useCoachAnalysis(
    * Compares the played move with the best move on the same "after move" phase.
    * Returns the centipawns lost and the mover's winning chances before (best
    * reply) and after (played move), or null while the needed evals are missing.
+   *
+   * The winning chances come from the centipawn scores, which saturate long
+   * before ±MATE_CP: a mate reached slowly is graded below the best tier but
+   * still measures as 100% accurate. Telling those apart on the accuracy scale
+   * needs a different model, not a different constant.
    */
   const evalMove = useCallback(
     (
@@ -223,8 +229,10 @@ export function useCoachAnalysis(
       const after = cache.get(move.after)
       if (!baseline || !after) return null
 
-      const sign = move.color === 'w' ? 1 : -1
-      const loss = Math.max(0, sign * (baseline.eval.cp - after.eval.cp))
+      // Not the same arithmetic inlined: centipawnLoss also knows what to do
+      // when both positions are forced mates, where the centipawn scores are
+      // equal and only the distance separates them.
+      const loss = centipawnLoss(baseline.eval, after.eval, move.color)
       const toMoverWin = (whiteCp: number) => {
         const white = winningChances(whiteCp)
         return move.color === 'w' ? white : 1 - white
@@ -244,9 +252,8 @@ export function useCoachAnalysis(
       if (move.san.includes('#')) return 'best'
       // The engine's own move is identified, not inferred from a zero loss.
       // Losses are clamped at zero, so a different move whose position happens
-      // to evaluate higher also reads as zero; and every forced mate collapses
-      // to one score, so keeping mate in ten would score like finding mate in
-      // one. Only the move the engine actually chose earns the top mark.
+      // to evaluate higher also reads as zero. Only the move the engine
+      // actually chose earns the top mark.
       const before = cache.get(move.before)
       const playedUci = `${move.from}${move.to}${move.promotion ?? ''}`
       if (before?.bestMoveUci === playedUci) return 'best'
