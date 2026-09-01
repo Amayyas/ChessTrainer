@@ -54,16 +54,21 @@ through every unrelated session.
 - **Never call a PR ready without querying its state.** Run `/pr-ready`, which
   checks all four blocking conditions — checks, approvals, branch freshness,
   unresolved threads — and confirms the state is stable across more than one
-  reading. The automated review posts _after_ the checks go green, so a reading
-  taken the moment checks pass is premature.
-- The automated reviewer, Qodo, has been right essentially every time. Verify
-  each finding rather than deferring to it, but expect it to be correct.
-- **Qodo has been silent since 1 September 2026.** It now answers new pull
-  requests with `qodo:billing-blocked`: the trial ended and reviews are paused
-  until the workspace has credits. Waiting for a review newer than the last push
-  therefore waits forever. Until that is resolved, read the silence as one
-  signal missing, never as a passing grade — PR #59 has green checks and no
-  review at all.
+  reading.
+- **Run `/code-review` before pushing.** It reads the branch's commits and the
+  working tree in a subagent of its own, costs nothing, and catches what it
+  catches while the code is still private. `/security-review` is its counterpart
+  for the changes that touch auth, policies or secrets.
+- **CodeRabbit reviews every pull request against `main`**, free on its
+  public-repository tier and configured in `.coderabbit.yaml`. It is worth more
+  than a second pass by the model that wrote the code, which is the whole reason
+  to keep it: verify each finding rather than deferring to it.
+- **A silent reviewer looks exactly like a clean one.** Qodo, which reviewed
+  here until its trial ended on 1 September 2026, spent its last pull requests
+  answering with a billing notice rather than a review — which reads as "no
+  findings" to anyone skimming. Before taking an empty review as a pass, confirm
+  something actually ran: a comment, a check run, anything carrying a timestamp
+  newer than the last push.
 
 ## Deploy budget
 
