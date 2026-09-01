@@ -67,12 +67,21 @@ through every unrelated session.
 
 ## Deploy budget
 
-Netlify runs on credits: **15 per production deploy**, 300 a month on the free
-plan, and **the site is taken offline when they run out**. Deploy previews,
-failed builds and CI are free.
+Netlify runs on credits: 300 a month on the free plan, and **every project is
+paused when they run out** — visitors get a "Site not available" page until the
+cycle resets. The free plan can neither buy credits nor auto recharge, so
+running out means waiting. The cycle resets on the **16th**, not the 1st.
 
-So: batch changes into fewer, larger PRs. A dev-dependency bump with no
-user-facing benefit can wait for the monthly reset rather than spend a deploy.
+Deploys are not the only thing that spends them. A production deploy costs
+**15**, but bandwidth costs **20 per GB** and web requests **2 per 10,000** — so
+traffic drains the balance while nobody deploys at all. Deploy previews, branch
+deploys, failed builds, rollbacks and CI are free.
+
+So: batch changes into fewer, larger PRs, and read the balance against the
+traffic as much as against the deploys. A dev-dependency bump with no
+user-facing benefit can wait for the reset rather than spend a deploy. Stopping
+builds in the Netlify project settings decouples merging from deploying: `main`
+can move without spending anything, and a single deploy publishes it all later.
 
 ## The stack, briefly
 
