@@ -24,6 +24,10 @@ reviews:
   high_level_summary: true
   poem: false
 
+  # On the free tier for public repositories CodeRabbit opens no review of its
+  # own: it posts a "Review skipped: manual review required for this OSS
+  # repository" status and waits for someone to comment @coderabbitai review.
+  # What follows is what it would use if that ever changes.
   auto_review:
     enabled: true
     drafts: false

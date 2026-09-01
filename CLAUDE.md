@@ -59,10 +59,13 @@ through every unrelated session.
   working tree in a subagent of its own, costs nothing, and catches what it
   catches while the code is still private. `/security-review` is its counterpart
   for the changes that touch auth, policies or secrets.
-- **CodeRabbit reviews every non-draft pull request targeting `main`**,
-  configured in `.coderabbit.yaml`, which is where that scope is set. It is
-  worth more than a second pass by the model that wrote the code, which is the
-  whole reason to keep it: verify each finding rather than deferring to it.
+- **CodeRabbit reviews on demand: comment `@coderabbitai review`.** On the free
+  tier for public repositories it starts nothing by itself. It posts a
+  `CodeRabbit` commit status reading "Review skipped: manual review required for
+  this OSS repository" and waits — a green status for a review that never ran.
+  Its settings are in `.coderabbit.yaml`. It is worth more than a second pass by
+  the model that wrote the code, which is the whole reason to keep it: verify
+  each finding rather than deferring to it.
 - **A silent reviewer looks exactly like a clean one.** Qodo, which reviewed
   here until its trial ended on 1 September 2026, spent its last pull requests
   answering with a billing notice rather than a review — which reads as "no
