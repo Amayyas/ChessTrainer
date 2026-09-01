@@ -225,6 +225,17 @@ describe('useBattleGame and the engine reply', () => {
     expect(analyze).toHaveBeenCalledTimes(1)
   })
 
+  /*
+   * A limit of the count above, found by deleting the code it covers: removing
+   * the `thinkingFor` guard from the hook leaves every test in this file green.
+   * With useStockfish handing back a stable `analyze`, nothing re-runs that
+   * effect while a search is pending, so the guard turns nothing away.
+   *
+   * What the ref does buy is the repeat two describes down — two games from the
+   * same starting position — and deleting the line that clears it there does go
+   * red. Guard and reset are load-bearing as a pair, not separately.
+   */
+
   it('hands the clock over on both sides of a move', async () => {
     scriptLine(['e4', 'e5'])
     const { result } = renderHook(() => useBattleGame())
