@@ -72,27 +72,28 @@ query($owner:String!,$repo:String!,$number:Int!){
 
 Every thread must be resolved, including the ones GitHub marks outdated.
 
-## 4. Is the review newer than the last push?
+## 4. Has anything actually reviewed the current code?
 
-The automated reviewer is Qodo. It posts as an issue comment titled
-`Code Review by Qodo`, and adds a review of its own when it has inline findings.
-It runs **after** the checks go green, so a reading taken the moment checks pass
-is premature.
+The reviewer has changed once already, so do not look for one name. List every
+comment and review with its author and timestamp, then compare with the head
+commit:
 
 ```bash
-gh pr view <n> --json comments \
-  --jq '.comments[] | select(.author.login == "qodo-code-review")
-        | {createdAt, head: (.body | .[0:80])}'
+gh pr view <n> --json comments,reviews \
+  --jq '[(.comments[] | {kind: "comment", who: .author.login, at: .createdAt}),
+         (.reviews[]  | {kind: "review",  who: .author.login, at: .submittedAt})]
+        | sort_by(.at)'
 git log -1 --format='%H %cI %s' <headRefOid>
 ```
 
-Compare the newest Qodo comment against the head commit's date. A review older
-than the last push has not seen the current code.
+CodeRabbit reviews pull requests against `main`, posting a walkthrough comment
+and a review of its own. Anything older than the last push has not seen the
+current code.
 
-**Qodo can be silent for a reason that is not "still working".** A comment
-containing `qodo:billing-blocked` means reviews are paused — the trial ended on
-1 September 2026 — and no review is coming. Say so and treat it as one missing
-signal, not as a pass.
+**Silence is not a pass.** The previous reviewer spent its last pull requests
+answering with a billing notice instead of a review, which reads as "no
+findings" to anyone skimming the page. If nothing ran, say that nothing ran, and
+count it as a missing signal rather than a clean bill.
 
 ## 5. Confirm, then answer
 
