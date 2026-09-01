@@ -174,9 +174,11 @@ chesstrainer.fr, so DMARC on this domain does not govern it. DMARC is at
 There is no DKIM record; adding one would make `reject` safer, since SPF alone
 breaks on forwarded mail.
 
-**Known and deliberately unfixed:** every forced mate collapses to the same
-score, so a slower mate is graded Excellent rather than penalised — pre-existing,
-and out of scope when it was found. Stockfish stays single-threaded: the shipped
+**Known and deliberately unfixed:** per-move accuracy saturates on forced mates.
+The grade now prices a slow mate by its distance, but the win-chances curve reads
+±10000 as a certainty either way, so the same move still measures 100% accurate.
+Telling those apart on that scale needs a different model, not a different
+constant. Stockfish stays single-threaded: the shipped
 package has no threaded build at all, so multithreading means replacing the
 engine, and a full coach analysis of a 40-move game measures 36 seconds on a
 desktop, which did not justify the risk.
