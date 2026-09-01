@@ -5,6 +5,8 @@ import {
   MOVE_QUALITY,
   MOVE_QUALITY_ORDER,
   moveAccuracy,
+  SLOWER_MATE_CP,
+  SLOWER_MATE_MAX_CP,
   toWhiteEval,
   winningChances,
 } from '@/utils/evaluation'
@@ -66,8 +68,7 @@ describe('classifyMove', () => {
 
   it('never awards the top tier from a loss alone', () => {
     // A zero loss does not identify the engine's move: losses are clamped at
-    // zero, and every forced mate collapses to one score. The coach compares
-    // against the chosen move instead.
+    // zero. The coach compares against the chosen move instead.
     expect(classifyMove(0)).not.toBe('best')
     expect(classifyMove(-50)).not.toBe('best')
   })
@@ -79,13 +80,6 @@ describe('classifyMove', () => {
     expect(classifyMove(21)).toBe('good')
     expect(classifyMove(30)).toBe('good')
     expect(classifyMove(31)).toBe('inaccuracy')
-  })
-
-  it('treats a missed mate as a blunder regardless of centipawn loss', () => {
-    expect(classifyMove(5, true)).toBe('blunder')
-    // Including one that gave up nothing on the board: the mate it let slip is
-    // the loss, and it must not be promoted to the top tier.
-    expect(classifyMove(0, true)).toBe('blunder')
   })
 
   it('never treats a negative loss as worse than excellent', () => {
@@ -108,6 +102,67 @@ describe('centipawnLoss', () => {
 
   it('is zero when the position did not worsen for the mover', () => {
     expect(centipawnLoss({ cp: 50, mate: null }, { cp: 90, mate: null }, 'w')).toBe(0)
+  })
+})
+
+describe('centipawnLoss between two forced mates', () => {
+  // MATE_CP flattens every mate to the same centipawn score, so the cp
+  // difference here is zero however far apart the mates are. That is what
+  // scored mate in ten exactly like mate in one.
+  const whiteMate = (moves: number) => ({ cp: 10000, mate: moves })
+  const blackMate = (moves: number) => ({ cp: -10000, mate: -moves })
+
+  it('prices the delay when the mover takes longer to mate', () => {
+    expect(centipawnLoss(whiteMate(1), whiteMate(3), 'w')).toBe(2 * SLOWER_MATE_CP)
+    expect(centipawnLoss(blackMate(1), blackMate(3), 'b')).toBe(2 * SLOWER_MATE_CP)
+  })
+
+  it('charges nothing for mating sooner than the engine meant to', () => {
+    expect(centipawnLoss(whiteMate(5), whiteMate(2), 'w')).toBe(0)
+    expect(centipawnLoss(whiteMate(3), whiteMate(3), 'w')).toBe(0)
+  })
+
+  it('caps the delay inside the inaccuracy band, however slow the mate', () => {
+    // A mate that still mates gave nothing away. The tier the player reads must
+    // not accuse them of an error, so the ladder stops here whether the delay is
+    // nine moves or ninety.
+    const slow = centipawnLoss(whiteMate(1), whiteMate(20), 'w')
+    expect(slow).toBe(SLOWER_MATE_MAX_CP)
+    expect(classifyMove(slow)).toBe('inaccuracy')
+    expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(90), 'w'))).toBe('inaccuracy')
+  })
+
+  it('walks the tiers down as the delay grows', () => {
+    expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(2), 'w'))).toBe('veryGood')
+    expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(3), 'w'))).toBe('good')
+    expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(4), 'w'))).toBe('inaccuracy')
+  })
+
+  it('charges the mated side for hurrying its own defeat', () => {
+    // Both are -MATE_CP, so this used to be a zero loss and an excellent move.
+    expect(centipawnLoss(blackMate(8), blackMate(6), 'w')).toBe(2 * SLOWER_MATE_CP)
+    expect(centipawnLoss(blackMate(8), blackMate(1), 'w')).toBe(SLOWER_MATE_MAX_CP)
+    // Holding out longer is not a loss.
+    expect(centipawnLoss(blackMate(2), blackMate(8), 'w')).toBe(0)
+  })
+})
+
+describe('centipawnLoss when only one side of the comparison is a mate', () => {
+  it('keeps the centipawn comparison, where the gap is a real one', () => {
+    // A mate traded for a merely winning position is not a slow mate, it is a
+    // mate thrown away — and the ±MATE_CP gap already says so.
+    const thrown = centipawnLoss({ cp: 10000, mate: 2 }, { cp: 300, mate: null }, 'w')
+    expect(thrown).toBeGreaterThan(200)
+    expect(classifyMove(thrown)).toBe('blunder')
+  })
+
+  it('scores walking into a mate as a blunder', () => {
+    const reversed = centipawnLoss({ cp: 10000, mate: 2 }, { cp: -10000, mate: -3 }, 'w')
+    expect(classifyMove(reversed)).toBe('blunder')
+  })
+
+  it('charges nothing for finding a mate the engine had not', () => {
+    expect(centipawnLoss({ cp: 300, mate: null }, { cp: 10000, mate: 2 }, 'w')).toBe(0)
   })
 })
 
