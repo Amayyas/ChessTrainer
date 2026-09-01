@@ -28,22 +28,22 @@ These are not preferences. Breaking one means the work gets redone.
 Two production bugs were found by the user, not by the test suite. The lesson
 stuck, and these follow from it.
 
-- **A test that has never failed proves nothing.** After writing one, break the
-  code it covers and watch it go red. Assert that the mutation's anchor exists
-  before applying it — an edit that silently matched nothing reads exactly like
-  a passing check.
-- **Commit before mutating.** `git checkout -- file` to undo a mutation also
-  erases an uncommitted fix. This has happened three times; use a file backup if
-  the work is not yet committed.
+- **A test that has never failed proves nothing.** Break the code it covers and
+  watch it go red.
 - **Measure rather than recall.** Claims about the engine, about bundle size,
   about what a service does — check them. Several confident statements in this
   project turned out to be backwards.
-- **Beware the censored measurement.** A 96% win rate is produced by a 500-point
-  Elo gap and by a 1500-point one alike. Outside roughly 25–75%, a score stops
-  discriminating; reading one as precise once hid a chasm in the difficulty
-  ladder for two releases.
+- **Beware the censored measurement.** Outside roughly 25–75%, a score stops
+  discriminating, and a check that cannot come out wrong is not a check. Give
+  every measurement a control that must fail, and read that control first.
 - **Never quote a commit hash without reading it back.** Fabricated hashes have
   reached PR comments twice.
+
+The mechanics behind the first two — the anchor check before a mutation, why to
+commit first, which runner covers which files, the band the Elo figures were
+measured in — live in `.claude/rules/`. Those files load when the code they
+govern is opened, so they are current where it matters without being carried
+through every unrelated session.
 
 ## Pull requests
 
@@ -51,23 +51,37 @@ stuck, and these follow from it.
   typecheck, tests, build and the bundle size budget.
 - `main` is protected: checks must pass, the branch must be current, and every
   review thread must be resolved.
-- **Never call a PR ready without querying its state.** Check all four blocking
-  conditions — checks, approvals, branch freshness, unresolved threads — with
-  `gh pr view <n> --json mergeable,mergeStateStatus`. The automated review posts
-  _after_ the checks go green, so a reading taken the moment checks pass is
-  premature. Wait for a review newer than the last push, and confirm the state
-  is stable across more than one reading.
-- The automated reviewer has been right essentially every time. Verify each
-  finding rather than deferring to it, but expect it to be correct.
+- **Never call a PR ready without querying its state.** Run `/pr-ready`, which
+  checks all four blocking conditions — checks, approvals, branch freshness,
+  unresolved threads — and confirms the state is stable across more than one
+  reading. The automated review posts _after_ the checks go green, so a reading
+  taken the moment checks pass is premature.
+- The automated reviewer, Qodo, has been right essentially every time. Verify
+  each finding rather than deferring to it, but expect it to be correct.
+- **Qodo has been silent since 1 September 2026.** It now answers new pull
+  requests with `qodo:billing-blocked`: the trial ended and reviews are paused
+  until the workspace has credits. Waiting for a review newer than the last push
+  therefore waits forever. Until that is resolved, read the silence as one
+  signal missing, never as a passing grade — PR #59 has green checks and no
+  review at all.
 
 ## Deploy budget
 
-Netlify runs on credits: **15 per production deploy**, 300 a month on the free
-plan, and **the site is taken offline when they run out**. Deploy previews,
-failed builds and CI are free.
+Netlify runs on credits: 300 a month on the free plan, and **every project is
+paused when they run out** — visitors get a "Site not available" page until the
+cycle resets. The free plan can neither buy credits nor auto recharge, so
+running out means waiting. The cycle resets on the **16th**, not the 1st.
 
-So: batch changes into fewer, larger PRs. A dev-dependency bump with no
-user-facing benefit can wait for the monthly reset rather than spend a deploy.
+Deploys are not the only thing that spends them. A production deploy costs
+**15**, but bandwidth costs **20 per GB** and web requests **2 per 10,000** — so
+traffic drains the balance while nobody deploys at all. Deploy previews, branch
+deploys, failed builds, rollbacks and CI are free.
+
+So: batch changes into fewer, larger PRs, and read the balance against the
+traffic as much as against the deploys. A dev-dependency bump with no
+user-facing benefit can wait for the reset rather than spend a deploy. Stopping
+builds in the Netlify project settings decouples merging from deploying: `main`
+can move without spending anything, and a single deploy publishes it all later.
 
 ## The stack, briefly
 
@@ -98,6 +112,29 @@ are indexable — the sitemap is generated from it at build time.
 
 `npm run dev`, `npm run ci`, `npm run test:watch`, `npm run test:rls`,
 `npm run size`.
+
+### Configuration for this agent
+
+`.claude/` is part of the repository and follows its rules: English, formatted,
+reviewed. It holds four things.
+
+`settings.json` registers one `PostToolUse` hook, `hooks/format-edited-file.sh`,
+which runs Prettier over every file this agent edits and ESLint `--fix` over the
+JavaScript and TypeScript among it. About 0.35s per edit, and it removes the
+commonest way `npm run ci` fails on a change that is otherwise correct. It never
+reaches the network — the binaries come from `node_modules` — and exits quietly
+when it does not recognise what it was handed. Hooks declared in a project
+settings file only run once the workspace is trusted, which Claude Code asks
+about the first time it starts here.
+
+`rules/*.md` are instructions scoped to file paths through their `paths`
+frontmatter. They load when a matching file is opened rather than at startup,
+which is what keeps this file short.
+
+`skills/pr-ready/` is the `/pr-ready` command: it queries the four conditions
+that block a merge and reports each with its evidence.
+
+`settings.local.json`, if it exists, is personal and gitignored.
 
 ## Copy that restates data drifts from it
 
@@ -135,7 +172,3 @@ and out of scope when it was found. Stockfish stays single-threaded: the shipped
 package has no threaded build at all, so multithreading means replacing the
 engine, and a full coach analysis of a 40-move game measures 36 seconds on a
 desktop, which did not justify the risk.
-
-**Open:** a Dependabot PR whose lockfile is out of sync with its own
-`package.json`, so `npm ci` fails. Dev dependencies only, no security fix. It
-needs `npm install` on the branch before it can merge.
