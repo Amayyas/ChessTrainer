@@ -97,10 +97,20 @@ query($owner:String!,$repo:String!,$number:Int!){
   comments: [$pr.comments.nodes[] | {who: .author.login, at: .createdAt}]}'
 ```
 
-A review with `current: false` read an earlier commit. CodeRabbit reviews
-non-draft pull requests targeting `main`, posting a walkthrough comment and a
-review of its own; the comment list is there to catch a reviewer that only
-comments, and to show when nothing ran at all.
+A review with `current: false` read an earlier commit. The comment list is there
+to catch a reviewer that only comments, and to show when nothing ran at all.
+
+CodeRabbit opens no review by itself on this repository, so read the status it
+posts instead — it is green whether or not anybody looked at the code:
+
+```bash
+gh api repos/Amayyas/ChessTrainer/commits/<headRefOid>/status \
+  --jq '.statuses[] | select(.context == "CodeRabbit") | {state, description}'
+```
+
+`Review skipped: manual review required for this OSS repository` means this
+commit has not been reviewed. Comment `@coderabbitai review` on the pull
+request, wait for the review to land, and read it before answering.
 
 **Silence is not a pass.** The previous reviewer spent its last pull requests
 answering with a billing notice instead of a review, which reads as "no
