@@ -50,49 +50,72 @@ gh pr view <n> --json statusCheckRollup \
 A `NEUTRAL` or `SKIPPED` entry is not a failure. A missing entry is not a pass:
 a check that never started reads as absence, not as red.
 
-## 3. Unresolved review threads
+## 3. Review threads, in full
 
-`gh pr view` does not carry them. Ask GraphQL:
+`gh pr view` does not carry them. Ask GraphQL, and read every comment in every
+thread rather than the first of each: a thread's answer usually sits below its
+opening remark, and a resolved thread still records what was decided.
 
 ```bash
 gh api graphql -f owner=Amayyas -f repo=ChessTrainer -F number=<n> -f query='
 query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
-      reviewThreads(last:100){ nodes{ isResolved isOutdated path
-        comments(first:1){ nodes{ author{login} body } } } }
-      reviews(last:20){ nodes{ author{login} state submittedAt } }
+      reviewThreads(last:100){ nodes{ id isResolved isOutdated path
+        comments(first:50){ nodes{ databaseId author{login} createdAt body } } } }
     }
   }
-}' --jq '{unresolved: [.data.repository.pullRequest.reviewThreads.nodes[]
-    | select(.isResolved == false) | {path, who: .comments.nodes[0].author.login}],
-  reviews: [.data.repository.pullRequest.reviews.nodes[]
-    | {who: .author.login, state, submittedAt}]}'
+}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[]
+  | {path, resolved: .isResolved, outdated: .isOutdated, id,
+     messages: [.comments.nodes[] | {who: .author.login, at: .createdAt, id: .databaseId}]}]'
 ```
 
-Every thread must be resolved, including the ones GitHub marks outdated.
+Every thread must be resolved before the merge, including the ones GitHub marks
+outdated. The `id` of a thread and the `databaseId` of a comment are what you
+need to reply and resolve, so keep them.
 
-## 4. Is the review newer than the last push?
+## 4. Has anything reviewed _this_ commit?
 
-The automated reviewer is Qodo. It posts as an issue comment titled
-`Code Review by Qodo`, and adds a review of its own when it has inline findings.
-It runs **after** the checks go green, so a reading taken the moment checks pass
-is premature.
+The reviewer has changed once already, so do not look for one name — and do not
+settle for a timestamp either. GitHub records the exact commit each review read;
+comparing that against the head is the direct question, where comparing dates is
+an inference that a rebase or a late push can invalidate.
 
 ```bash
-gh pr view <n> --json comments \
-  --jq '.comments[] | select(.author.login == "qodo-code-review")
-        | {createdAt, head: (.body | .[0:80])}'
-git log -1 --format='%H %cI %s' <headRefOid>
+gh api graphql -f owner=Amayyas -f repo=ChessTrainer -F number=<n> -f query='
+query($owner:String!,$repo:String!,$number:Int!){
+  repository(owner:$owner,name:$repo){
+    pullRequest(number:$number){
+      headRefOid
+      reviews(last:20){ nodes{ author{login} state submittedAt commit{oid} } }
+      comments(last:50){ nodes{ author{login} createdAt } }
+    }
+  }
+}' --jq '.data.repository.pullRequest as $pr | {head: $pr.headRefOid,
+  reviews: [$pr.reviews.nodes[] | {who: .author.login, state, at: .submittedAt,
+            commit: .commit.oid, current: (.commit.oid == $pr.headRefOid)}],
+  comments: [$pr.comments.nodes[] | {who: .author.login, at: .createdAt}]}'
 ```
 
-Compare the newest Qodo comment against the head commit's date. A review older
-than the last push has not seen the current code.
+A review with `current: false` read an earlier commit. The comment list is there
+to catch a reviewer that only comments, and to show when nothing ran at all.
 
-**Qodo can be silent for a reason that is not "still working".** A comment
-containing `qodo:billing-blocked` means reviews are paused — the trial ended on
-1 September 2026 — and no review is coming. Say so and treat it as one missing
-signal, not as a pass.
+CodeRabbit opens no review by itself on this repository, so read the status it
+posts instead — it is green whether or not anybody looked at the code:
+
+```bash
+gh api repos/Amayyas/ChessTrainer/commits/<headRefOid>/status \
+  --jq '.statuses[] | select(.context == "CodeRabbit") | {state, description}'
+```
+
+`Review skipped: manual review required for this OSS repository` means this
+commit has not been reviewed. Comment `@coderabbitai review` on the pull
+request, wait for the review to land, and read it before answering.
+
+**Silence is not a pass.** The previous reviewer spent its last pull requests
+answering with a billing notice instead of a review, which reads as "no
+findings" to anyone skimming the page. If nothing ran, say that nothing ran, and
+count it as a missing signal rather than a clean bill.
 
 ## 5. Confirm, then answer
 
