@@ -147,7 +147,11 @@ describe('useBattleGame starting a game', () => {
     expect(configureLevel).toHaveBeenLastCalledWith(getLevel(level))
   })
 
-  it('clears the previous game before dealing the next one', () => {
+  // Only the board and the verdict. The clock and the position the engine is
+  // searching are cleared by backToSetup, not by start — which is safe only
+  // because the setup screen is the sole way back here. A "Rejouer" button on
+  // the over screen would call start directly and inherit both.
+  it('clears the board and the verdict of the game before it', () => {
     scriptLine(['e4'])
     const { result } = renderHook(() => useBattleGame())
 
