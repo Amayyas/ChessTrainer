@@ -67,6 +67,18 @@ function resolveColor(choice: ColorChoice): Color {
  */
 export const MAX_ENGINE_FAILURES = 3
 
+/**
+ * How long one search may take before it counts as a failure.
+ *
+ * The ladder caps depth at 7, where this engine answers in well under a second,
+ * so the budget is loose enough never to fire on a search that is merely
+ * working. It is here for the wedged worker: a promise that never settles runs
+ * none of the code below, so no move is played, no failure is counted, and
+ * nothing gives up. With a clock the engine eventually flags; the default
+ * control has no clock at all, and the board would simply stay frozen.
+ */
+export const SEARCH_TIMEOUT_MS = 10_000
+
 const DEFAULT_CONFIG: BattleConfig = {
   levelId: 3,
   colorChoice: 'white',
@@ -194,7 +206,22 @@ export function useBattleGame(): UseBattleGame {
       setEngineFailures((count) => count + 1)
     }
 
+    // This search's deadline. The cleanup below clears it, and the cleanup runs
+    // whichever way the search ends — answered, failed or abandoned — because
+    // each of those changes something the effect depends on. Nothing else needs
+    // to cancel it, and a late answer is already turned away by `cancelled`.
+    let abandon: ReturnType<typeof setTimeout> | undefined
+
     const timer = setTimeout(() => {
+      abandon = setTimeout(() => {
+        // Cancelled here and not left to the cleanup: the cleanup runs only once
+        // React has processed the failure below, and an answer landing in that
+        // window would play its move after the search was already given up on.
+        cancelled = true
+        setIsThinking(false)
+        failed()
+      }, SEARCH_TIMEOUT_MS)
+
       void analyze(game.fen, level.depth).then((analysis) => {
         if (cancelled) return
         setIsThinking(false)
@@ -216,7 +243,20 @@ export function useBattleGame(): UseBattleGame {
     return () => {
       cancelled = true
       clearTimeout(timer)
+      // Hygiene rather than correctness, and knowingly so: a deadline left
+      // running would count one failure that the next answer resets anyway.
+      // What it does buy is not leaving a timer alive after unmount.
+      clearTimeout(abandon)
       setIsThinking(false)
+      // A search cancelled before it answered leaves nothing behind, so let the
+      // position be searched again. Otherwise the guard above turns the next run
+      // away, no move is ever played, and no failure is counted either - the
+      // board simply stops, which is the one hole the retry count cannot cover.
+      //
+      // Unconditional: cleanup runs before the next run's body, so the ref holds
+      // either this run's position or the null a failure left. Comparing first
+      // was a condition that could not come out false.
+      thinkingFor.current = null
     }
     // engineFailures, not just the flag derived from it: every failed search
     // has to run this again, and the flag only moves on the last one.
