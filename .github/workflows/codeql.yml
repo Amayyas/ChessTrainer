@@ -42,7 +42,11 @@ jobs:
       actions: read
       contents: read
     steps:
+      # As in ci.yml: no step needs the token on disk, and this workflow runs
+      # pull request code too.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
