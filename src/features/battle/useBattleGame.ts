@@ -239,6 +239,9 @@ export function useBattleGame(): UseBattleGame {
     return () => {
       cancelled = true
       clearTimeout(timer)
+      // Hygiene rather than correctness, and knowingly so: a deadline left
+      // running would count one failure that the next answer resets anyway.
+      // What it does buy is not leaving a timer alive after unmount.
       clearTimeout(abandon)
       setIsThinking(false)
       // A search cancelled before it answered leaves nothing behind, so let the
