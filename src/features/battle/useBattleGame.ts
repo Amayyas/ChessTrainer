@@ -67,6 +67,18 @@ function resolveColor(choice: ColorChoice): Color {
  */
 export const MAX_ENGINE_FAILURES = 3
 
+/**
+ * How long one search may take before it counts as a failure.
+ *
+ * The ladder caps depth at 7, where this engine answers in well under a second,
+ * so the budget is loose enough never to fire on a search that is merely
+ * working. It is here for the wedged worker: a promise that never settles runs
+ * none of the code below, so no move is played, no failure is counted, and
+ * nothing gives up. With a clock the engine eventually flags; the default
+ * control has no clock at all, and the board would simply stay frozen.
+ */
+export const SEARCH_TIMEOUT_MS = 10_000
+
 const DEFAULT_CONFIG: BattleConfig = {
   levelId: 3,
   colorChoice: 'white',
@@ -194,9 +206,21 @@ export function useBattleGame(): UseBattleGame {
       setEngineFailures((count) => count + 1)
     }
 
+    // Cleared by the cleanup, and by the answer if one arrives in time.
+    let abandon: ReturnType<typeof setTimeout> | undefined
+    let abandoned = false
+
     const timer = setTimeout(() => {
-      void analyze(game.fen, level.depth).then((analysis) => {
+      abandon = setTimeout(() => {
         if (cancelled) return
+        abandoned = true
+        setIsThinking(false)
+        failed()
+      }, SEARCH_TIMEOUT_MS)
+
+      void analyze(game.fen, level.depth).then((analysis) => {
+        clearTimeout(abandon)
+        if (cancelled || abandoned) return
         setIsThinking(false)
         const move = analysis?.bestMove ? parseUciMove(analysis.bestMove) : null
         if (!move) return failed()
@@ -216,6 +240,7 @@ export function useBattleGame(): UseBattleGame {
     return () => {
       cancelled = true
       clearTimeout(timer)
+      clearTimeout(abandon)
       setIsThinking(false)
       // A search cancelled before it answered leaves nothing behind, so let the
       // position be searched again. Otherwise the guard above turns the next run

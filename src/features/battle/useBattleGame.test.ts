@@ -5,6 +5,7 @@ import { getLevel, type LevelId } from '@/engine/levels'
 import type { Analysis } from '@/engine/stockfishEngine'
 import {
   MAX_ENGINE_FAILURES,
+  SEARCH_TIMEOUT_MS,
   useBattleGame,
   type BattleConfig,
   type UseBattleGame,
@@ -613,26 +614,46 @@ describe('useBattleGame corners the earlier tests left out', () => {
     expect(result.current.result).toEqual({ outcome: 'draw', label: 'Pat — partie nulle.' })
   })
 
-  it('gives the player the win when the engine is the one to flag', async () => {
-    // The other side of the flag. A search that hangs rather than refusing is
-    // not a stall - nothing is counted, nothing gives up - so the engine's own
-    // clock runs out, which is exactly what taking too long means.
-    const bullet = getTimeControl('bullet')
-    scriptLine(['e4'])
+  /*
+   * Not covered here, and deliberately: the engine losing on time for real.
+   * "Temps écoulé — l'IA perd au temps." needs a working engine that spends its
+   * whole clock, which at a second a move is some sixty moves of bullet — a game
+   * no unit test is going to play. A wedged engine no longer reaches it either,
+   * since the search budget below stalls it first, which is the point.
+   */
+  it('gives up on a search that never answers, clock or no clock', async () => {
+    // A wedged worker resolves nothing, so none of the code that counts a
+    // failure ever runs. Every other fault reaches the stall banner; this one
+    // used to leave the board frozen on the engine's turn - and the default
+    // control has no clock to notice, so nothing else ever would.
     const { result } = renderHook(() => useBattleGame())
 
-    startGame(result, { timeControlId: 'bullet' })
+    startGame(result, { colorChoice: 'black' })
     hangs = true
-    playerPlays(result, 'e4')
+
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(getLevel(LEVEL).maxDelayMs + SEARCH_TIMEOUT_MS + 1)
+      })
+    }
+
+    expect(result.current.isEngineStalled).toBe(true)
+    expect(result.current.isThinking).toBe(false)
+    expect(result.current.game.sanHistory).toEqual([])
+  })
+
+  it('does not give up on a search that answers within its budget', async () => {
+    // The control for the test above: the same waiting, minus the wedge.
+    scriptLine(FOOLS_MATE)
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(bullet.initialMs + 1_000)
+      await vi.advanceTimersByTimeAsync(getLevel(LEVEL).maxDelayMs + SEARCH_TIMEOUT_MS + 1)
     })
 
-    expect(result.current.clock.flagged).toBe('b')
-    expect(result.current.result).toEqual({
-      outcome: 'win',
-      label: "Temps écoulé — l'IA perd au temps.",
-    })
+    expect(result.current.isEngineStalled).toBe(false)
+    expect(result.current.game.sanHistory).toEqual(['f3'])
   })
 
   it('searches the position again when its search is cancelled in flight', async () => {
