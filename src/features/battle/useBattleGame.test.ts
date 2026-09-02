@@ -32,9 +32,14 @@ let illegalAnswers = 0
 
 /** True while searches should hang rather than answer, as a wedged engine does. */
 let hangs = false
+/** How long a search takes to answer, so a slow one can be told from a wedged one. */
+let answerDelayMs = 0
 
 const analyze = vi.fn(async (fen: string, _depth?: number): Promise<Analysis | null> => {
   if (hangs) return new Promise<never>(() => {})
+  if (answerDelayMs > 0) {
+    await new Promise<void>((resolve) => setTimeout(resolve, answerDelayMs))
+  }
   if (refusals > 0) {
     refusals -= 1
     return null
@@ -191,6 +196,7 @@ describe('useBattleGame starting a game', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
@@ -281,6 +287,7 @@ describe('useBattleGame and the engine reply', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
@@ -375,6 +382,7 @@ describe('useBattleGame verdicts', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
@@ -465,6 +473,7 @@ describe('useBattleGame when the engine will not answer', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
@@ -582,6 +591,7 @@ describe('useBattleGame corners the earlier tests left out', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
@@ -642,9 +652,12 @@ describe('useBattleGame corners the earlier tests left out', () => {
     expect(result.current.game.sanHistory).toEqual([])
   })
 
-  it('does not give up on a search that answers within its budget', async () => {
-    // The control for the test above: the same waiting, minus the wedge.
+  it('waits out a slow search rather than abandoning a working engine', async () => {
+    // The control for the test above, and the one that pins the budget to a
+    // real duration: this search takes half of it and must still be honoured.
+    // An instant answer would prove nothing, since it beats any deadline.
     scriptLine(FOOLS_MATE)
+    answerDelayMs = SEARCH_TIMEOUT_MS / 2
     const { result } = renderHook(() => useBattleGame())
 
     startGame(result, { colorChoice: 'black' })
@@ -684,6 +697,7 @@ describe('useBattleGame going back for another game', () => {
     refusals = 0
     illegalAnswers = 0
     hangs = false
+    answerDelayMs = 0
     analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()

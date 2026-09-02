@@ -206,21 +206,20 @@ export function useBattleGame(): UseBattleGame {
       setEngineFailures((count) => count + 1)
     }
 
-    // Cleared by the cleanup, and by the answer if one arrives in time.
+    // This search's deadline. The cleanup below clears it, and the cleanup runs
+    // whichever way the search ends — answered, failed or abandoned — because
+    // each of those changes something the effect depends on. Nothing else needs
+    // to cancel it, and a late answer is already turned away by `cancelled`.
     let abandon: ReturnType<typeof setTimeout> | undefined
-    let abandoned = false
 
     const timer = setTimeout(() => {
       abandon = setTimeout(() => {
-        if (cancelled) return
-        abandoned = true
         setIsThinking(false)
         failed()
       }, SEARCH_TIMEOUT_MS)
 
       void analyze(game.fen, level.depth).then((analysis) => {
-        clearTimeout(abandon)
-        if (cancelled || abandoned) return
+        if (cancelled) return
         setIsThinking(false)
         const move = analysis?.bestMove ? parseUciMove(analysis.bestMove) : null
         if (!move) return failed()
