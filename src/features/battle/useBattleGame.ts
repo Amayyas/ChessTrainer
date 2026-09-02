@@ -36,6 +36,12 @@ export interface UseBattleGame {
   /** True while the engine is deciding on its move. */
   isThinking: boolean
   isEngineReady: boolean
+  /**
+   * True once the engine has failed to produce a move often enough that it is
+   * not going to. The game cannot go on, and saying so beats a board that will
+   * never move again.
+   */
+  isEngineStalled: boolean
   result: BattleResult | null
   start: (config: BattleConfig) => void
   /** Plays a move for the human side; ignored when it is not their turn. */
@@ -49,6 +55,17 @@ function resolveColor(choice: ColorChoice): Color {
   if (choice === 'black') return 'b'
   return Math.random() < 0.5 ? 'w' : 'b'
 }
+
+/**
+ * How many searches may come back without a move before the engine is given up
+ * on. The failed search that starts the run counts: three is one attempt and
+ * two retries.
+ *
+ * A failure is usually transient, so retrying is worth it; a position the engine
+ * will not answer at all must not leave the player in front of a board that can
+ * never move, which is what happened before the count existed.
+ */
+export const MAX_ENGINE_FAILURES = 3
 
 const DEFAULT_CONFIG: BattleConfig = {
   levelId: 3,
@@ -67,6 +84,23 @@ export function useBattleGame(): UseBattleGame {
   const [playerColor, setPlayerColor] = useState<Color>('w')
   const [isThinking, setIsThinking] = useState(false)
   const [result, setResult] = useState<BattleResult | null>(null)
+  /**
+   * Consecutive searches that produced no move.
+   *
+   * State rather than a ref, deliberately, and for the reason the coach keeps
+   * its own refusal counts in state: a failed search plays nothing and changes
+   * nothing else, so counting it is the only thing that will run the effect
+   * below again. A ref would leave the game stopped on the engine's turn.
+   */
+  const [engineFailures, setEngineFailures] = useState(0)
+  /**
+   * How many games have been dealt. Nothing reads the number; it exists so that
+   * dealing a game is visible to the effects even when every other value they
+   * watch happens to be identical — a second game started from the setup screen
+   * without a move played in the first one would otherwise leave the clock
+   * reset and never restarted.
+   */
+  const [deal, setDeal] = useState(0)
 
   const level = getLevel(config.levelId)
   const timeControl = getTimeControl(config.timeControlId)
@@ -80,26 +114,54 @@ export function useBattleGame(): UseBattleGame {
     if (isReady) void configureLevel(level)
   }, [isReady, level, configureLevel])
 
+  // Depend on the clock's stable callbacks, never on the clock object: it is
+  // rebuilt on every tick, which would restart the effects ten times a second.
+  const {
+    press: clockPress,
+    start: clockStart,
+    stop: clockStop,
+    reset: clockReset,
+    flagged,
+  } = clock
+
+  /** The position the engine is already searching, so it is searched once. */
+  const thinkingFor = useRef<string | null>(null)
+
+  /**
+   * Deals a new game. Clears everything the last one left behind — including
+   * the clock and the position the engine was searching, which used to be the
+   * business of backToSetup alone. That was safe only while the setup screen
+   * was the one way back here: a "Rejouer" on the end-of-game card would call
+   * this directly and inherit a spent clock and a mute engine.
+   */
   const start = useCallback(
     (next: BattleConfig) => {
       setConfig(next)
       setPlayerColor(resolveColor(next.colorChoice))
       setResult(null)
       setIsThinking(false)
+      setEngineFailures(0)
+      thinkingFor.current = null
+      clockReset()
       game.reset()
+      setDeal((count) => count + 1)
       setPhase('playing')
     },
-    [game],
+    [game, clockReset],
   )
-
-  // Depend on the clock's stable callbacks, never on the clock object: it is
-  // rebuilt on every tick, which would restart the effects ten times a second.
-  const { press: clockPress, start: clockStart, stop: clockStop, flagged } = clock
 
   // White always moves first, so the clock starts on white.
   useEffect(() => {
     if (phase === 'playing' && game.sanHistory.length === 0) clockStart('w')
-  }, [phase, game.sanHistory.length, clockStart])
+  }, [phase, deal, game.sanHistory.length, clockStart])
+
+  const isEngineStalled = engineFailures >= MAX_ENGINE_FAILURES
+
+  // An engine that stopped answering has not lost on time, and the player has
+  // not won: stop the clock rather than let it decide a game nobody played.
+  useEffect(() => {
+    if (isEngineStalled) clockStop()
+  }, [isEngineStalled, clockStop])
 
   const playerMove = useCallback(
     (from: Square, to: Square, promotion?: PieceSymbol) => {
@@ -113,29 +175,41 @@ export function useBattleGame(): UseBattleGame {
   )
 
   // The engine answers after a human-looking pause.
-  const thinkingFor = useRef<string | null>(null)
   useEffect(() => {
     if (phase !== 'playing' || game.status.isOver || !isReady) return
     if (game.turn === playerColor) return
     if (thinkingFor.current === game.fen) return
+    if (isEngineStalled) return
 
     thinkingFor.current = game.fen
     const engineColor: Color = playerColor === 'w' ? 'b' : 'w'
     let cancelled = false
     setIsThinking(true)
 
+    // Nothing was played, so let the position be searched again and count the
+    // attempt — the count is what re-runs this effect, and what stops it once
+    // the engine has had its chances.
+    const failed = () => {
+      thinkingFor.current = null
+      setEngineFailures((count) => count + 1)
+    }
+
     const timer = setTimeout(() => {
       void analyze(game.fen, level.depth).then((analysis) => {
         if (cancelled) return
         setIsThinking(false)
         const move = analysis?.bestMove ? parseUciMove(analysis.bestMove) : null
-        if (!move) return
+        if (!move) return failed()
         const applied = game.move(
           move.from as Square,
           move.to as Square,
           move.promotion as PieceSymbol | undefined,
         )
-        if (applied) clockPress(engineColor)
+        // An illegal move counts as no move: the engine answered, but with
+        // something this position cannot play.
+        if (!applied) return failed()
+        setEngineFailures(0)
+        clockPress(engineColor)
       })
     }, thinkingDelay(level))
 
@@ -144,7 +218,19 @@ export function useBattleGame(): UseBattleGame {
       clearTimeout(timer)
       setIsThinking(false)
     }
-  }, [phase, game, playerColor, isReady, analyze, level, clockPress])
+    // engineFailures, not just the flag derived from it: every failed search
+    // has to run this again, and the flag only moves on the last one.
+  }, [
+    phase,
+    game,
+    playerColor,
+    isReady,
+    analyze,
+    level,
+    clockPress,
+    engineFailures,
+    isEngineStalled,
+  ])
 
   // End-of-game detection: mate, stalemate, draw, then timeout.
   useEffect(() => {
@@ -186,13 +272,14 @@ export function useBattleGame(): UseBattleGame {
   }, [phase, clockStop])
 
   const backToSetup = useCallback(() => {
-    clock.reset()
+    clockReset()
     game.reset()
     setResult(null)
     setIsThinking(false)
+    setEngineFailures(0)
     thinkingFor.current = null
     setPhase('setup')
-  }, [clock, game])
+  }, [clockReset, game])
 
   return {
     phase,
@@ -202,6 +289,7 @@ export function useBattleGame(): UseBattleGame {
     playerColor,
     isThinking,
     isEngineReady: isReady,
+    isEngineStalled,
     result,
     start,
     playerMove,

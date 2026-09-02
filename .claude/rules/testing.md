@@ -28,6 +28,13 @@ A test that has never failed proves nothing. After writing one:
 
 ## Which runner
 
+Run it with no reporter flag. `--reporter=basic` no longer exists in Vitest 4:
+the run dies while loading the reporter, before a single test executes, and
+exits non-zero with no test tally at all. In a mutation sweep that reads as
+every mutation caught — sixteen out of sixteen here, every one of them false.
+**A run with no `Tests …` summary line is a broken measurement, not a red one**,
+and a sweep should say so rather than count it.
+
 `npm test` is Vitest on jsdom and covers `src/**/*.{test,spec}.{ts,tsx}` only.
 It runs as if nothing were configured: `VITE_SUPABASE_URL`,
 `VITE_SUPABASE_ANON_KEY` and `VITE_SITE_URL` are pinned empty in

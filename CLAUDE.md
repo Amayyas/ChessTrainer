@@ -175,7 +175,12 @@ breaks on forwarded mail.
 The grade now prices a slow mate by its distance, but the win-chances curve reads
 ±10000 as a certainty either way, so the same move still measures 100% accurate.
 Telling those apart on that scale needs a different model, not a different
-constant. Stockfish stays single-threaded: the shipped
+constant, and the model was chosen rather than inherited: pinning mates lower on
+the curve was measured — at 1250 cp a slow mate reads 98.5%, at 600 cp it reads
+87.6% — and the scale, not the evidence, decides the answer. It stays at 100%,
+because the grade already judges the move and accuracy judges how close to
+winning the player stayed. A forced mate is a forced mate. Stockfish stays
+single-threaded: the shipped
 package has no threaded build at all, so multithreading means replacing the
 engine, and a full coach analysis of a 40-move game measures 36 seconds on a
 desktop, which did not justify the risk.

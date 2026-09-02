@@ -69,6 +69,8 @@ export default function BattlePage() {
             <span className="flex items-center gap-2 text-sm text-ardoise">
               <Spinner size="sm" /> L'IA réfléchit…
             </span>
+          ) : battle.isEngineStalled && phase === 'playing' ? (
+            <Badge variant="danger">L'IA ne répond plus</Badge>
           ) : (
             <Badge variant="neutral">{describeStatus(game.status, game.turn)}</Badge>
           )
@@ -160,6 +162,21 @@ export default function BattlePage() {
               <h2 className="mb-2 font-display text-lg font-bold text-ebene">Coups joués</h2>
               <MoveHistory moves={game.sanHistory} />
             </div>
+
+            {/* Only while a game is still on: once it has a verdict, the card
+                above says so, and two panels offering a new game is one too
+                many. */}
+            {battle.isEngineStalled && phase === 'playing' && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-ardoise">
+                  L&apos;IA n&apos;a pas répondu malgré plusieurs tentatives. La partie ne peut pas
+                  se poursuivre.
+                </p>
+                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                  Nouvelle partie
+                </Button>
+              </div>
+            )}
 
             {phase === 'playing' && (
               <Button variant="secondary" size="sm" onClick={battle.resign}>
