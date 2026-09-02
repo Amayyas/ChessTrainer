@@ -29,7 +29,11 @@ let refusals = 0
 /** Searches to answer with a move the position cannot play. */
 let illegalAnswers = 0
 
-const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
+/** True while searches should hang rather than answer, as a wedged engine does. */
+let hangs = false
+
+const analyze = vi.fn(async (fen: string, _depth?: number): Promise<Analysis | null> => {
+  if (hangs) return new Promise<never>(() => {})
   if (refusals > 0) {
     refusals -= 1
     return null
@@ -45,11 +49,33 @@ const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
 })
 const configureLevel = vi.fn(async () => {})
 
+/**
+ * Which `analyze` the hook is handed.
+ *
+ * Bumping it hands back a different function, as a useStockfish that forgot to
+ * memoise would. useBattleGame does not own that hook and cannot assume the
+ * reference is stable, so the behaviour is worth being able to provoke.
+ */
+let analyzeGeneration = 0
+const analyzers = new Map<number, (fen: string, depth?: number) => Promise<Analysis | null>>()
+function currentAnalyze() {
+  const generation = analyzeGeneration
+  if (!analyzers.has(generation)) {
+    analyzers.set(generation, (fen, depth) => analyze(fen, depth))
+  }
+  return analyzers.get(generation)!
+}
+
 // `analyze` and `configureLevel` are handed over by reference, as the real hook
 // does through useCallback. A fresh closure per render would restart the engine
 // effect on every render and hide whatever the effect's own dependencies do.
 vi.mock('@/engine/useStockfish', () => ({
-  useStockfish: () => ({ isReady: true, isAnalyzing: false, analyze, configureLevel }),
+  useStockfish: () => ({
+    isReady: true,
+    isAnalyzing: false,
+    analyze: currentAnalyze(),
+    configureLevel,
+  }),
 }))
 
 /**
@@ -70,6 +96,32 @@ function scriptLine(line: string[]): void {
 
 /** 1. f3 e5 2. g4 Qh4# — the shortest mate, playable from either side. */
 const FOOLS_MATE = ['f3', 'e5', 'g4', 'Qh4#']
+
+/**
+ * Sam Loyd's ten-move stalemate, the shortest there is. White plays every move
+ * below with an even number before it; Black is left without a legal move.
+ */
+const FASTEST_STALEMATE = [
+  'e3',
+  'a5',
+  'Qh5',
+  'Ra6',
+  'Qxa5',
+  'h5',
+  'Qxc7',
+  'Rah6',
+  'h4',
+  'f6',
+  'Qxd7+',
+  'Kf7',
+  'Qxb7',
+  'Qd3',
+  'Qxb8',
+  'Qh7',
+  'Qxc8',
+  'Kg6',
+  'Qe6',
+]
 
 /** Knights out and back, twice: the start position occurs three times. */
 const SHUFFLE = ['Nf3', 'Nf6', 'Ng1', 'Ng8', 'Nf3', 'Nf6', 'Ng1', 'Ng8']
@@ -137,6 +189,8 @@ describe('useBattleGame starting a game', () => {
     engineMoves.clear()
     refusals = 0
     illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -225,6 +279,8 @@ describe('useBattleGame and the engine reply', () => {
     engineMoves.clear()
     refusals = 0
     illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -317,6 +373,8 @@ describe('useBattleGame verdicts', () => {
     engineMoves.clear()
     refusals = 0
     illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -405,6 +463,8 @@ describe('useBattleGame when the engine will not answer', () => {
     engineMoves.clear()
     refusals = 0
     illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -514,12 +574,96 @@ describe('useBattleGame when the engine will not answer', () => {
   })
 })
 
+describe('useBattleGame corners the earlier tests left out', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
+    analyze.mockClear()
+    configureLevel.mockClear()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('searches at the depth the level caps it to', async () => {
+    scriptLine(FOOLS_MATE)
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    await letEngineThink()
+
+    // The cap is half of what makes a level weak - skill alone does not reach
+    // beginner strength - and nothing checked it was passed on.
+    expect(analyze).toHaveBeenCalledWith(expect.any(String), getLevel(LEVEL).depth)
+  })
+
+  it('calls a stalemate by its own name', async () => {
+    scriptLine(FASTEST_STALEMATE)
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'white' })
+    for (let move = 0; move < FASTEST_STALEMATE.length; move += 2) {
+      playerPlays(result, FASTEST_STALEMATE[move]!)
+      if (move + 1 < FASTEST_STALEMATE.length) await letEngineThink()
+    }
+
+    expect(result.current.game.status.reason).toBe('stalemate')
+    expect(result.current.result).toEqual({ outcome: 'draw', label: 'Pat — partie nulle.' })
+  })
+
+  it('gives the player the win when the engine is the one to flag', async () => {
+    // The other side of the flag. A search that hangs rather than refusing is
+    // not a stall - nothing is counted, nothing gives up - so the engine's own
+    // clock runs out, which is exactly what taking too long means.
+    const bullet = getTimeControl('bullet')
+    scriptLine(['e4'])
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { timeControlId: 'bullet' })
+    hangs = true
+    playerPlays(result, 'e4')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(bullet.initialMs + 1_000)
+    })
+
+    expect(result.current.clock.flagged).toBe('b')
+    expect(result.current.result).toEqual({
+      outcome: 'win',
+      label: "Temps écoulé — l'IA perd au temps.",
+    })
+  })
+
+  it('searches the position again when its search is cancelled in flight', async () => {
+    // useStockfish belongs to another module, and useBattleGame cannot assume it
+    // hands back the same `analyze` on every render. A new one cancels the
+    // search in flight; unless the position is released, the guard turns the
+    // next run away and the board stops with no move and no failure counted.
+    scriptLine(FOOLS_MATE)
+    const { result, rerender } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    expect(result.current.isThinking).toBe(true)
+
+    analyzeGeneration += 1
+    await act(async () => {
+      rerender()
+    })
+
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+  })
+})
+
 describe('useBattleGame going back for another game', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
     refusals = 0
     illegalAnswers = 0
+    hangs = false
+    analyzeGeneration += 1
     analyze.mockClear()
     configureLevel.mockClear()
   })
