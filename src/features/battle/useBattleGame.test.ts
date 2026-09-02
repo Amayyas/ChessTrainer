@@ -164,10 +164,6 @@ describe('useBattleGame starting a game', () => {
     expect(configureLevel).toHaveBeenLastCalledWith(getLevel(level))
   })
 
-  // Only the board and the verdict. The clock and the position the engine is
-  // searching are cleared by backToSetup, not by start — which is safe only
-  // because the setup screen is the sole way back here. A "Rejouer" button on
-  // the over screen would call start directly and inherit both.
   it('clears the board and the verdict of the game before it', () => {
     scriptLine(['e4'])
     const { result } = renderHook(() => useBattleGame())
@@ -180,6 +176,27 @@ describe('useBattleGame starting a game', () => {
     startGame(result)
     expect(result.current.result).toBeNull()
     expect(result.current.game.sanHistory).toEqual([])
+  })
+
+  it('deals a whole new game without a trip through the setup screen', async () => {
+    // start is public, and nothing makes the caller pass through backToSetup
+    // first — a "Rejouer" on the end-of-game card would not. Everything the
+    // last game left behind has to go here too, or that button would hand the
+    // player a spent clock and an engine that never moves, because the position
+    // it is asked about is the one it was already searching.
+    scriptLine(FOOLS_MATE)
+    const blitz = getTimeControl('blitz')
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black', timeControlId: 'blitz' })
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+
+    startGame(result, { colorChoice: 'black', timeControlId: 'blitz' })
+    expect(result.current.clock.whiteMs).toBe(blitz.initialMs)
+
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
   })
 })
 
@@ -427,7 +444,7 @@ describe('useBattleGame when the engine will not answer', () => {
     for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
     expect(result.current.isEngineStalled).toBe(true)
 
-    act(() => result.current.backToSetup())
+    // Straight into another game, without the setup screen resetting anything.
     scriptLine(FOOLS_MATE)
     startGame(result, { colorChoice: 'black' })
     await letEngineThink()

@@ -104,6 +104,26 @@ export function useBattleGame(): UseBattleGame {
     if (isReady) void configureLevel(level)
   }, [isReady, level, configureLevel])
 
+  // Depend on the clock's stable callbacks, never on the clock object: it is
+  // rebuilt on every tick, which would restart the effects ten times a second.
+  const {
+    press: clockPress,
+    start: clockStart,
+    stop: clockStop,
+    reset: clockReset,
+    flagged,
+  } = clock
+
+  /** The position the engine is already searching, so it is searched once. */
+  const thinkingFor = useRef<string | null>(null)
+
+  /**
+   * Deals a new game. Clears everything the last one left behind — including
+   * the clock and the position the engine was searching, which used to be the
+   * business of backToSetup alone. That was safe only while the setup screen
+   * was the one way back here: a "Rejouer" on the end-of-game card would call
+   * this directly and inherit a spent clock and a mute engine.
+   */
   const start = useCallback(
     (next: BattleConfig) => {
       setConfig(next)
@@ -111,15 +131,13 @@ export function useBattleGame(): UseBattleGame {
       setResult(null)
       setIsThinking(false)
       setEngineFailures(0)
+      thinkingFor.current = null
+      clockReset()
       game.reset()
       setPhase('playing')
     },
-    [game],
+    [game, clockReset],
   )
-
-  // Depend on the clock's stable callbacks, never on the clock object: it is
-  // rebuilt on every tick, which would restart the effects ten times a second.
-  const { press: clockPress, start: clockStart, stop: clockStop, flagged } = clock
 
   // White always moves first, so the clock starts on white.
   useEffect(() => {
@@ -138,7 +156,6 @@ export function useBattleGame(): UseBattleGame {
   )
 
   // The engine answers after a human-looking pause.
-  const thinkingFor = useRef<string | null>(null)
   useEffect(() => {
     if (phase !== 'playing' || game.status.isOver || !isReady) return
     if (game.turn === playerColor) return
@@ -224,14 +241,14 @@ export function useBattleGame(): UseBattleGame {
   }, [phase, clockStop])
 
   const backToSetup = useCallback(() => {
-    clock.reset()
+    clockReset()
     game.reset()
     setResult(null)
     setIsThinking(false)
     setEngineFailures(0)
     thinkingFor.current = null
     setPhase('setup')
-  }, [clock, game])
+  }, [clockReset, game])
 
   return {
     phase,
