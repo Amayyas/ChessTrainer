@@ -57,10 +57,12 @@ function resolveColor(choice: ColorChoice): Color {
 }
 
 /**
- * How many times the engine is asked again after it fails to answer a position.
+ * How many searches may come back without a move before the engine is given up
+ * on. The failed search that starts the run counts: three is one attempt and
+ * two retries.
  *
- * A failure is usually transient, so one is worth retrying; a position it will
- * not answer at all must not leave the player in front of a board that can
+ * A failure is usually transient, so retrying is worth it; a position the engine
+ * will not answer at all must not leave the player in front of a board that can
  * never move, which is what happened before the count existed.
  */
 export const MAX_ENGINE_FAILURES = 3
