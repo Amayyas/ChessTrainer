@@ -91,6 +91,14 @@ export function useBattleGame(): UseBattleGame {
    * below again. A ref would leave the game stopped on the engine's turn.
    */
   const [engineFailures, setEngineFailures] = useState(0)
+  /**
+   * How many games have been dealt. Nothing reads the number; it exists so that
+   * dealing a game is visible to the effects even when every other value they
+   * watch happens to be identical — a second game started from the setup screen
+   * without a move played in the first one would otherwise leave the clock
+   * reset and never restarted.
+   */
+  const [deal, setDeal] = useState(0)
 
   const level = getLevel(config.levelId)
   const timeControl = getTimeControl(config.timeControlId)
@@ -134,6 +142,7 @@ export function useBattleGame(): UseBattleGame {
       thinkingFor.current = null
       clockReset()
       game.reset()
+      setDeal((count) => count + 1)
       setPhase('playing')
     },
     [game, clockReset],
@@ -142,7 +151,15 @@ export function useBattleGame(): UseBattleGame {
   // White always moves first, so the clock starts on white.
   useEffect(() => {
     if (phase === 'playing' && game.sanHistory.length === 0) clockStart('w')
-  }, [phase, game.sanHistory.length, clockStart])
+  }, [phase, deal, game.sanHistory.length, clockStart])
+
+  const isEngineStalled = engineFailures >= MAX_ENGINE_FAILURES
+
+  // An engine that stopped answering has not lost on time, and the player has
+  // not won: stop the clock rather than let it decide a game nobody played.
+  useEffect(() => {
+    if (isEngineStalled) clockStop()
+  }, [isEngineStalled, clockStop])
 
   const playerMove = useCallback(
     (from: Square, to: Square, promotion?: PieceSymbol) => {
@@ -160,7 +177,7 @@ export function useBattleGame(): UseBattleGame {
     if (phase !== 'playing' || game.status.isOver || !isReady) return
     if (game.turn === playerColor) return
     if (thinkingFor.current === game.fen) return
-    if (engineFailures >= MAX_ENGINE_FAILURES) return
+    if (isEngineStalled) return
 
     thinkingFor.current = game.fen
     const engineColor: Color = playerColor === 'w' ? 'b' : 'w'
@@ -199,7 +216,19 @@ export function useBattleGame(): UseBattleGame {
       clearTimeout(timer)
       setIsThinking(false)
     }
-  }, [phase, game, playerColor, isReady, analyze, level, clockPress, engineFailures])
+    // engineFailures, not just the flag derived from it: every failed search
+    // has to run this again, and the flag only moves on the last one.
+  }, [
+    phase,
+    game,
+    playerColor,
+    isReady,
+    analyze,
+    level,
+    clockPress,
+    engineFailures,
+    isEngineStalled,
+  ])
 
   // End-of-game detection: mate, stalemate, draw, then timeout.
   useEffect(() => {
@@ -258,7 +287,7 @@ export function useBattleGame(): UseBattleGame {
     playerColor,
     isThinking,
     isEngineReady: isReady,
-    isEngineStalled: engineFailures >= MAX_ENGINE_FAILURES,
+    isEngineStalled,
     result,
     start,
     playerMove,

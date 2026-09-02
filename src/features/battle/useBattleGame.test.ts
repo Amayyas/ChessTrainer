@@ -198,6 +198,25 @@ describe('useBattleGame starting a game', () => {
     await letEngineThink()
     expect(result.current.game.sanHistory).toEqual(['f3'])
   })
+
+  it('restarts the clock even when the game before it saw no move at all', async () => {
+    // Nothing else the clock effect watches changes between two games abandoned
+    // at move zero — same phase, same empty history — so without a signal that a
+    // game was dealt, start resets the clock and nothing ever starts it again.
+    const blitz = getTimeControl('blitz')
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { timeControlId: 'blitz' })
+    expect(result.current.clock.active).toBe('w')
+
+    startGame(result, { timeControlId: 'blitz' })
+    expect(result.current.clock.active).toBe('w')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000)
+    })
+    expect(result.current.clock.whiteMs).toBeLessThan(blitz.initialMs)
+  })
 })
 
 describe('useBattleGame and the engine reply', () => {
@@ -436,6 +455,26 @@ describe('useBattleGame when the engine will not answer', () => {
     // And it stops asking, rather than retrying for as long as the tab is open.
     await letEngineThink()
     expect(analyze).toHaveBeenCalledTimes(MAX_ENGINE_FAILURES)
+  })
+
+  it('does not hand the player a win on time for a game the engine never played', async () => {
+    // The engine's clock was still running while it failed to answer, so it
+    // flagged: "Temps écoulé — l'IA perd au temps", a victory and the XP that
+    // goes with it, for a game that never happened.
+    const bullet = getTimeControl('bullet')
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black', timeControlId: 'bullet' })
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
+    expect(result.current.isEngineStalled).toBe(true)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(bullet.initialMs + 1_000)
+    })
+
+    expect(result.current.result).toBeNull()
+    expect(result.current.clock.flagged).toBeNull()
+    expect(result.current.phase).toBe('playing')
   })
 
   it('starts the next game with a clean count', async () => {
