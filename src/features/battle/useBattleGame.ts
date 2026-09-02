@@ -221,7 +221,11 @@ export function useBattleGame(): UseBattleGame {
       // position be searched again. Otherwise the guard above turns the next run
       // away, no move is ever played, and no failure is counted either - the
       // board simply stops, which is the one hole the retry count cannot cover.
-      if (thinkingFor.current === game.fen) thinkingFor.current = null
+      //
+      // Unconditional: cleanup runs before the next run's body, so the ref holds
+      // either this run's position or the null a failure left. Comparing first
+      // was a condition that could not come out false.
+      thinkingFor.current = null
     }
     // engineFailures, not just the flag derived from it: every failed search
     // has to run this again, and the flag only moves on the last one.
