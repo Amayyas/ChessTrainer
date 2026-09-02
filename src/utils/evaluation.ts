@@ -125,15 +125,14 @@ export function classifyMove(centipawnLoss: number): MoveQuality {
 
 /**
  * Which way a mate runs for the mover: +1 when they are the one mating, −1 when
- * they are the one being mated, 0 when the evaluation is not a mate at all.
+ * they are the one being mated.
  *
- * Read from the mate distance, except at zero — the position where the mate has
- * just landed, and where zero has no sign to carry the answer. The score does,
- * since a mate is always ±MATE_CP.
+ * Read from the distance, except at zero — the position where the mate has just
+ * landed, and where zero has no sign to carry the answer. The score does, since
+ * a mate is always ±MATE_CP.
  */
-function mateDirection(evaluation: WhiteEval, sign: number): number {
-  if (evaluation.mate === null) return 0
-  return evaluation.mate === 0 ? Math.sign(evaluation.cp * sign) : Math.sign(evaluation.mate * sign)
+function mateDirection(mate: number, cp: number, sign: number): number {
+  return Math.sign((mate === 0 ? cp : mate) * sign)
 }
 
 /**
@@ -152,8 +151,8 @@ export function centipawnLoss(evalBefore: WhiteEval, evalAfter: WhiteEval, mover
   const sign = mover === 'w' ? 1 : -1
 
   if (evalBefore.mate !== null && evalAfter.mate !== null) {
-    const direction = mateDirection(evalBefore, sign)
-    if (direction !== 0 && direction === mateDirection(evalAfter, sign)) {
+    const direction = mateDirection(evalBefore.mate, evalBefore.cp, sign)
+    if (direction === mateDirection(evalAfter.mate, evalAfter.cp, sign)) {
       // Distance from the mover's side: positive when they are the one mating,
       // so a bigger number is a slower win; negative when they are being mated,
       // so a smaller one is a quicker defeat. `after - before` is the delay
