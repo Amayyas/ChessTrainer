@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLevel, type LevelId } from '@/engine/levels'
 import type { Analysis } from '@/engine/stockfishEngine'
 import {
+  MAX_ENGINE_FAILURES,
   useBattleGame,
   type BattleConfig,
   type UseBattleGame,
@@ -23,7 +24,21 @@ import { getTimeControl } from '@/hooks/useChessClock'
 /** Position (FEN) → the move the scripted line plays there, in UCI. */
 const engineMoves = new Map<string, string>()
 
+/** Searches to answer with nothing before the script takes over. */
+let refusals = 0
+/** Searches to answer with a move the position cannot play. */
+let illegalAnswers = 0
+
 const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
+  if (refusals > 0) {
+    refusals -= 1
+    return null
+  }
+  if (illegalAnswers > 0) {
+    illegalAnswers -= 1
+    // A rook on a1 with its own pieces around it: parseable, and not legal.
+    return { bestMove: 'a1a8', scoreCp: 0, scoreMate: null, depth: 5, pv: [] }
+  }
   const bestMove = engineMoves.get(fen)
   if (!bestMove) return null
   return { bestMove, scoreCp: 0, scoreMate: null, depth: 5, pv: [] }
@@ -120,6 +135,8 @@ describe('useBattleGame starting a game', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -170,6 +187,8 @@ describe('useBattleGame and the engine reply', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -260,6 +279,8 @@ describe('useBattleGame verdicts', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
     analyze.mockClear()
     configureLevel.mockClear()
   })
@@ -342,10 +363,107 @@ describe('useBattleGame verdicts', () => {
   })
 })
 
+describe('useBattleGame when the engine will not answer', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
+    analyze.mockClear()
+    configureLevel.mockClear()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('asks again after a search that came back with nothing', async () => {
+    scriptLine(FOOLS_MATE)
+    refusals = 1
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual([])
+    expect(result.current.isEngineStalled).toBe(false)
+
+    // A failure is usually transient, so the position is searched again.
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+    expect(analyze).toHaveBeenCalledTimes(2)
+  })
+
+  it('counts a move the position cannot play as no answer at all', async () => {
+    scriptLine(FOOLS_MATE)
+    illegalAnswers = 1
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual([])
+
+    await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+  })
+
+  it('gives up rather than leaving the player at a board that cannot move', async () => {
+    // Nothing is scripted, so every search comes back empty. Before the count
+    // existed the first one pinned the position for good: no move, no retry,
+    // no way forward but to resign a game the engine never played.
+    const { result } = renderHook(() => useBattleGame())
+    startGame(result, { colorChoice: 'black' })
+
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
+
+    expect(result.current.isEngineStalled).toBe(true)
+    expect(result.current.isThinking).toBe(false)
+    expect(analyze).toHaveBeenCalledTimes(MAX_ENGINE_FAILURES)
+
+    // And it stops asking, rather than retrying for as long as the tab is open.
+    await letEngineThink()
+    expect(analyze).toHaveBeenCalledTimes(MAX_ENGINE_FAILURES)
+  })
+
+  it('starts the next game with a clean count', async () => {
+    const { result } = renderHook(() => useBattleGame())
+    startGame(result, { colorChoice: 'black' })
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
+    expect(result.current.isEngineStalled).toBe(true)
+
+    act(() => result.current.backToSetup())
+    scriptLine(FOOLS_MATE)
+    startGame(result, { colorChoice: 'black' })
+    await letEngineThink()
+
+    expect(result.current.isEngineStalled).toBe(false)
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+  })
+
+  it('forgets earlier failures once the engine answers again', async () => {
+    // The count is consecutive failures, not failures for the life of the game:
+    // an engine that hiccups twice early on must still get its full allowance
+    // later, rather than stalling on its third bad moment of the afternoon.
+    scriptLine(FOOLS_MATE)
+    refusals = MAX_ENGINE_FAILURES - 1
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
+    expect(result.current.game.sanHistory).toEqual(['f3'])
+    expect(result.current.isEngineStalled).toBe(false)
+
+    playerPlays(result, 'e5')
+    refusals = MAX_ENGINE_FAILURES - 1
+    for (let attempt = 0; attempt < MAX_ENGINE_FAILURES; attempt += 1) await letEngineThink()
+
+    expect(result.current.game.sanHistory).toEqual(['f3', 'e5', 'g4'])
+    expect(result.current.isEngineStalled).toBe(false)
+  })
+})
+
 describe('useBattleGame going back for another game', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    refusals = 0
+    illegalAnswers = 0
     analyze.mockClear()
     configureLevel.mockClear()
   })

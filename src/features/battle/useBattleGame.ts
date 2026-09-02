@@ -36,6 +36,12 @@ export interface UseBattleGame {
   /** True while the engine is deciding on its move. */
   isThinking: boolean
   isEngineReady: boolean
+  /**
+   * True once the engine has failed to produce a move often enough that it is
+   * not going to. The game cannot go on, and saying so beats a board that will
+   * never move again.
+   */
+  isEngineStalled: boolean
   result: BattleResult | null
   start: (config: BattleConfig) => void
   /** Plays a move for the human side; ignored when it is not their turn. */
@@ -49,6 +55,15 @@ function resolveColor(choice: ColorChoice): Color {
   if (choice === 'black') return 'b'
   return Math.random() < 0.5 ? 'w' : 'b'
 }
+
+/**
+ * How many times the engine is asked again after it fails to answer a position.
+ *
+ * A failure is usually transient, so one is worth retrying; a position it will
+ * not answer at all must not leave the player in front of a board that can
+ * never move, which is what happened before the count existed.
+ */
+export const MAX_ENGINE_FAILURES = 3
 
 const DEFAULT_CONFIG: BattleConfig = {
   levelId: 3,
@@ -67,6 +82,15 @@ export function useBattleGame(): UseBattleGame {
   const [playerColor, setPlayerColor] = useState<Color>('w')
   const [isThinking, setIsThinking] = useState(false)
   const [result, setResult] = useState<BattleResult | null>(null)
+  /**
+   * Consecutive searches that produced no move.
+   *
+   * State rather than a ref, deliberately, and for the reason the coach keeps
+   * its own refusal counts in state: a failed search plays nothing and changes
+   * nothing else, so counting it is the only thing that will run the effect
+   * below again. A ref would leave the game stopped on the engine's turn.
+   */
+  const [engineFailures, setEngineFailures] = useState(0)
 
   const level = getLevel(config.levelId)
   const timeControl = getTimeControl(config.timeControlId)
@@ -86,6 +110,7 @@ export function useBattleGame(): UseBattleGame {
       setPlayerColor(resolveColor(next.colorChoice))
       setResult(null)
       setIsThinking(false)
+      setEngineFailures(0)
       game.reset()
       setPhase('playing')
     },
@@ -118,24 +143,37 @@ export function useBattleGame(): UseBattleGame {
     if (phase !== 'playing' || game.status.isOver || !isReady) return
     if (game.turn === playerColor) return
     if (thinkingFor.current === game.fen) return
+    if (engineFailures >= MAX_ENGINE_FAILURES) return
 
     thinkingFor.current = game.fen
     const engineColor: Color = playerColor === 'w' ? 'b' : 'w'
     let cancelled = false
     setIsThinking(true)
 
+    // Nothing was played, so let the position be searched again and count the
+    // attempt — the count is what re-runs this effect, and what stops it once
+    // the engine has had its chances.
+    const failed = () => {
+      thinkingFor.current = null
+      setEngineFailures((count) => count + 1)
+    }
+
     const timer = setTimeout(() => {
       void analyze(game.fen, level.depth).then((analysis) => {
         if (cancelled) return
         setIsThinking(false)
         const move = analysis?.bestMove ? parseUciMove(analysis.bestMove) : null
-        if (!move) return
+        if (!move) return failed()
         const applied = game.move(
           move.from as Square,
           move.to as Square,
           move.promotion as PieceSymbol | undefined,
         )
-        if (applied) clockPress(engineColor)
+        // An illegal move counts as no move: the engine answered, but with
+        // something this position cannot play.
+        if (!applied) return failed()
+        setEngineFailures(0)
+        clockPress(engineColor)
       })
     }, thinkingDelay(level))
 
@@ -144,7 +182,7 @@ export function useBattleGame(): UseBattleGame {
       clearTimeout(timer)
       setIsThinking(false)
     }
-  }, [phase, game, playerColor, isReady, analyze, level, clockPress])
+  }, [phase, game, playerColor, isReady, analyze, level, clockPress, engineFailures])
 
   // End-of-game detection: mate, stalemate, draw, then timeout.
   useEffect(() => {
@@ -190,6 +228,7 @@ export function useBattleGame(): UseBattleGame {
     game.reset()
     setResult(null)
     setIsThinking(false)
+    setEngineFailures(0)
     thinkingFor.current = null
     setPhase('setup')
   }, [clock, game])
@@ -202,6 +241,7 @@ export function useBattleGame(): UseBattleGame {
     playerColor,
     isThinking,
     isEngineReady: isReady,
+    isEngineStalled: engineFailures >= MAX_ENGINE_FAILURES,
     result,
     start,
     playerMove,
