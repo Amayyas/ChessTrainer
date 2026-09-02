@@ -154,12 +154,13 @@ export function centipawnLoss(evalBefore: WhiteEval, evalAfter: WhiteEval, mover
   if (evalBefore.mate !== null && evalAfter.mate !== null) {
     const direction = mateDirection(evalBefore, sign)
     if (direction !== 0 && direction === mateDirection(evalAfter, sign)) {
-      // Distance from the mover's side, pointed the way the mate runs. Mating
-      // more slowly and being mated sooner are the same `after - before` moves
-      // of delay, and hurrying one's own defeat costs what dawdling over a win
+      // Distance from the mover's side: positive when they are the one mating,
+      // so a bigger number is a slower win; negative when they are being mated,
+      // so a smaller one is a quicker defeat. `after - before` is the delay
+      // either way — hurrying one's own defeat costs what dawdling over a win
       // costs.
-      const before = Math.abs(evalBefore.mate) * direction
-      const after = Math.abs(evalAfter.mate) * direction
+      const before = evalBefore.mate * sign
+      const after = evalAfter.mate * sign
       const delay = after - before
       return delay <= 0 ? 0 : Math.min(delay * SLOWER_MATE_CP, SLOWER_MATE_MAX_CP)
     }
