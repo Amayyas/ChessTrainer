@@ -719,6 +719,23 @@ describe('useBattleGame corners the earlier tests left out', () => {
     expect(result.current.game.sanHistory).toEqual([])
   })
 
+  it('ignores an answer that lands in the same instant as the deadline', async () => {
+    // The narrow case: the deadline fires, and the answer settles before React
+    // has processed the failure and run the cleanup. Waiting for the cleanup to
+    // mark the search cancelled leaves that window open, and a move played in
+    // it lands on a search that has already been given up on and counted.
+    scriptLine(FOOLS_MATE)
+    answerDelayMs = SEARCH_TIMEOUT_MS
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(getLevel(LEVEL).maxDelayMs + SEARCH_TIMEOUT_MS + 1)
+    })
+
+    expect(result.current.game.sanHistory).toEqual([])
+  })
+
   it('searches the position again when its search is cancelled in flight', async () => {
     // useStockfish belongs to another module, and useBattleGame cannot assume it
     // hands back the same `analyze` on every render. A new one cancels the

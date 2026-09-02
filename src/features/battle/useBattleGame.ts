@@ -214,6 +214,10 @@ export function useBattleGame(): UseBattleGame {
 
     const timer = setTimeout(() => {
       abandon = setTimeout(() => {
+        // Cancelled here and not left to the cleanup: the cleanup runs only once
+        // React has processed the failure below, and an answer landing in that
+        // window would play its move after the search was already given up on.
+        cancelled = true
         setIsThinking(false)
         failed()
       }, SEARCH_TIMEOUT_MS)
