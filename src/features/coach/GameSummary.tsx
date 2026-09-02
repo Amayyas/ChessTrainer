@@ -1,5 +1,6 @@
 import { Badge, Card } from '@/components/UI'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
+import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 
 interface GameSummaryProps {
   summary: GameSummaryData
@@ -18,8 +19,27 @@ function AccuracyStat({ label, value }: { label: string; value: number | null })
   )
 }
 
+/**
+ * The tier's name as a counted noun: singular up to one, as French wants, and
+ * lowered because the badge reads as a fragment while the table capitalises for
+ * the legend. Both forms come from MOVE_QUALITY, so renaming a tier renames it
+ * here and a test fails if anyone writes the word back in by hand.
+ */
+function countedNoun(meta: { label: string; plural: string }, count: number): string {
+  return (count > 1 ? meta.plural : meta.label).toLowerCase()
+}
+
 /** End-of-game report: accuracy, mistake counts, best move. */
 export default function GameSummary({ summary, statusLabel }: GameSummaryProps) {
+  // The three tiers the summary counts, worst last. Not derived from
+  // MOVE_QUALITY_ORDER: the approving tiers are not worth counting, and which
+  // ones are is an editorial choice rather than a property of the table.
+  const counted: { quality: MoveQuality; count: number }[] = [
+    { quality: 'inaccuracy', count: summary.inaccuracies },
+    { quality: 'mistake', count: summary.mistakes },
+    { quality: 'blunder', count: summary.blunders },
+  ]
+
   return (
     <Card className="flex flex-col gap-4">
       <div>
@@ -33,13 +53,17 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Badge variant="neutral">{summary.inaccuracies} imprécisions</Badge>
-        <Badge variant={summary.mistakes > 0 ? 'danger' : 'neutral'}>
-          {summary.mistakes} erreurs
-        </Badge>
-        <Badge variant={summary.blunders > 0 ? 'danger' : 'neutral'}>
-          {summary.blunders} gaffes
-        </Badge>
+        {counted.map(({ quality, count }) => {
+          const meta = MOVE_QUALITY[quality]
+          return (
+            <Badge
+              key={quality}
+              variant={quality !== 'inaccuracy' && count > 0 ? 'danger' : 'neutral'}
+            >
+              {count} {countedNoun(meta, count)}
+            </Badge>
+          )
+        })}
       </div>
 
       {summary.bestMove && (

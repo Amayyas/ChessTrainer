@@ -65,6 +65,14 @@ export interface MoveQualityMeta {
   symbol: string
   /** French label for the UI. */
   label: string
+  /**
+   * Plural of the label, for the summary that counts them.
+   *
+   * Stored rather than derived. Adding an "s" happens to work for three of
+   * these seven and produces "Meilleur coups" for another, and a rule that is
+   * right most of the time is how the wrong word ships.
+   */
+  plural: string
   /** Tailwind text colour token. */
   color: string
 }
@@ -72,15 +80,20 @@ export interface MoveQualityMeta {
 export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
   // Cyan rather than a deeper green: the top two tiers sit next to each other in
   // the move list, and two shades of the same hue would not tell them apart.
-  best: { symbol: '!!', label: 'Meilleur coup', color: 'text-cyan-700' },
-  excellent: { symbol: '!', label: 'Excellent', color: 'text-emerald-600' },
+  best: { symbol: '!!', label: 'Meilleur coup', plural: 'Meilleurs coups', color: 'text-cyan-700' },
+  excellent: { symbol: '!', label: 'Excellent', plural: 'Excellents', color: 'text-emerald-600' },
   // Doubling marks the stronger of a pair, as it does for ! and !!, so the two
   // approving tiers read as one family rather than two unrelated glyphs.
-  veryGood: { symbol: '✓✓', label: 'Très bon', color: 'text-emerald-500' },
-  good: { symbol: '✓', label: 'Bon coup', color: 'text-ardoise' },
-  inaccuracy: { symbol: '?!', label: 'Imprécision', color: 'text-amber-500' },
-  mistake: { symbol: '?', label: 'Erreur', color: 'text-orange-600' },
-  blunder: { symbol: '??', label: 'Gaffe', color: 'text-red-600' },
+  veryGood: { symbol: '✓✓', label: 'Très bon', plural: 'Très bons', color: 'text-emerald-500' },
+  good: { symbol: '✓', label: 'Bon coup', plural: 'Bons coups', color: 'text-ardoise' },
+  inaccuracy: {
+    symbol: '?!',
+    label: 'Imprécision',
+    plural: 'Imprécisions',
+    color: 'text-amber-500',
+  },
+  mistake: { symbol: '?', label: 'Erreur', plural: 'Erreurs', color: 'text-orange-600' },
+  blunder: { symbol: '??', label: 'Gaffe', plural: 'Gaffes', color: 'text-red-600' },
 }
 
 /**
