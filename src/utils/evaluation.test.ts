@@ -29,6 +29,20 @@ describe('toWhiteEval', () => {
     expect(blackMate.mate).toBe(-2)
     expect(blackMate.cp).toBeLessThan(-9000)
   })
+
+  it('reads a mate that has landed from whose turn it is, not from zero', () => {
+    // "mate 0" is the side to move having just been checkmated, and zero has no
+    // sign to say who won. Taking the direction from the mate value scored both
+    // of these as a win for Black, which swung the eval bar to the mated side on
+    // the final position of every game that ended in mate.
+    const whiteMated = toWhiteEval({ scoreCp: null, scoreMate: 0 }, 'b')
+    expect(whiteMated.mate).toBe(0)
+    expect(whiteMated.cp).toBeGreaterThan(9000)
+
+    const blackMated = toWhiteEval({ scoreCp: null, scoreMate: 0 }, 'w')
+    expect(blackMated.mate).toBe(0)
+    expect(blackMated.cp).toBeLessThan(-9000)
+  })
 })
 
 describe('winningChances', () => {
@@ -136,6 +150,18 @@ describe('centipawnLoss between two forced mates', () => {
     expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(2), 'w'))).toBe('veryGood')
     expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(3), 'w'))).toBe('good')
     expect(classifyMove(centipawnLoss(whiteMate(1), whiteMate(4), 'w'))).toBe('inaccuracy')
+  })
+
+  it('prices the delay when the engine’s own mate had already landed', () => {
+    // The baseline is the position the best move reached, so when that move was
+    // the mate itself the baseline is a checkmate: "mate 0", distance zero. That
+    // is the commonest case there is — the engine usually has the mate now, not
+    // in three — and it is the one a direction read off the mate value skips.
+    const engineMated = toWhiteEval({ scoreCp: null, scoreMate: 0 }, 'b')
+    expect(centipawnLoss(engineMated, whiteMate(3), 'w')).toBe(3 * SLOWER_MATE_CP)
+    expect(classifyMove(centipawnLoss(engineMated, whiteMate(3), 'w'))).toBe('inaccuracy')
+    // And mating at once, as the engine did, costs nothing.
+    expect(centipawnLoss(engineMated, engineMated, 'w')).toBe(0)
   })
 
   it('charges the mated side for hurrying its own defeat', () => {

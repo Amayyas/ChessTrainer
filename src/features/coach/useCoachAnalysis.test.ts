@@ -20,7 +20,11 @@ import type { UseChessGame } from '@/hooks/useChessGame'
 interface Entry {
   bestMoveUci: string
   whiteCp: number
-  /** Set for a forced mate: White-relative distance, negative when Black mates. */
+  /**
+   * Set for a forced mate: White-relative distance, negative when Black mates.
+   * Zero is a position where the mate has landed, and there the side to move is
+   * the mated one — as in real UCI, where the distance alone cannot say.
+   */
   whiteMate?: number
 }
 
@@ -311,6 +315,30 @@ describe('useCoachAnalysis and the top tier', () => {
     expect(result.current.qualities[0]).toBe('inaccuracy')
     expect(result.current.summary.mistakes).toBe(0)
     expect(result.current.summary.blunders).toBe(0)
+  })
+
+  it('penalises a slow mate when the engine’s own mate was already on the board', async () => {
+    // The case the player actually meets: Black has Qh4# and plays Nc6, which
+    // still mates, three moves later. The position the engine's move reached is
+    // a checkmate — "mate 0" — so the comparison has a distance of zero on one
+    // side, and zero is exactly where a mate loses the sign that says who won.
+    const { game } = buildGame([
+      { san: 'f3', best: 'f3', baselineCp: 0, afterCp: 0 },
+      { san: 'e5', best: 'e5', baselineCp: 0, afterCp: 0 },
+      { san: 'g4', best: 'g4', baselineCp: 0, afterCp: 0 },
+      {
+        san: 'Nc6',
+        best: 'Qh4',
+        baselineCp: -10000,
+        baselineMate: 0,
+        afterCp: -10000,
+        afterMate: -3,
+      },
+    ])
+    const { result } = renderAnalysis(game)
+    await waitFor(() => expect(result.current.summary.isComplete).toBe(true))
+
+    expect(result.current.qualities.at(-1)).toBe('inaccuracy')
   })
 
   it('keeps the approving tier for a mate found at the engine’s own speed', async () => {

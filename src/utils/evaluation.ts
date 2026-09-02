@@ -27,7 +27,7 @@ const MATE_CP = 10000
  * as one — a mate traded for +3.00 is a ~9700 cp loss down the ordinary path,
  * which is a blunder, and the two cases stay distinguishable.
  *
- * Against the thresholds below: one move late is "very good", two "good", four
+ * Against the thresholds below: one move late is "very good", two "good", three
  * and beyond "inaccuracy".
  */
 export const SLOWER_MATE_CP = 15
@@ -41,6 +41,11 @@ export function toWhiteEval(
   const sign = turn === 'w' ? 1 : -1
 
   if (analysis.scoreMate !== null) {
+    // `mate 0` is the side to move having just been checkmated. Zero carries no
+    // sign to say who won, so the score comes from whose turn it is instead:
+    // reading it off the mate value swung the bar to the mated side on the last
+    // position of every game that ended in mate.
+    if (analysis.scoreMate === 0) return { cp: turn === 'w' ? -MATE_CP : MATE_CP, mate: 0 }
     const mate = analysis.scoreMate * sign
     return { cp: mate > 0 ? MATE_CP : -MATE_CP, mate }
   }
@@ -119,6 +124,19 @@ export function classifyMove(centipawnLoss: number): MoveQuality {
 }
 
 /**
+ * Which way a mate runs for the mover: +1 when they are the one mating, −1 when
+ * they are the one being mated, 0 when the evaluation is not a mate at all.
+ *
+ * Read from the mate distance, except at zero — the position where the mate has
+ * just landed, and where zero has no sign to carry the answer. The score does,
+ * since a mate is always ±MATE_CP.
+ */
+function mateDirection(evaluation: WhiteEval, sign: number): number {
+  if (evaluation.mate === null) return 0
+  return evaluation.mate === 0 ? Math.sign(evaluation.cp * sign) : Math.sign(evaluation.mate * sign)
+}
+
+/**
  * Centipawns lost by `mover` when the position went from evalBefore (best play
  * available) to evalAfter (after the move), both White-relative. Never negative.
  *
@@ -134,13 +152,14 @@ export function centipawnLoss(evalBefore: WhiteEval, evalAfter: WhiteEval, mover
   const sign = mover === 'w' ? 1 : -1
 
   if (evalBefore.mate !== null && evalAfter.mate !== null) {
-    // Positive = the mover mates in that many moves, so a bigger number is a
-    // slower win; negative = the mover is being mated, so a smaller absolute
-    // number is a quicker defeat. `after - before` is the delay either way, and
-    // hurrying one's own defeat costs what dawdling over a win costs.
-    const before = evalBefore.mate * sign
-    const after = evalAfter.mate * sign
-    if (Math.sign(before) === Math.sign(after)) {
+    const direction = mateDirection(evalBefore, sign)
+    if (direction !== 0 && direction === mateDirection(evalAfter, sign)) {
+      // Distance from the mover's side, pointed the way the mate runs. Mating
+      // more slowly and being mated sooner are the same `after - before` moves
+      // of delay, and hurrying one's own defeat costs what dawdling over a win
+      // costs.
+      const before = Math.abs(evalBefore.mate) * direction
+      const after = Math.abs(evalAfter.mate) * direction
       const delay = after - before
       return delay <= 0 ? 0 : Math.min(delay * SLOWER_MATE_CP, SLOWER_MATE_MAX_CP)
     }
