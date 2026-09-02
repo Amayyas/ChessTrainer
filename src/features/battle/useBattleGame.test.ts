@@ -134,6 +134,13 @@ const SHUFFLE = ['Nf3', 'Nf6', 'Ng1', 'Ng8', 'Nf3', 'Nf6', 'Ng1', 'Ng8']
 
 const LEVEL: LevelId = 1
 
+/**
+ * A search that is slow but working. Deliberately an independent number rather
+ * than a fraction of the budget: derived from it, shrinking the budget shrinks
+ * this too and the test goes blind to the very value it is meant to pin.
+ */
+const SLOW_SEARCH_MS = 2_000
+
 type Battle = { current: UseBattleGame }
 
 function startGame(battle: Battle, config: Partial<BattleConfig> = {}): void {
@@ -657,7 +664,9 @@ describe('useBattleGame corners the earlier tests left out', () => {
     // real duration: this search takes half of it and must still be honoured.
     // An instant answer would prove nothing, since it beats any deadline.
     scriptLine(FOOLS_MATE)
-    answerDelayMs = SEARCH_TIMEOUT_MS / 2
+    // The premise, stated so it fails rather than quietly stops discriminating.
+    expect(SLOW_SEARCH_MS).toBeLessThan(SEARCH_TIMEOUT_MS)
+    answerDelayMs = SLOW_SEARCH_MS
     const { result } = renderHook(() => useBattleGame())
 
     startGame(result, { colorChoice: 'black' })
@@ -667,6 +676,47 @@ describe('useBattleGame corners the earlier tests left out', () => {
 
     expect(result.current.isEngineStalled).toBe(false)
     expect(result.current.game.sanHistory).toEqual(['f3'])
+  })
+
+  it('leaves no deadline behind once a search has answered', async () => {
+    // The deadline outlives its search unless the cleanup clears it. Left
+    // running, it fires a while later and counts a failure against a game that
+    // is going perfectly - three of those and the mode stalls for no reason.
+    scriptLine(SHUFFLE)
+    const { result } = renderHook(() => useBattleGame())
+    startGame(result, { colorChoice: 'black' })
+
+    for (const reply of ['Nf6', 'Ng8', 'Nf6']) {
+      await letEngineThink()
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(SEARCH_TIMEOUT_MS + 1_000)
+      })
+      playerPlays(result, reply)
+    }
+
+    expect(result.current.isEngineStalled).toBe(false)
+    expect(result.current.game.sanHistory).toEqual(['Nf3', 'Nf6', 'Ng1', 'Ng8', 'Nf3', 'Nf6'])
+  })
+
+  it('ignores an answer that arrives after its search was abandoned', async () => {
+    // The engine is not wrong to answer late, but the position has moved on and
+    // the failure is already counted. Playing that move now would put a piece on
+    // the board minutes after anyone asked for it.
+    scriptLine(FOOLS_MATE)
+    answerDelayMs = SEARCH_TIMEOUT_MS + SLOW_SEARCH_MS
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black' })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(getLevel(LEVEL).maxDelayMs + SEARCH_TIMEOUT_MS + 100)
+    })
+    expect(result.current.game.sanHistory).toEqual([])
+
+    // Now the abandoned search finally answers.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SLOW_SEARCH_MS)
+    })
+    expect(result.current.game.sanHistory).toEqual([])
   })
 
   it('searches the position again when its search is cancelled in flight', async () => {
