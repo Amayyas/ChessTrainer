@@ -173,7 +173,7 @@ export default function LandingPage() {
               />
             </Suspense>
           </div>
-          <ul className="flex flex-col gap-2">
+          <ul aria-label="Barème de notation des coups" className="flex flex-col gap-2">
             {MOVE_QUALITY_ORDER.map((quality) => {
               const meta = MOVE_QUALITY[quality]
               return (
