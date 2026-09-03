@@ -8,8 +8,9 @@ export interface NavItem {
   /** Read by screen readers in place of the glyph (accessibility). */
   description: string
   /**
-   * The mobile bottom bar only exposes the 4 game modes and the profile.
-   * The dashboard and the leaderboard stay reachable from the sidebar.
+   * The mobile bottom bar exposes the dashboard, the 4 game modes and the
+   * profile. The leaderboard stays on the sidebar; there is no room for a
+   * seventh, and it is reachable from the dashboard.
    */
   inBottomBar: boolean
   /** Fallback for the bottom bar: at 375px an item only gets about 75px. */
@@ -20,9 +21,10 @@ export const NAV_ITEMS: NavItem[] = [
   {
     path: ROUTES.dashboard,
     label: 'Tableau de bord',
+    shortLabel: 'Tableau',
     glyph: '♔',
     description: 'Progression, défis du jour et activité récente',
-    inBottomBar: false,
+    inBottomBar: true,
   },
   {
     path: ROUTES.coach,
