@@ -1,13 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Badge, Card } from '@/components/UI'
-import { ENGINE_LEVELS } from '@/engine/levels'
-import type { BadgeVariant } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
 import { challengeProgress } from '@/features/progression/challenges'
 import { levelFromXp } from '@/features/progression/levels'
+import { MODES } from '@/features/home/modes'
 import { staggerContainer, staggerItem } from '@/lib/motion'
-import { ROUTES, type RoutePath } from '@/routes'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { brand } from '@/lib/design-tokens'
 
@@ -15,58 +13,6 @@ import { brand } from '@/lib/design-tokens'
  * Dashboard: progression, the day's challenges, recent
  * activity, and a way into each mode.
  */
-interface ModeCard {
-  to: RoutePath
-  glyph: string
-  title: string
-  description: string
-  badge: string
-  badgeVariant: BadgeVariant
-}
-
-/**
- * Read from the ladder rather than written out. This card still said "cinq
- * niveaux, de 800 à 2200 Elo" after the ladder had grown to six levels with
- * measured figures: copy that restates data drifts from it silently.
- */
-const BATTLE_FLOOR = ENGINE_LEVELS[0]!.elo
-const BATTLE_CEILING = ENGINE_LEVELS[ENGINE_LEVELS.length - 1]!.elo
-
-const MODES: ModeCard[] = [
-  {
-    to: ROUTES.coach,
-    glyph: '♞',
-    title: 'Coach IA',
-    description: 'Analysez chaque coup avec Stockfish et progressez à votre rythme.',
-    badge: 'Apprentissage',
-    badgeVariant: 'gold',
-  },
-  {
-    to: ROUTES.battle,
-    glyph: '♜',
-    title: 'Affrontement',
-    description: `Défiez l'IA sur ${ENGINE_LEVELS.length} niveaux, de ${BATTLE_FLOOR} à ${BATTLE_CEILING} Elo.`,
-    badge: `${ENGINE_LEVELS.length} niveaux`,
-    badgeVariant: 'neutral',
-  },
-  {
-    to: ROUTES.puzzle,
-    glyph: '♝',
-    title: 'Puzzles',
-    description: 'Résolvez des positions tactiques classées par thème.',
-    badge: 'Tactique',
-    badgeVariant: 'neutral',
-  },
-  {
-    to: ROUTES.hunt,
-    glyph: '♟',
-    title: 'Chasse aux Pièces',
-    description: 'Capturez un maximum de pièces en 60 secondes.',
-    badge: 'Arcade',
-    badgeVariant: 'gold',
-  },
-]
-
 const ACTIVITY_GLYPHS: Record<string, string> = {
   battle: '♜',
   puzzle: '♝',

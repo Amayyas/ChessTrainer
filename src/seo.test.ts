@@ -31,8 +31,11 @@ describe('INDEXABLE_ROUTES', () => {
 
   it('leaves out everything behind an account or an email link', () => {
     // These have nothing to offer a search result, and advertising the recovery
-    // screens in a sitemap invites crawlers to spend links that work once.
+    // screens in a sitemap invites crawlers to spend links that work once. The
+    // dashboard is a signed-in view reached from the menu; '/' is the public
+    // page a visitor and a crawler actually land on.
     for (const path of [
+      ROUTES.dashboard,
       ROUTES.profile,
       ROUTES.login,
       ROUTES.register,

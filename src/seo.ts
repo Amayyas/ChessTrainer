@@ -26,6 +26,9 @@ export const PAGE_META: Record<RoutePath, PageMeta> = {
     title: 'ChessTrainer AI — Apprenez les échecs avec un coach intelligent',
     indexable: true,
   },
+  // The dashboard is a signed-in view reached from the menu, not an address a
+  // visitor or a crawler arrives at: nothing to offer a search result.
+  [ROUTES.dashboard]: { title: `Tableau de bord · ${SUFFIX}`, indexable: false },
   [ROUTES.coach]: { title: `Coach IA — analyse de vos parties · ${SUFFIX}`, indexable: true },
   [ROUTES.battle]: { title: `Affrontement — défiez l'IA · ${SUFFIX}`, indexable: true },
   [ROUTES.puzzle]: { title: `Puzzles tactiques · ${SUFFIX}`, indexable: true },

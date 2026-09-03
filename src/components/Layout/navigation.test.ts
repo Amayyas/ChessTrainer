@@ -4,9 +4,12 @@ import { ROUTES } from '@/routes'
 
 describe('navigation', () => {
   it('exposes one entry per navigable route', () => {
-    // Reached from a guard, a link or an email, never from the menu: the auth
-    // screens, the two recovery screens and the two legal documents.
+    // Reached from a guard, a link or an email, never from the menu: the public
+    // landing on '/', the auth screens, the two recovery screens and the two
+    // legal documents. The sidebar's own logo links to '/'; the menu points at
+    // the dashboard instead.
     const offMenu: string[] = [
+      ROUTES.home,
       ROUTES.login,
       ROUTES.register,
       ROUTES.forgotPassword,

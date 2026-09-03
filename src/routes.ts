@@ -1,6 +1,7 @@
 /** SPA route table. */
 export const ROUTES = {
   home: '/',
+  dashboard: '/dashboard',
   coach: '/coach',
   battle: '/battle',
   puzzle: '/puzzle',
