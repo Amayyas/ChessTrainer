@@ -18,12 +18,13 @@ import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
  * modes, the calibrated difficulty ladder, and the coach's move grading — and
  * leaves the dashboard to '/dashboard', where someone who has an account goes.
  *
- * Every figure on the page is read from the data it describes: the number of
- * levels and the Elo range come from ENGINE_LEVELS, the grading tiers from
- * MOVE_QUALITY. The home page once advertised "cinq niveaux, de 800 à 2200 Elo"
- * for two releases after the ladder had six with measured figures, because those
- * numbers were prose. LandingPage.test.tsx fails if anyone writes them back by
- * hand.
+ * Every figure on the page is read from the data it describes — the level
+ * count, the Elo range and each level's rating from ENGINE_LEVELS, the grading
+ * tiers from MOVE_QUALITY — and the prose around them is written so it states no
+ * count of its own to fall out of step. The home page once advertised "cinq
+ * niveaux, de 800 à 2200 Elo" for two releases after the ladder had six with
+ * measured figures, because those numbers were prose. LandingPage.test.tsx
+ * fails if anyone writes them back by hand.
  */
 
 /** Ebony-band CTA, styled to match the primary Button without being one. */
@@ -83,9 +84,9 @@ export default function LandingPage() {
       </section>
 
       <section>
-        <h2 className="mb-1 font-display text-2xl font-bold text-ebene">Quatre façons de jouer</h2>
+        <h2 className="mb-1 font-display text-2xl font-bold text-ebene">Les modes de jeu</h2>
         <p className="mb-5 text-sm text-ardoise">
-          Chaque mode est accessible immédiatement, sans compte.
+          Chacun est accessible immédiatement, sans compte.
         </p>
         <motion.div
           className="grid gap-4 sm:grid-cols-2"
@@ -153,8 +154,8 @@ export default function LandingPage() {
           Le coach note chacun de vos coups
         </h2>
         <p className="mb-6 max-w-2xl text-sm text-ardoise">
-          Après chaque partie, Stockfish rejoue vos coups et les classe sur sept niveaux, du
-          meilleur coup à la gaffe, avec la meilleure alternative affichée sur l'échiquier.
+          Après chaque partie, Stockfish rejoue vos coups et les classe du meilleur coup à la gaffe,
+          avec la meilleure alternative affichée sur l'échiquier.
         </p>
         <div className="grid items-center gap-8 md:grid-cols-2">
           <div className="mx-auto w-full max-w-sm">

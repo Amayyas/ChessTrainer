@@ -78,4 +78,24 @@ describe('LandingPage', () => {
       '/register',
     )
   })
+
+  it('counts modes and tiers nowhere in its static prose', () => {
+    // The home page said "cinq niveaux" for two releases after there were six,
+    // because the count was prose. The mode and grading sections are written to
+    // state no count of their own — "Les modes de jeu", not "Quatre façons";
+    // "du meilleur coup à la gaffe", not "sur sept niveaux" — so there is
+    // nothing to drift. The only count on the page is the hero's, derived from
+    // ENGINE_LEVELS.length and covered by the ladder test above.
+    renderLanding()
+
+    for (const forbidden of [
+      /quatre\s+(façons|modes)/i,
+      /\d+\s+modes/i,
+      /sept\s+niveaux/i,
+      /\d+\s+niveaux\s+de\s+notation/i,
+      /sur\s+sept/i,
+    ]) {
+      expect(document.body.textContent ?? '').not.toMatch(forbidden)
+    }
+  })
 })
