@@ -33,10 +33,11 @@ describe('LandingPage', () => {
       ),
     ).toBeInTheDocument()
 
-    // And every level is listed with its own measured figure.
+    // And every level is listed with its own measured figure, marked
+    // approximate with the same "~" the battle setup uses.
     for (const level of ENGINE_LEVELS) {
       expect(screen.getByText(level.label)).toBeInTheDocument()
-      expect(screen.getByText(`${level.elo} Elo`)).toBeInTheDocument()
+      expect(screen.getByText(`~${level.elo} Elo`)).toBeInTheDocument()
     }
   })
 

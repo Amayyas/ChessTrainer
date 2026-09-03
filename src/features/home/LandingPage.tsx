@@ -1,12 +1,10 @@
-import { motion, useReducedMotion } from 'framer-motion'
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import type { Square } from 'react-chessboard/dist/chessboard/types'
-import { Badge, Card, DottedGrid } from '@/components/UI'
+import { Aurora } from '@/components/UI'
 import { ENGINE_LEVELS } from '@/engine/levels'
-import { MODES } from '@/features/home/modes'
+import ModeGrid from '@/features/home/ModeGrid'
 import { board, brand } from '@/lib/design-tokens'
-import { staggerContainer, staggerItem } from '@/lib/motion'
 import { ROUTES } from '@/routes'
 import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
 
@@ -14,9 +12,9 @@ import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
  * The public front door on '/'.
  *
  * The dashboard used to sit here, so a visitor typing the domain met an empty
- * progress bar and four cards. This presents the product instead — the four
- * modes, the calibrated difficulty ladder, and the coach's move grading — and
- * leaves the dashboard to '/dashboard', where someone who has an account goes.
+ * progress bar and a mode picker. This presents the product instead — the game
+ * modes, the calibrated difficulty ladder, and the coach's move grading.
+ * HomeRoute sends a signed-in visitor to the dashboard rather than here.
  *
  * Every figure on the page is read from the data it describes — the level
  * count, the Elo range and each level's rating from ENGINE_LEVELS, the grading
@@ -51,16 +49,15 @@ const noTargets = (): Square[] => []
 
 // The board pulls in react-chessboard (~29 kB gzip). It illustrates one section
 // of a page that is otherwise eager for the first paint, so it loads on its own
-// and holds an aspect-square gap until it does.
-const ChessBoard = lazy(() => import('@/components/Board').then((m) => ({ default: m.ChessBoard })))
+// and holds an aspect-square gap until it does. Imported by its own path, not
+// the Board barrel, which would also pull in EvalBar and MoveHistory.
+const ChessBoard = lazy(() => import('@/components/Board/ChessBoard'))
 
 export default function LandingPage() {
-  const reduceMotion = useReducedMotion()
-
   return (
     <div className="flex flex-col gap-14">
       <section className="relative overflow-hidden rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
-        <DottedGrid />
+        <Aurora />
         <div className="relative max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-or">
             {brand.fullName}
@@ -88,41 +85,11 @@ export default function LandingPage() {
         <p className="mb-5 text-sm text-ardoise">
           Chacun est accessible immédiatement, sans compte.
         </p>
-        <motion.div
-          className="grid gap-4 sm:grid-cols-2"
-          variants={reduceMotion ? undefined : staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
-          {MODES.map((mode) => (
-            <motion.div key={mode.to} variants={reduceMotion ? undefined : staggerItem}>
-              <Link
-                to={mode.to}
-                className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ivoire"
-              >
-                <Card interactive className="flex h-full items-start gap-4">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ebene text-3xl text-or"
-                  >
-                    {mode.glyph}
-                  </span>
-                  <div className="flex-1">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <h3 className="font-display text-xl font-bold text-ebene">{mode.title}</h3>
-                      <Badge variant={mode.badgeVariant}>{mode.badge}</Badge>
-                    </div>
-                    <p className="text-sm text-ardoise">{mode.description}</p>
-                  </div>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
-        </motion.div>
+        <ModeGrid />
       </section>
 
       <section className="relative overflow-hidden rounded-2xl bg-ebene px-6 py-12 text-ivoire sm:px-12">
-        <DottedGrid />
+        <Aurora />
         <div className="relative">
           <h2 className="font-display text-2xl font-bold">
             Une IA qui joue à votre niveau, pas au sien
@@ -139,12 +106,12 @@ export default function LandingPage() {
                 className="flex items-baseline justify-between gap-3 rounded-xl bg-white/5 px-4 py-3"
               >
                 <span className="font-semibold">{level.label}</span>
-                <span className="shrink-0 text-sm tabular-nums text-or">{level.elo} Elo</span>
+                <span className="shrink-0 text-sm tabular-nums text-or">~{level.elo} Elo</span>
               </li>
             ))}
           </ol>
           <p className="mt-4 text-xs text-ivoire/50">
-            Figures à ±150, une façon de se situer plutôt qu'un classement officiel.
+            Des estimations pour se situer, pas un classement officiel.
           </p>
         </div>
       </section>
@@ -196,7 +163,7 @@ export default function LandingPage() {
       <footer className="border-t border-ebene/10 pt-8 text-sm text-ardoise">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-display font-bold text-ebene">{brand.fullName}</p>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2">
+          <nav aria-label="Pied de page" className="flex flex-wrap gap-x-5 gap-y-2">
             <Link to={ROUTES.legal} className="underline-offset-2 hover:text-ebene hover:underline">
               Mentions légales
             </Link>

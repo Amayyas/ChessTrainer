@@ -1,11 +1,8 @@
-import { motion, useReducedMotion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { Badge, Card } from '@/components/UI'
+import { Card } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
+import ModeGrid from '@/features/home/ModeGrid'
 import { challengeProgress } from '@/features/progression/challenges'
 import { levelFromXp } from '@/features/progression/levels'
-import { MODES } from '@/features/home/modes'
-import { staggerContainer, staggerItem } from '@/lib/motion'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { brand } from '@/lib/design-tokens'
 
@@ -21,7 +18,6 @@ const ACTIVITY_GLYPHS: Record<string, string> = {
 }
 
 export default function HomePage() {
-  const reduceMotion = useReducedMotion()
   const xp = useProgressionStore((state) => state.xp)
   const stats = useProgressionStore((state) => state.stats)
   const daily = useProgressionStore((state) => state.daily)
@@ -113,37 +109,7 @@ export default function HomePage() {
 
       <h2 className="mb-4 font-display text-2xl font-bold text-ebene">Choisissez un mode</h2>
 
-      <motion.div
-        className="grid gap-4 sm:grid-cols-2"
-        variants={reduceMotion ? undefined : staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
-        {MODES.map((mode) => (
-          <motion.div key={mode.to} variants={reduceMotion ? undefined : staggerItem}>
-            <Link
-              to={mode.to}
-              className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ivoire"
-            >
-              <Card interactive className="flex h-full items-start gap-4">
-                <span
-                  aria-hidden="true"
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ebene text-3xl text-or"
-                >
-                  {mode.glyph}
-                </span>
-                <div className="flex-1">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <h3 className="font-display text-xl font-bold text-ebene">{mode.title}</h3>
-                    <Badge variant={mode.badgeVariant}>{mode.badge}</Badge>
-                  </div>
-                  <p className="text-sm text-ardoise">{mode.description}</p>
-                </div>
-              </Card>
-            </Link>
-          </motion.div>
-        ))}
-      </motion.div>
+      <ModeGrid />
     </div>
   )
 }
