@@ -3,17 +3,18 @@ import { Route, Routes } from 'react-router-dom'
 import AppLayout from '@/components/Layout/AppLayout'
 import RouteFallback from '@/components/Layout/RouteFallback'
 import RequireAuth from '@/features/auth/RequireAuth'
-import LandingPage from '@/features/home/LandingPage'
+import HomeRoute from '@/features/home/HomeRoute'
 import { useProgressionSync } from '@/features/progression/useProgressionSync'
 import { ROUTES } from '@/routes'
 import AuthLinkLanding from '@/features/auth/AuthLinkLanding'
 import DocumentHead from '@/features/seo/DocumentHead'
 import { useAuthStore } from '@/store/useAuthStore'
 
-// The public landing on '/' stays eager so the first paint — the one Lighthouse
-// measures — needs no extra chunk. Every other route is split out, the dashboard
-// included: it is behind a visit to '/dashboard', not the address a new visitor
-// or a crawler lands on, so it has no claim on the initial bundle.
+// HomeRoute (and the LandingPage it renders) stays eager so the first paint on
+// '/' — the one Lighthouse measures — needs no extra chunk. Every other route is
+// split out, the dashboard included: it is behind a visit to '/dashboard', not
+// the address a new visitor or a crawler lands on, so it has no claim on the
+// initial bundle.
 const DashboardPage = lazy(() => import('@/features/home/HomePage'))
 const CoachPage = lazy(() => import('@/features/coach/CoachPage'))
 const BattlePage = lazy(() => import('@/features/battle/BattlePage'))
@@ -47,7 +48,7 @@ export default function App() {
       <DocumentHead />
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path={ROUTES.home} element={<LandingPage />} />
+          <Route path={ROUTES.home} element={<HomeRoute />} />
           <Route
             path={ROUTES.dashboard}
             element={

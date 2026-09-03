@@ -34,15 +34,18 @@ export default function AppLayout() {
           </AnimatePresence>
 
           {/* The sidebar holds these on desktop, but it is hidden below md and
-              a legal notice has to be reachable from every screen. */}
-          <p className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-ardoise md:hidden">
-            <Link to={ROUTES.legal} className="underline underline-offset-2">
-              Mentions légales
-            </Link>
-            <Link to={ROUTES.privacy} className="underline underline-offset-2">
-              Confidentialité
-            </Link>
-          </p>
+              a legal notice has to be reachable from every screen. The landing
+              carries its own footer with the same links, so it opts out. */}
+          {location.pathname !== ROUTES.home && (
+            <p className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-ardoise md:hidden">
+              <Link to={ROUTES.legal} className="underline underline-offset-2">
+                Mentions légales
+              </Link>
+              <Link to={ROUTES.privacy} className="underline underline-offset-2">
+                Confidentialité
+              </Link>
+            </p>
+          )}
         </div>
       </main>
     </div>
