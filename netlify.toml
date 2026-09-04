@@ -25,11 +25,20 @@
 # gets a 404, so the app never starts. Navigating from the home page hides the
 # problem entirely, since React does the routing there.
 #
+# Falls back to app.html, not index.html: the build (scripts/prerender.mjs)
+# bakes server-rendered markup for '/' into index.html so its first paint does
+# not wait on the JS bundle, and app.html is the empty shell taken before that
+# happens. Every route but '/' hydrates onto an empty #root the way the whole
+# app always has; splicing the landing's markup into every address instead
+# would hand each of them a server render that does not match what mounts
+# there, which is a hydration mismatch, not a faster paint.
+#
 # Real files still win: Netlify serves an existing asset before applying a
-# rewrite, so /stockfish/stockfish.js and /og-image.png are unaffected.
+# rewrite, so /stockfish/stockfish.js, /og-image.png and index.html itself for
+# a direct hit on '/' are unaffected.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/app.html"
   status = 200
 
 # Vite fingerprints these filenames, so the name changes whenever the content

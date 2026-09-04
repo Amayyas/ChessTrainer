@@ -2,6 +2,8 @@
   "ci": {
     "collect": {
       "staticDistDir": "./dist",
+      "isSinglePageApplication": true,
+      "url": ["http://localhost/"],
       "numberOfRuns": 3,
       "settings": {
         "chromeFlags": "--no-sandbox --headless=new"
