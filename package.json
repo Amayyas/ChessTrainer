@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "size": "node scripts/check-bundle-size.mjs",
-    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && vite build && npm run size",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build && npm run size",
     "test:rls": "vitest run --config vitest.rls.config.ts",
     "db:test": "bash scripts/rls-db.sh"
   },

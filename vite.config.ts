@@ -61,7 +61,7 @@ function discoveryFiles(mode: string): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, isSsrBuild }) => {
   // Read through loadEnv rather than process.env: Vite does not populate
   // process.env from .env files while it is evaluating this config, so a token
   // placed in .env as documented would be read as absent. loadEnv reads those
@@ -128,6 +128,11 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
+    // The SSR build only ever produces entry-server.js for scripts/prerender.mjs
+    // to import — nothing under public/ is served from dist-ssr, so copying the
+    // Stockfish engine and fonts in there is pure waste, and it briefly caught
+    // ESLint on Stockfish's generated JS before dist-ssr was added to its ignores.
+    publicDir: isSsrBuild ? false : undefined,
     build: {
       // The manifest lets the size guard tell the initial bundle apart from the
       // lazily loaded route chunks, so its budget measures first-load JS only.

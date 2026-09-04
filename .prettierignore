@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-ssr
 coverage
 package-lock.json
 cahier-des-charges.html
