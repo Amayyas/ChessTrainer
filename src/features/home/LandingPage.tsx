@@ -99,7 +99,7 @@ export default function LandingPage() {
             {LEVEL_CEILING} Elo. Chaque niveau a été mesuré en le faisant jouer contre un
             Stockfish&nbsp;18 calibré — ce ne sont pas des étiquettes posées au hasard.
           </p>
-          <ol className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <ol className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ENGINE_LEVELS.map((level) => (
               <li
                 key={level.id}
@@ -124,7 +124,7 @@ export default function LandingPage() {
           Après chaque partie, Stockfish rejoue vos coups et les classe du meilleur coup à la gaffe,
           avec la meilleure alternative affichée sur l'échiquier.
         </p>
-        <div className="grid items-center gap-8 md:grid-cols-2">
+        <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
           <div className="mx-auto w-full max-w-sm">
             <Suspense
               fallback={<div className="aspect-square w-full rounded-md bg-ebene/5 shadow-card" />}

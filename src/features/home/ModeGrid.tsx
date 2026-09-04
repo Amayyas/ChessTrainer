@@ -16,7 +16,7 @@ export default function ModeGrid() {
 
   return (
     <motion.div
-      className="grid gap-4 sm:grid-cols-2"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
       variants={reduceMotion ? undefined : staggerContainer}
       initial="initial"
       animate="animate"
