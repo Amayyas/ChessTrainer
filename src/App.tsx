@@ -3,17 +3,19 @@ import { Route, Routes } from 'react-router-dom'
 import AppLayout from '@/components/Layout/AppLayout'
 import RouteFallback from '@/components/Layout/RouteFallback'
 import RequireAuth from '@/features/auth/RequireAuth'
-import HomePage from '@/features/home/HomePage'
+import HomeRoute from '@/features/home/HomeRoute'
 import { useProgressionSync } from '@/features/progression/useProgressionSync'
 import { ROUTES } from '@/routes'
 import AuthLinkLanding from '@/features/auth/AuthLinkLanding'
 import DocumentHead from '@/features/seo/DocumentHead'
 import { useAuthStore } from '@/store/useAuthStore'
 
-// The home route stays eager so the landing paint — the one Lighthouse measures
-// — needs no extra chunk. Every other route is split out, which keeps the board,
-// the react-chessboard library and the engine wrapper out of the initial bundle
-// until a mode that needs them is opened.
+// HomeRoute (and the LandingPage it renders) stays eager so the first paint on
+// '/' — the one Lighthouse measures — needs no extra chunk. Every other route is
+// split out, the dashboard included: it is behind a visit to '/dashboard', not
+// the address a new visitor or a crawler lands on, so it has no claim on the
+// initial bundle.
+const DashboardPage = lazy(() => import('@/features/home/HomePage'))
 const CoachPage = lazy(() => import('@/features/coach/CoachPage'))
 const BattlePage = lazy(() => import('@/features/battle/BattlePage'))
 const PuzzlePage = lazy(() => import('@/features/puzzle/PuzzlePage'))
@@ -46,7 +48,15 @@ export default function App() {
       <DocumentHead />
       <Routes>
         <Route element={<AppLayout />}>
-          <Route path={ROUTES.home} element={<HomePage />} />
+          <Route path={ROUTES.home} element={<HomeRoute />} />
+          <Route
+            path={ROUTES.dashboard}
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <DashboardPage />
+              </Suspense>
+            }
+          />
           <Route
             path={ROUTES.coach}
             element={

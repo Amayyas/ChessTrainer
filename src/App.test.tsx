@@ -15,6 +15,9 @@ function renderAt(path: string) {
 describe('routing', () => {
   it.each([
     [ROUTES.home, /Apprenez les échecs/],
+    // The dashboard moved off '/'; signed out (no backend in tests) '/' is the
+    // landing, and '/dashboard' serves the dashboard as its own lazy chunk.
+    [ROUTES.dashboard, /Apprenez les échecs/],
     [ROUTES.coach, 'Coach'],
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, 'Puzzles'],
@@ -28,6 +31,24 @@ describe('routing', () => {
   ])('renders the expected page at %s', async (path, heading) => {
     renderAt(path)
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument()
+  })
+
+  it('serves the landing, not the dashboard, at / when signed out', async () => {
+    // The h1 alone does not tell them apart — both say "Apprenez les échecs".
+    // The dashboard's level bar and mode picker are what distinguish it, and
+    // they must not be on '/'.
+    renderAt(ROUTES.home)
+    await screen.findByRole('heading', { level: 1 })
+    expect(screen.queryByText(/XP au total/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Choisissez un mode' })).not.toBeInTheDocument()
+  })
+
+  it('serves the dashboard, not the landing, at /dashboard', async () => {
+    renderAt(ROUTES.dashboard)
+    expect(await screen.findByText(/XP au total/)).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Choisissez un mode' }),
+    ).toBeInTheDocument()
   })
 
   it('renders the 404 page on an unknown route', async () => {

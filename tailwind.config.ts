@@ -25,6 +25,20 @@ export default {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },
         },
+        // The hero aurora: two blobs drift on offset paths so the wash never
+        // looks like it is on a single track.
+        'aurora-slow': {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+          '50%': { transform: 'translate3d(12%, 8%, 0) scale(1.15)' },
+        },
+        'aurora-slower': {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1.1)' },
+          '50%': { transform: 'translate3d(-10%, -6%, 0) scale(1)' },
+        },
+      },
+      animation: {
+        'aurora-slow': 'aurora-slow 24s ease-in-out infinite',
+        'aurora-slower': 'aurora-slower 32s ease-in-out infinite',
       },
     },
   },
