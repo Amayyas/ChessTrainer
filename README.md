@@ -279,21 +279,21 @@ Run `npm run ci` before every commit: it is the same sequence as the remote CI.
 ## Continuous integration
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull
-request and every push to `main`. The `main` branch is protected, and four of
+request and every push to `main`. The `main` branch is protected, and five of
 these jobs are required to pass before a merge: **Quality**, **Unit tests**,
-**Build & bundle budget** and **Database policies**.
+**Build & bundle budget**, **Database policies** and **Lighthouse**.
 
 Required checks are matched **by name**. Renaming one of those jobs does not
 weaken the gate, it jams it: the old name never reports again and every pull
 request stays blocked until the protection is updated to match.
 
-| Job                      | Contents                                                   |
-| ------------------------ | ---------------------------------------------------------- |
-| Quality (Node 22 and 24) | `format:check`, `lint`, `typecheck`                        |
-| Unit tests               | Vitest + coverage, published as an artifact                |
-| Build & bundle budget    | Production build with reporting on, then size-budget check |
-| Database policies        | Row Level Security and the score RPCs, on a real Postgres  |
-| Lighthouse               | Performance & accessibility audit, 3 runs, report artifact |
+| Job                      | Contents                                                            |
+| ------------------------ | ------------------------------------------------------------------- |
+| Quality (Node 22 and 24) | `format:check`, `lint`, `typecheck`                                 |
+| Unit tests               | Vitest + coverage, published as an artifact                         |
+| Build & bundle budget    | `npm audit --audit-level=high`, production build, size-budget check |
+| Database policies        | Row Level Security and the score RPCs, on a real Postgres           |
+| Lighthouse               | Performance & accessibility audit, 3 runs, report artifact          |
 
 [`codeql.yml`](.github/workflows/codeql.yml) runs separately, on the same
 triggers plus a weekly pass — new rules ship regularly, and code that was clean
@@ -352,8 +352,8 @@ accessibility and best practices are blocking; SEO only warns.
 | -------------- | --------- | -------- |
 | Performance    | 90        | Yes      |
 | Accessibility  | 95        | Yes      |
-| Best practices | 90        | Yes      |
-| SEO            | 90        | No       |
+| Best practices | 95        | Yes      |
+| SEO            | 95        | No       |
 
 ## Deployment
 

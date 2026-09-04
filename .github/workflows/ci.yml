@@ -189,6 +189,13 @@ jobs:
 
       - run: npm ci
 
+      # Runs on the resolved lockfile, so it catches a vulnerable transitive
+      # dependency Dependabot has not opened a PR for yet. --audit-level=high
+      # keeps the gate on what is worth blocking a merge over; moderate and
+      # below still reach Dependabot's weekly grouped PR.
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
       # Built as production is built, or the budget guards the wrong thing. With
       # no DSN the guard in monitoring.ts is statically false, the dynamic
       # import is dropped as dead code, and the Sentry chunk this measures never
