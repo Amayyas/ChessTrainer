@@ -14,7 +14,8 @@ export interface Analysis {
   pv: string[]
 }
 
-const DEFAULT_SCRIPT_URL = '/stockfish/stockfish.js'
+/** Same-origin path to the worker script; the CSP's worker-src is checked against it. */
+export const DEFAULT_SCRIPT_URL = '/stockfish/stockfish.js'
 
 /**
  * Thin wrapper around the Stockfish Web Worker. Communicates
