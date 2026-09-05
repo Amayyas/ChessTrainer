@@ -1,0 +1,23 @@
+name: Labeler
+
+# Labels a pull request from the paths it touches, using .github/labeler.yml.
+#
+# pull_request_target runs with the base repo's token and permissions even for
+# a pull request from a fork, which is what lets this label fork PRs at all.
+# That is only safe because nothing here checks out the pull request's code:
+# the action reads the changed file list from the API and never executes
+# anything from the head branch.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Label by changed paths
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0

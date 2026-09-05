@@ -1,0 +1,72 @@
+# Consumed by actions/labeler (.github/workflows/labeler.yml). Paths mirror
+# the layout documented in CLAUDE.md's "Where things live".
+#
+# Every label named below must already exist in the repository. The workflow
+# only grants pull-requests: write, not issues: write, so the action cannot
+# create a missing label — it would fail on the first PR that needed one.
+# Create a label here with `gh label create` before adding it below.
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: '**/*.md'
+
+engine:
+  - changed-files:
+      - any-glob-to-any-file: 'src/engine/**'
+
+supabase:
+  - changed-files:
+      - any-glob-to-any-file: 'supabase/**'
+
+store:
+  - changed-files:
+      - any-glob-to-any-file: 'src/store/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.ts'
+          - '**/*.test.tsx'
+
+'area: auth':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/auth/**'
+
+'area: battle':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/battle/**'
+
+'area: coach':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/coach/**'
+
+'area: home':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/home/**'
+
+'area: hunt':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/hunt/**'
+
+'area: leaderboard':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/leaderboard/**'
+
+'area: legal':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/legal/**'
+
+'area: profile':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/profile/**'
+
+'area: progression':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/progression/**'
+
+'area: puzzle':
+  - changed-files:
+      - any-glob-to-any-file: 'src/features/puzzle/**'
