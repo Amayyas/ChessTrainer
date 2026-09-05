@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type LeaderboardPeriod = 'today' | 'week' | 'all'
@@ -42,16 +42,6 @@ export function bestPerPlayer(rows: LeaderboardRow[], limit = 10): LeaderboardRo
     .slice(0, limit)
 }
 
-interface ScoreWithProfile {
-  id: number
-  user_id: string
-  piece: string
-  score: number
-  captures: number
-  played_at: string
-  profiles: { username: string; avatar_piece: string } | null
-}
-
 /**
  * The worldwide Piece Hunt leaderboard: top ten per piece or
  * overall, filtered by period, and refreshed live through Supabase Realtime.
@@ -88,7 +78,7 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
     setError(null)
     setRows(
       bestPerPlayer(
-        ((data ?? []) as unknown as ScoreWithProfile[]).map((row) => ({
+        (data ?? []).map((row) => ({
           id: row.id,
           userId: row.user_id,
           username: row.profiles?.username ?? 'Joueur',
@@ -107,20 +97,29 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
     void load()
   }, [load])
 
-  // Live updates: any new score reloads the board.
+  // The subscription below wants the current loader without being torn down
+  // and rebuilt — a websocket round trip — every time the piece or period
+  // filter changes. It reads this ref instead of closing over `load`.
+  const loadRef = useRef(load)
+  useEffect(() => {
+    loadRef.current = load
+  }, [load])
+
+  // Live updates: any new score reloads the board. One channel for the life of
+  // the hook, so switching filters costs a query, not a resubscribe.
   useEffect(() => {
     if (!supabase) return
     const channel = supabase
       .channel('scores-feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scores' }, () => {
-        void load()
+        void loadRef.current()
       })
       .subscribe()
 
     return () => {
       void supabase?.removeChannel(channel)
     }
-  }, [load])
+  }, [])
 
   return { rows, isLoading, error, reload: load }
 }

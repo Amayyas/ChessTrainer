@@ -59,9 +59,31 @@
 # threaded Stockfish build, which wants SharedArrayBuffer; this app ships the
 # single-threaded one, and those headers would constrain every asset the page
 # loads for no gain.
+#
+# The Content-Security-Policy ships in Report-Only first. The Supabase session
+# lives in localStorage (persistSession), so an XSS would be an account
+# takeover, and a CSP is the defence-in-depth that makes an injection
+# unexploitable — but it can only be enforced once a real deploy confirms
+# nothing legitimate trips it. Report-Only surfaces every violation in the
+# browser console while breaking nothing; enforce it (rename the key to
+# `Content-Security-Policy`) after a week of clean reports.
+#
+# What each source has to cover:
+#   script-src  'wasm-unsafe-eval' — Stockfish compiles a .wasm module in the
+#               worker; without it the engine fails to start under enforcement.
+#               Vite's inline module-preload polyfill also needs a hash or
+#               `modulePreload.polyfill = false` before this can go enforcing.
+#   worker-src  the engine is `new Worker('/stockfish/stockfish.js')`, same
+#               origin; `blob:` covers builds that wrap the worker.
+#   style-src   'unsafe-inline' — framer-motion and the board write inline
+#               style attributes; a nonce cannot reach them.
+#   connect-src Supabase REST + Auth (https) and Realtime (wss), and Sentry's
+#               EU ingest host. HSTS is added by Netlify when Force HTTPS is on.
 [[headers]]
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io"

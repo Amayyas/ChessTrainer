@@ -171,6 +171,32 @@ jobs:
           DATABASE_URL: postgres://postgres:test@localhost:5432/chesstrainer
         run: npm run test:rls
 
+  db-types:
+    name: Generated DB types
+    runs-on: ubuntu-latest
+
+    # src/lib/database.types.ts is what ties the client's row types to the
+    # schema: without it a renamed or dropped column fails only in the browser.
+    # It is checked in, so a migration that changes a column has to regenerate
+    # it in the same commit. This rebuilds it from the migrations — a throwaway
+    # Postgres in Docker, the Supabase CLI introspecting it, exactly as
+    # `npm run db:types` does locally — and fails on any diff.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Regenerate from the migrations
+        run: npm run db:types
+
+      - name: Fail on drift
+        run: git diff --exit-code -- src/lib/database.types.ts
+
   build:
     name: Build & bundle budget
     runs-on: ubuntu-latest

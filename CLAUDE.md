@@ -96,6 +96,9 @@ persisted and versioned state. Vitest with Testing Library; a separate
 
 Supabase provides auth, Postgres and row-level security, hosted in the EU.
 Policies are tested — `npm run test:rls` — because nothing else verifies them.
+The client's row types live in `src/lib/database.types.ts`, generated from the
+migrations by `npm run db:types` and diff-checked in CI: a migration that
+changes a column has to regenerate them in the same commit.
 
 Stockfish 11 runs single-threaded in a Web Worker. It exposes `Skill Level` but
 no `UCI_Elo`, which is why the difficulty ladder combines skill, allowed error
@@ -116,7 +119,7 @@ are indexable — the sitemap is generated from it at build time.
 ### Commands
 
 `npm run dev`, `npm run ci`, `npm run test:watch`, `npm run test:rls`,
-`npm run size`.
+`npm run size`, `npm run db:types`.
 
 ### Configuration for this agent
 
