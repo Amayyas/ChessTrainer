@@ -1,214 +1,22 @@
-import { Chess } from 'chess.js'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import QualityLegend from '@/features/coach/QualityLegend'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
 import GameSummary from '@/features/coach/GameSummary'
-import type { BattleOutcome } from '@/features/battle/useBattleGame'
-import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
-import { useChessGame } from '@/hooks/useChessGame'
-import { board } from '@/lib/design-tokens'
-import { useProgressionStore } from '@/store/useProgressionStore'
-import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
-
-const PIECE_NAMES: Record<string, string> = {
-  p: 'pion',
-  n: 'cavalier',
-  b: 'fou',
-  r: 'tour',
-  q: 'dame',
-  k: 'roi',
-}
+import { useCoachPageState } from '@/features/coach/useCoachPageState'
 
 /**
  * Coach mode: a playable board with live Stockfish analysis —
  * evaluation bar, best-move arrow, per-move classification, progressive hints,
  * an end-of-game summary and a move-by-move replay.
+ *
+ * All of the orchestration lives in useCoachPageState; this file is the view.
  */
 export default function CoachPage() {
-  const game = useChessGame()
-  const analysis = useCoachAnalysis(game, { enabled: true })
-  const [orientation, setOrientation] = useState<'white' | 'black'>('white')
-  const [hintLevel, setHintLevel] = useState(0)
-  const [replayPly, setReplayPly] = useState<number | null>(null)
-  // Best-move arrow is off by default (play your own move first) but available
-  // on demand: the arrow is meant to be toggleable, not always on.
-  const [showArrow, setShowArrow] = useState(false)
-  // "Partie" plays from the start; "Analyse libre" starts from a pasted FEN
-  // (play a full game against yourself, or analyse freely).
-  const [mode, setMode] = useState<'game' | 'analysis'>('game')
-  const [fenInput, setFenInput] = useState('')
-  const [fenError, setFenError] = useState<string | null>(null)
+  const coach = useCoachPageState()
+  const { game, analysis } = coach
 
-  useEffect(() => setHintLevel(0), [game.fen])
-
-  // A game handed over from the battle mode opens straight
-  // into replay, so it can be reviewed move by move with the annotations.
-  const location = useLocation()
-  const handedOver = location.state as {
-    pgn?: string
-    playerColor?: Color
-    levelLabel?: string
-    outcome?: BattleOutcome
-    playedAt?: string
-  } | null
-  const handedOverPgn = handedOver?.pgn
-  /**
-   * The side the player held, when this game arrived from a battle. Only those
-   * games count towards the accuracy statistic: in the coach both sides are the
-   * player's, moves can be taken back and hints asked for, so nothing measured
-   * here would say anything about how well they actually play.
-   */
-  /**
-   * The battle under review, tied to the exact game it describes.
-   *
-   * Keyed by PGN on purpose. Held loose, this metadata outlived the game it came
-   * from: switching to free analysis, loading a FEN or starting a fresh game
-   * left it in place, and the next game to finish was recorded with the previous
-   * battle's colour, level and outcome — the very thing this feature exists to
-   * prevent.
-   */
-  const reviewed = useRef<{
-    pgn: string
-    color: Color
-    level: string
-    outcome: BattleOutcome
-    playedAt: string
-  } | null>(null)
-  const loadedPgn = useRef<string | null>(null)
-  useEffect(() => {
-    if (!handedOverPgn || loadedPgn.current === handedOverPgn) return
-    loadedPgn.current = handedOverPgn
-    reviewed.current =
-      handedOver?.playerColor && handedOver.levelLabel && handedOver.outcome
-        ? {
-            pgn: handedOverPgn,
-            color: handedOver.playerColor,
-            level: handedOver.levelLabel,
-            outcome: handedOver.outcome,
-            playedAt: handedOver.playedAt ?? new Date().toISOString(),
-          }
-        : null
-    if (game.loadPgn(handedOverPgn)) {
-      setMode('game')
-      setReplayPly(0)
-    }
-  }, [handedOverPgn, handedOver, game])
-
-  const selectMode = (next: 'game' | 'analysis') => {
-    if (next === mode) return
-    setReplayPly(null)
-    setFenError(null)
-    if (next === 'game') game.reset()
-    else setFenInput(game.fen)
-    setMode(next)
-  }
-
-  const loadFen = () => {
-    const trimmed = fenInput.trim()
-    if (!createGame(trimmed)) {
-      setFenError('FEN invalide.')
-      return
-    }
-    setFenError(null)
-    setReplayPly(null)
-    game.reset(trimmed)
-  }
-
-  // FEN of each position from the start (index 0) to the latest move.
-  const plyFens = useMemo(() => {
-    if (game.history.length === 0) return [game.fen]
-    return [game.history[0]!.before, ...game.history.map((move) => move.after)]
-  }, [game.history, game.fen])
-
-  const inReplay = replayPly !== null
-  const viewFen = inReplay ? (plyFens[replayPly] ?? game.fen) : game.fen
-  const insight = inReplay
-    ? analysis.analysisAt(viewFen)
-    : { eval: analysis.currentEval, bestMove: analysis.bestMove }
-
-  const viewLastMove =
-    inReplay && replayPly > 0
-      ? { from: game.history[replayPly - 1]!.from, to: game.history[replayPly - 1]!.to }
-      : inReplay
-        ? null
-        : game.lastMove
-
-  // A finished, analysed game counts towards progression, once per game.
-  const recordCoachAnalysis = useProgressionStore((state) => state.recordCoachAnalysis)
-  const recordedGame = useRef<string | null>(null)
-  useEffect(() => {
-    if (game.sanHistory.length === 0) {
-      recordedGame.current = null
-      return
-    }
-
-    // This game is a battle under review only while it still is that game.
-    const review = reviewed.current?.pgn === game.pgn ? reviewed.current : null
-
-    // A battle can end without the board ending: resignation and timeout both
-    // hand over a position with legal moves left. Requiring a terminal position
-    // meant those games — which carry a perfectly good result — were never
-    // recorded at all.
-    if (!game.status.isOver && review === null) return
-
-    // Wait for the whole game. Stockfish works through it position by position,
-    // and the summary read too early is built from the few moves done so far —
-    // which is how a game once recorded 100%, off a single mate.
-    if (!analysis.summary.isComplete) return
-    if (recordedGame.current === game.pgn) return
-
-    recordedGame.current = game.pgn
-    const battleAccuracy =
-      review === null
-        ? null
-        : review.color === 'w'
-          ? analysis.summary.accuracyWhite
-          : analysis.summary.accuracyBlack
-    recordCoachAnalysis({
-      battleAccuracy,
-      battle: review
-        ? { level: review.level, outcome: review.outcome, playedAt: review.playedAt }
-        : undefined,
-    })
-  }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
-
-  const statusLabel = describeStatus(game.status, game.turn)
-  const statusVariant = game.status.isOver ? 'gold' : game.status.isCheck ? 'danger' : 'neutral'
-
-  const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
-  const arrows = showBestArrow
-    ? ([[insight.bestMove!.from, insight.bestMove!.to, board.arrow]] as [Square, Square, string][])
-    : undefined
-
-  const hint = useMemo(() => {
-    if (!analysis.bestMove) return null
-    const probe = new Chess(game.fen)
-    const piece = probe.get(analysis.bestMove.from)
-    let san: string | null = null
-    try {
-      san = probe.move({
-        from: analysis.bestMove.from,
-        to: analysis.bestMove.to,
-        promotion: 'q',
-      }).san
-    } catch {
-      san = null
-    }
-    return { piece: piece ? PIECE_NAMES[piece.type] : 'pièce', from: analysis.bestMove.from, san }
-  }, [analysis.bestMove, game.fen])
-
-  const hintMessages = hint
-    ? [
-        `Cherchez le meilleur coup pour votre ${hint.piece}.`,
-        `Déplacez votre ${hint.piece} depuis ${hint.from}.`,
-        hint.san ? `Le meilleur coup est ${hint.san}.` : 'Analyse en cours…',
-      ]
-    : []
-
-  const exitReplay = () => setReplayPly(null)
-  const lastPly = plyFens.length - 1
+  const inReplay = coach.inReplay
+  const statusLabel = coach.statusLabel
 
   return (
     <div>
@@ -234,19 +42,19 @@ export default function CoachPage() {
         {/* self-start keeps the eval bar tied to the board height instead of
             stretching to the (taller) side panel as the move list grows. */}
         <div className="mx-auto flex w-full max-w-[560px] gap-3 self-start">
-          <EvalBar evaluation={insight.eval} orientation={orientation} />
+          <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
           <div className="min-w-0 flex-1">
             <ChessBoard
-              fen={viewFen}
+              fen={coach.viewFen}
               turn={game.turn}
-              orientation={orientation}
+              orientation={coach.orientation}
               interactive={!inReplay}
               onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
               getLegalTargets={game.getLegalTargets}
               isPromotion={game.isPromotion}
-              lastMove={viewLastMove}
+              lastMove={coach.viewLastMove}
               checkSquare={inReplay ? null : game.checkSquare}
-              arrows={arrows}
+              arrows={coach.arrows}
             />
           </div>
         </div>
@@ -268,10 +76,10 @@ export default function CoachPage() {
                     <button
                       key={value}
                       type="button"
-                      onClick={() => selectMode(value)}
-                      aria-pressed={mode === value}
+                      onClick={() => coach.selectMode(value)}
+                      aria-pressed={coach.mode === value}
                       className={
-                        mode === value
+                        coach.mode === value
                           ? 'rounded-md bg-white px-3 py-1 text-sm font-semibold text-ebene shadow-sm'
                           : 'rounded-md px-3 py-1 text-sm font-medium text-ardoise hover:text-ebene'
                       }
@@ -281,7 +89,7 @@ export default function CoachPage() {
                   ))}
                 </div>
 
-                {mode === 'analysis' && (
+                {coach.mode === 'analysis' && (
                   <div className="mt-3">
                     <label htmlFor="fen-input" className="text-xs font-medium text-ardoise">
                       Position de départ (FEN)
@@ -289,17 +97,19 @@ export default function CoachPage() {
                     <div className="mt-1 flex gap-2">
                       <input
                         id="fen-input"
-                        value={fenInput}
-                        onChange={(event) => setFenInput(event.target.value)}
-                        onKeyDown={(event) => event.key === 'Enter' && loadFen()}
+                        value={coach.fenInput}
+                        onChange={(event) => coach.setFenInput(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && coach.loadFen()}
                         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
                         className="min-w-0 flex-1 rounded-lg border border-ebene/20 px-2 py-1.5 text-sm"
                       />
-                      <Button size="sm" onClick={loadFen}>
+                      <Button size="sm" onClick={coach.loadFen}>
                         Charger
                       </Button>
                     </div>
-                    {fenError && <p className="mt-1 text-xs text-red-600">{fenError}</p>}
+                    {coach.fenError && (
+                      <p className="mt-1 text-xs text-red-600">{coach.fenError}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -310,7 +120,7 @@ export default function CoachPage() {
                 <h2 className="mb-2 font-display text-lg font-bold text-ebene">
                   État de la partie
                 </h2>
-                <Badge variant={statusVariant}>{statusLabel}</Badge>
+                <Badge variant={coach.statusVariant}>{statusLabel}</Badge>
               </div>
             )}
 
@@ -319,17 +129,17 @@ export default function CoachPage() {
                 <h2 className="font-display text-lg font-bold text-ebene">Coups joués</h2>
                 <button
                   type="button"
-                  onClick={() => setShowArrow((v) => !v)}
+                  onClick={coach.toggleArrow}
                   className="text-xs font-semibold text-ardoise underline-offset-2 hover:text-ebene hover:underline"
-                  aria-pressed={showArrow}
+                  aria-pressed={coach.showArrow}
                 >
-                  {showArrow ? 'Masquer la flèche' : 'Afficher la flèche'}
+                  {coach.showArrow ? 'Masquer la flèche' : 'Afficher la flèche'}
                 </button>
               </div>
               <MoveHistory
                 moves={game.sanHistory}
                 qualities={analysis.qualities}
-                activeIndex={inReplay ? replayPly - 1 : undefined}
+                activeIndex={inReplay ? coach.replayPly - 1 : undefined}
               />
               <div className="mt-2">
                 <QualityLegend />
@@ -344,8 +154,8 @@ export default function CoachPage() {
                     variant="outline"
                     size="sm"
                     aria-label="Début"
-                    disabled={replayPly === 0}
-                    onClick={() => setReplayPly(0)}
+                    disabled={coach.replayPly === 0}
+                    onClick={coach.goToStart}
                   >
                     «
                   </Button>
@@ -353,8 +163,8 @@ export default function CoachPage() {
                     variant="outline"
                     size="sm"
                     aria-label="Coup précédent"
-                    disabled={replayPly === 0}
-                    onClick={() => setReplayPly((p) => Math.max(0, (p ?? 0) - 1))}
+                    disabled={coach.replayPly === 0}
+                    onClick={coach.stepBack}
                   >
                     ‹
                   </Button>
@@ -362,8 +172,8 @@ export default function CoachPage() {
                     variant="outline"
                     size="sm"
                     aria-label="Coup suivant"
-                    disabled={replayPly >= lastPly}
-                    onClick={() => setReplayPly((p) => Math.min(lastPly, (p ?? 0) + 1))}
+                    disabled={coach.replayPly >= coach.lastPly}
+                    onClick={coach.stepForward}
                   >
                     ›
                   </Button>
@@ -371,17 +181,17 @@ export default function CoachPage() {
                     variant="outline"
                     size="sm"
                     aria-label="Fin"
-                    disabled={replayPly >= lastPly}
-                    onClick={() => setReplayPly(lastPly)}
+                    disabled={coach.replayPly >= coach.lastPly}
+                    onClick={coach.goToEnd}
                   >
                     »
                   </Button>
-                  <Button variant="ghost" size="sm" className="ml-auto" onClick={exitReplay}>
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={coach.exitReplay}>
                     Quitter
                   </Button>
                 </div>
                 <p className="mt-2 text-xs text-ardoise">
-                  Coup {replayPly} / {lastPly}
+                  Coup {coach.replayPly} / {coach.lastPly}
                 </p>
               </div>
             ) : (
@@ -389,13 +199,13 @@ export default function CoachPage() {
                 {!game.status.isOver && (
                   <div>
                     <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
-                    {hintLevel === 0 ? (
+                    {coach.hintLevel === 0 ? (
                       <p className="text-sm text-ardoise">
                         Bloqué ? Révélez un indice à la fois, sans dévoiler tout le coup.
                       </p>
                     ) : (
                       <ul className="space-y-1 text-sm text-ebene">
-                        {hintMessages.slice(0, hintLevel).map((message, index) => (
+                        {coach.hintMessages.slice(0, coach.hintLevel).map((message, index) => (
                           <li key={index} className="flex gap-2">
                             <span className="font-semibold text-or">{index + 1}.</span>
                             {message}
@@ -407,12 +217,12 @@ export default function CoachPage() {
                       variant="ghost"
                       size="sm"
                       className="mt-2"
-                      disabled={!analysis.isReady || hintLevel >= 3}
-                      onClick={() => setHintLevel((level) => Math.min(3, level + 1))}
+                      disabled={!coach.canRevealHint}
+                      onClick={coach.revealHint}
                     >
-                      {hintLevel === 0
+                      {coach.hintLevel === 0
                         ? 'Demander un indice'
-                        : hintLevel >= 3
+                        : coach.hintLevel >= coach.maxHintLevel
                           ? 'Indice complet'
                           : 'Indice suivant'}
                     </Button>
@@ -428,21 +238,17 @@ export default function CoachPage() {
                   >
                     Annuler
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => game.reset()}>
+                  <Button variant="outline" size="sm" onClick={coach.newGame}>
                     Nouvelle partie
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setOrientation((o) => (o === 'white' ? 'black' : 'white'))}
-                  >
+                  <Button variant="ghost" size="sm" onClick={coach.flipBoard}>
                     Retourner le plateau
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     disabled={game.sanHistory.length === 0}
-                    onClick={() => setReplayPly(lastPly)}
+                    onClick={coach.enterReplay}
                   >
                     Revoir la partie
                   </Button>
