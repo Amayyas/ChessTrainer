@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export type LeaderboardPeriod = 'today' | 'week' | 'all'
@@ -97,20 +97,29 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
     void load()
   }, [load])
 
-  // Live updates: any new score reloads the board.
+  // The subscription below wants the current loader without being torn down
+  // and rebuilt — a websocket round trip — every time the piece or period
+  // filter changes. It reads this ref instead of closing over `load`.
+  const loadRef = useRef(load)
+  useEffect(() => {
+    loadRef.current = load
+  }, [load])
+
+  // Live updates: any new score reloads the board. One channel for the life of
+  // the hook, so switching filters costs a query, not a resubscribe.
   useEffect(() => {
     if (!supabase) return
     const channel = supabase
       .channel('scores-feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scores' }, () => {
-        void load()
+        void loadRef.current()
       })
       .subscribe()
 
     return () => {
       void supabase?.removeChannel(channel)
     }
-  }, [load])
+  }, [])
 
   return { rows, isLoading, error, reload: load }
 }
