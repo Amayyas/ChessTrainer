@@ -1,5 +1,10 @@
 # Consumed by actions/labeler (.github/workflows/labeler.yml). Paths mirror
 # the layout documented in CLAUDE.md's "Where things live".
+#
+# Every label named below must already exist in the repository. The workflow
+# only grants pull-requests: write, not issues: write, so the action cannot
+# create a missing label — it would fail on the first PR that needed one.
+# Create a label here with `gh label create` before adding it below.
 ci:
   - changed-files:
       - any-glob-to-any-file: '.github/**'
