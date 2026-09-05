@@ -7,7 +7,8 @@ import {
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
 import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
-import type { ProgressionRow } from '@/lib/supabase'
+import type { Json } from '@/lib/database.types'
+import type { ProgressionInsert, ProgressionRow } from '@/lib/supabase'
 import { ACTIVITY_KINDS, type Activity, type ActivityKind } from '@/store/useProgressionStore'
 import {
   EMPTY_STATS,
@@ -200,21 +201,29 @@ export function rowToSnapshot(row: ProgressionRow): ProgressionSnapshot {
   }
 }
 
+/**
+ * The store's documents are JSON by construction — that is what the six JSON
+ * columns on `progression` are for. The generated `Json` type rejects an
+ * interface that has no index signature, so the assertion lives here, in the
+ * one function that serialises the store to a row, rather than at each field.
+ */
+const asJson = (document: object): Json => document as unknown as Json
+
 /** The current store snapshot, shaped for an upsert into `progression`. */
 export function snapshotToRow(
   userId: string,
   snapshot: ProgressionSnapshot,
-): Omit<ProgressionRow, 'updated_at'> {
+): Omit<ProgressionInsert, 'updated_at'> {
   return {
     user_id: userId,
     xp: snapshot.xp,
-    stats: snapshot.stats,
     unlocked_badges: snapshot.unlockedBadges,
-    hunt_scores: snapshot.huntScores,
-    puzzle_progress: snapshot.puzzleProgress,
-    accuracy_history: snapshot.accuracyHistory,
-    daily_counters: snapshot.daily,
-    activity_feed: snapshot.activities,
+    stats: asJson(snapshot.stats),
+    hunt_scores: asJson(snapshot.huntScores),
+    puzzle_progress: asJson(snapshot.puzzleProgress),
+    accuracy_history: asJson(snapshot.accuracyHistory),
+    daily_counters: asJson(snapshot.daily),
+    activity_feed: asJson(snapshot.activities),
   }
 }
 

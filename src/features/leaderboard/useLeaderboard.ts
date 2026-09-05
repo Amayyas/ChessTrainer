@@ -42,16 +42,6 @@ export function bestPerPlayer(rows: LeaderboardRow[], limit = 10): LeaderboardRo
     .slice(0, limit)
 }
 
-interface ScoreWithProfile {
-  id: number
-  user_id: string
-  piece: string
-  score: number
-  captures: number
-  played_at: string
-  profiles: { username: string; avatar_piece: string } | null
-}
-
 /**
  * The worldwide Piece Hunt leaderboard: top ten per piece or
  * overall, filtered by period, and refreshed live through Supabase Realtime.
@@ -88,7 +78,7 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
     setError(null)
     setRows(
       bestPerPlayer(
-        ((data ?? []) as unknown as ScoreWithProfile[]).map((row) => ({
+        (data ?? []).map((row) => ({
           id: row.id,
           userId: row.user_id,
           username: row.profiles?.username ?? 'Joueur',
