@@ -27,12 +27,27 @@ docker run -d --name "$NAME" \
   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=chesstrainer \
   -p "$PORT":5432 postgres:16-alpine >/dev/null
 
+# The default socket check is not enough: on first boot the image runs initdb
+# behind a temporary server that answers over the socket and is then shut down
+# before the real one starts, so a check that passes there hits "the database
+# system is shutting down" a second later. That temporary server has
+# listen_addresses empty, so a TCP check (-h localhost) only ever reaches the
+# real server.
 printf 'waiting for postgres'
+ready=
 for _ in $(seq 1 60); do
-  if docker exec "$NAME" pg_isready -U postgres >/dev/null 2>&1; then break; fi
-  printf '.'; sleep 1
+  if docker exec "$NAME" pg_isready -h localhost -U postgres -d chesstrainer -q; then
+    ready=1
+    break
+  fi
+  printf '.'
+  sleep 1
 done
 echo
+[ -n "$ready" ] || {
+  echo "postgres did not accept TCP connections within 60s" >&2
+  exit 1
+}
 
 apply() {
   docker cp "$1" "$NAME":/tmp/apply.sql >/dev/null
