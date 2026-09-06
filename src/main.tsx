@@ -3,12 +3,15 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from '@/App'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { installChunkReloadHandler } from '@/lib/chunkReload'
 import { bufferEarlyErrors, reportError, startMonitoring } from '@/lib/monitoring'
 import '@/lib/fonts'
 import '@/index.css'
 
 // Before anything else runs, so a failure during startup is still caught.
 bufferEarlyErrors()
+// A route chunk that 404s after a deploy: reload once for fresh HTML.
+installChunkReloadHandler()
 
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root element not found in index.html')

@@ -79,9 +79,16 @@
 #               style attributes; a nonce cannot reach them.
 #   connect-src Supabase REST + Auth (https) and Realtime (wss), and Sentry's
 #               EU ingest host. HSTS is added by Netlify when Force HTTPS is on.
+#
+# Cache-Control here is the fallback for everything the two rules above do not
+# claim — the HTML documents most of all. They must be revalidated on every
+# load so a client that kept an old index.html cannot go on requesting route
+# chunks whose fingerprints changed in a deploy. The fingerprinted assets keep
+# their year-long immutable cache from the more specific rule.
 [[headers]]
   for = "/*"
   [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"

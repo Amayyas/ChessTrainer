@@ -101,4 +101,13 @@ describe('global response headers', () => {
       expect(permissions).toMatch(new RegExp(`${feature}=\\(\\)`))
     }
   })
+
+  it('makes the fallback (the HTML) revalidate every load', () => {
+    // A client holding an old index.html would keep asking for route chunks
+    // whose fingerprints changed in a deploy. The immutable rule for
+    // /assets/* is more specific and still wins for the fingerprinted files.
+    const cacheControl = /Cache-Control = "([^"]+)"/.exec(values)?.[1] ?? ''
+    expect(cacheControl).toMatch(/max-age=0/)
+    expect(cacheControl).toMatch(/must-revalidate|no-cache/)
+  })
 })

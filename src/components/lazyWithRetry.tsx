@@ -5,12 +5,12 @@ type PageModule = { default: ComponentType }
 /**
  * `React.lazy` that retries the dynamic import before giving up.
  *
- * A route chunk fetch fails for reasons that clear on a second try: a flaky
- * connection, or — the common one — a deploy that replaced the fingerprinted
- * file in the window between this page loading and the navigation. Left to
- * `React.lazy` alone the first failure throws straight to the route boundary;
- * with a retry the transient case recovers on its own and only a real outage
- * reaches the player.
+ * This covers a transient failure — a flaky connection, a chunk request that
+ * times out — where a second attempt at the same URL succeeds. It does not
+ * cover a chunk that is genuinely gone after a deploy: React caches the
+ * rejection and the URL stays dead, so the retry loop cannot help. That case
+ * is handled separately by the `vite:preloadError` reload in lib/chunkReload,
+ * which gets fresh HTML with the new fingerprints.
  */
 export function lazyWithRetry(
   factory: () => Promise<PageModule>,
