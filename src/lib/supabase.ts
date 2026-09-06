@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -33,8 +34,8 @@ function readAuthLinkType(): 'recovery' | 'signup' | null {
 
 export const authLinkType = readAuthLinkType()
 
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url!, anonKey!, {
+export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
+  ? createClient<Database>(url!, anonKey!, {
       auth: {
         persistSession: true,
         // The JWT refreshes itself client-side.
@@ -57,41 +58,41 @@ export const AVATAR_GLYPHS: Record<AvatarPiece, string> = {
   p: '♟',
 }
 
-export interface Profile {
-  id: string
-  username: string
+/**
+ * Row shapes, derived from the generated schema rather than restated, so a
+ * migration that renames or drops a column fails the typecheck here — and in
+ * every query builder, since the client above carries `Database` — instead of
+ * in the browser. Regenerate with `npm run db:types` after a migration.
+ */
+type Tables = Database['public']['Tables']
+
+/** `profiles`, with avatar_piece narrowed to the six symbols the column allows. */
+export interface Profile extends Omit<Tables['profiles']['Row'], 'avatar_piece'> {
   avatar_piece: AvatarPiece
-  created_at: string
 }
 
-export interface ScoreRow {
-  id: number
-  user_id: string
-  piece: string
-  score: number
-  captures: number
-  played_at: string
-}
+export type ScoreRow = Tables['scores']['Row']
+
+/** The six JSON columns on `progression`, each a whole document from the store. */
+type ProgressionJsonColumn =
+  | 'stats'
+  | 'hunt_scores'
+  | 'puzzle_progress'
+  | 'accuracy_history'
+  | 'daily_counters'
+  | 'activity_feed'
 
 /**
  * The account's copy of the progression store, so XP, badges and statistics
- * follow the player across devices. `stats` holds
- * the whole ProgressionStats object as one JSON document.
+ * follow the player across devices.
+ *
+ * The scalar columns keep their generated types, so a column renamed or retyped
+ * in a migration fails the typecheck. The JSON columns are widened to `unknown`:
+ * they come back from a column any client can write, and sync.ts folds each onto
+ * a known shape at read time rather than trusting its contents.
  */
-export interface ProgressionRow {
-  user_id: string
-  xp: number
-  stats: unknown
-  unlocked_badges: string[]
-  /** Best hunt rounds per champion, as one JSON document. */
-  hunt_scores: unknown
-  /** Daily puzzle streak and totals, as one JSON document. */
-  puzzle_progress: unknown
-  /** One entry per reviewed battle, newest first, as one JSON document. */
-  accuracy_history: unknown
-  /** The day's challenge counters, as one JSON document. */
-  daily_counters: unknown
-  /** The recent activity feed, newest first, as one JSON document. */
-  activity_feed: unknown
-  updated_at: string
-}
+export type ProgressionRow = Omit<Tables['progression']['Row'], ProgressionJsonColumn> &
+  Record<ProgressionJsonColumn, unknown>
+
+/** The shape `snapshotToRow` builds for an upsert into `progression`. */
+export type ProgressionInsert = Tables['progression']['Insert']

@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { lazyWithRetry } from '@/components/lazyWithRetry'
 import AppLayout from '@/components/Layout/AppLayout'
 import RouteFallback from '@/components/Layout/RouteFallback'
 import RequireAuth from '@/features/auth/RequireAuth'
@@ -15,20 +16,20 @@ import { useAuthStore } from '@/store/useAuthStore'
 // split out, the dashboard included: it is behind a visit to '/dashboard', not
 // the address a new visitor or a crawler lands on, so it has no claim on the
 // initial bundle.
-const DashboardPage = lazy(() => import('@/features/home/HomePage'))
-const CoachPage = lazy(() => import('@/features/coach/CoachPage'))
-const BattlePage = lazy(() => import('@/features/battle/BattlePage'))
-const PuzzlePage = lazy(() => import('@/features/puzzle/PuzzlePage'))
-const HuntPage = lazy(() => import('@/features/hunt/HuntPage'))
-const LeaderboardPage = lazy(() => import('@/features/leaderboard/LeaderboardPage'))
-const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'))
-const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
-const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'))
-const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'))
-const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'))
-const NotFoundPage = lazy(() => import('@/features/NotFoundPage'))
-const LegalPage = lazy(() => import('@/features/legal/LegalPage'))
-const PrivacyPage = lazy(() => import('@/features/legal/PrivacyPage'))
+const DashboardPage = lazyWithRetry(() => import('@/features/home/HomePage'))
+const CoachPage = lazyWithRetry(() => import('@/features/coach/CoachPage'))
+const BattlePage = lazyWithRetry(() => import('@/features/battle/BattlePage'))
+const PuzzlePage = lazyWithRetry(() => import('@/features/puzzle/PuzzlePage'))
+const HuntPage = lazyWithRetry(() => import('@/features/hunt/HuntPage'))
+const LeaderboardPage = lazyWithRetry(() => import('@/features/leaderboard/LeaderboardPage'))
+const ProfilePage = lazyWithRetry(() => import('@/features/profile/ProfilePage'))
+const LoginPage = lazyWithRetry(() => import('@/features/auth/LoginPage'))
+const RegisterPage = lazyWithRetry(() => import('@/features/auth/RegisterPage'))
+const ForgotPasswordPage = lazyWithRetry(() => import('@/features/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazyWithRetry(() => import('@/features/auth/ResetPasswordPage'))
+const NotFoundPage = lazyWithRetry(() => import('@/features/NotFoundPage'))
+const LegalPage = lazyWithRetry(() => import('@/features/legal/LegalPage'))
+const PrivacyPage = lazyWithRetry(() => import('@/features/legal/PrivacyPage'))
 
 export default function App() {
   const initialise = useAuthStore((state) => state.initialise)

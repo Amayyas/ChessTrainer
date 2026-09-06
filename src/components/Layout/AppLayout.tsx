@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Link, useLocation, useOutlet } from 'react-router-dom'
+import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 import BottomBar from '@/components/Layout/BottomBar'
 import Sidebar from '@/components/Layout/Sidebar'
 import SkipLink from '@/components/Layout/SkipLink'
@@ -29,7 +30,10 @@ export default function AppLayout() {
               exit="exit"
               transition={pageTransition}
             >
-              {outlet}
+              {/* Catches a chunk that failed to load, or a page that threw,
+                  without losing the shell around it. Remounts with the
+                  motion.div on every navigation, so it never sticks. */}
+              <RouteErrorBoundary>{outlet}</RouteErrorBoundary>
             </motion.div>
           </AnimatePresence>
 

@@ -168,9 +168,21 @@ export default defineConfig(({ mode, isSsrBuild }) => {
         exclude: [
           'src/main.tsx',
           'src/vite-env.d.ts',
+          'src/lib/database.types.ts',
           'src/test/**',
           'src/**/*.{test,spec}.{ts,tsx}',
         ],
+        // A few points below the current totals — measured, not aspirational:
+        // enough headroom that adding one lightly tested component does not
+        // fail the build, tight enough that deleting a tested module, or
+        // landing a feature with no tests, does. Ratchet up when the real
+        // numbers move, never down to make a red run green.
+        thresholds: {
+          statements: 73,
+          branches: 59,
+          functions: 73,
+          lines: 74,
+        },
       },
     },
   }
