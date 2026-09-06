@@ -138,10 +138,14 @@ about the first time it starts here.
 
 `rules/*.md` are instructions scoped to file paths through their `paths`
 frontmatter. They load when a matching file is opened rather than at startup,
-which is what keeps this file short.
+which is what keeps this file short — the engine calibration, the test
+procedure, and the migration rules each live next to the code they govern.
 
-`skills/pr-ready/` is the `/pr-ready` command: it queries the four conditions
-that block a merge and reports each with its evidence.
+`skills/*` are the slash commands. `/pr-ready` queries the four conditions that
+block a merge and reports each with its evidence. `/verify-test` runs the
+"prove the test can fail" procedure — anchor, mutation, red run, restore — and
+reports the quoted failure. `/deploy-budget` measures the Netlify credit
+position rather than trusting the figures written above.
 
 `settings.local.json`, if it exists, is personal and gitignored.
 
