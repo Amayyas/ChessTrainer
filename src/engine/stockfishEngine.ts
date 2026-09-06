@@ -75,6 +75,13 @@ export class StockfishEngine {
   private queue: Promise<unknown> = Promise.resolve()
   private readonly initTimeoutMs: number
   private readonly analysisTimeoutMs: number
+  /**
+   * Bumped every time the worker is discarded. A timeout started against one
+   * worker must not tear down its replacement: when dispose() or an earlier
+   * timeout has already recycled, the stale timer's expiry finds a newer
+   * generation and does nothing but reject its own promise.
+   */
+  private generation = 0
 
   constructor(
     private readonly scriptUrl: string = DEFAULT_SCRIPT_URL,
@@ -86,12 +93,18 @@ export class StockfishEngine {
 
   /** Discards the worker and any pending readiness, so the next call boots afresh. */
   private recycleWorker(): void {
+    this.generation += 1
     if (this.worker) {
       this.worker.terminate()
       this.worker = null
     }
     this.listeners.clear()
     this.readyPromise = null
+  }
+
+  /** Recycles only if nothing has replaced the worker this timeout was watching. */
+  private recycleIfCurrent(generation: number): void {
+    if (this.generation === generation) this.recycleWorker()
   }
 
   private ensureWorker(): Worker {
@@ -146,10 +159,11 @@ export class StockfishEngine {
     // A worker that boots but never reports readiness would hang every
     // analyze() at `await this.init()`. Discard it on timeout so a retry — the
     // coach makes several — gets a fresh one instead of the same dead worker.
+    const generation = this.generation
     this.readyPromise = withTimeout(
       ready,
       this.initTimeoutMs,
-      () => this.recycleWorker(),
+      () => this.recycleIfCurrent(generation),
       `Stockfish did not report readiness within ${this.initTimeoutMs}ms`,
     )
     return this.readyPromise
@@ -208,10 +222,11 @@ export class StockfishEngine {
       // running. On timeout the worker is discarded and the rejection reaches
       // useStockfish as a null result, which the coach already treats as a
       // refusal and retries.
+      const generation = this.generation
       return withTimeout(
         search,
         this.analysisTimeoutMs,
-        () => this.recycleWorker(),
+        () => this.recycleIfCurrent(generation),
         `Stockfish analysis timed out after ${this.analysisTimeoutMs}ms`,
       )
     }

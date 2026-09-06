@@ -106,4 +106,32 @@ describe('StockfishEngine', () => {
     expect(workers).toHaveLength(1)
     expect(workers[0]?.terminated).toBe(false)
   })
+
+  it('a timeout left over from a disposed worker does not tear down its replacement', async () => {
+    behaviour = 'no-bestmove'
+    const engine = new StockfishEngine('/x/stockfish.js', {
+      analysisTimeoutMs: 50,
+      initTimeoutMs: 50,
+    })
+
+    const first = engine.analyze('fen', 12)
+    const firstRejects = expect(first).rejects.toThrow(/timed out/)
+    // Let the worker boot and the search start before pulling it out.
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    engine.dispose()
+    expect(workers[0]?.terminated).toBe(true)
+
+    // A fresh analyse gets a new worker while the first timeout is still armed.
+    behaviour = 'ready'
+    const analysis = await engine.analyze('fen', 12)
+    expect(analysis.bestMove).toBe('e2e4')
+    expect(workers).toHaveLength(2)
+
+    // Let the stale timeout fire: it must leave the replacement alone.
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    expect(workers[1]?.terminated).toBe(false)
+
+    await firstRejects
+  })
 })
