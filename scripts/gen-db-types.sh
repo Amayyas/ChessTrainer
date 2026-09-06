@@ -4,9 +4,13 @@
 # The Supabase row types the client relies on were maintained by hand, so a
 # renamed or dropped column would not fail `npm run typecheck` — it would fail
 # in the browser, which is exactly the class of bug this project keeps being
-# bitten by. This brings up a throwaway Postgres, applies the bootstrap and
-# every migration in the order a fresh project would, and lets the Supabase CLI
-# introspect the result. CI runs the same script and fails on any diff.
+# bitten by. Run this after any migration that changes a column. It brings up a
+# throwaway Postgres, applies the bootstrap and every migration in the order a
+# fresh project would, and lets the Supabase CLI introspect the result.
+#
+# CI does not run this (it needs Docker and a CLI download); instead
+# database.types.test.ts replays the migrations in plain Node and fails if the
+# committed file's columns have drifted from them.
 #
 # Pinned CLI version: the generator's output changes between releases, so an
 # unpinned run would rewrite the file on someone else's machine for no reason.

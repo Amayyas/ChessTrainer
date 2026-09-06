@@ -66,7 +66,6 @@ describe('CI installs with a pinned npm', () => {
       'quality-matrix',
       'test',
       'policies',
-      'db-types',
       'build',
       'lighthouse',
     ])
