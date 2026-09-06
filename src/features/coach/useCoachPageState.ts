@@ -109,7 +109,10 @@ export function useCoachPageState() {
 
   const loadFen = useCallback(() => {
     const trimmed = fenInput.trim()
-    if (!createGame(trimmed)) {
+    // createGame('') hands back a default game rather than null, so an empty
+    // box would clear the error and then game.reset('') would be swallowed —
+    // the button looks like it did nothing.
+    if (!trimmed || !createGame(trimmed)) {
       setFenError('FEN invalide.')
       return
     }

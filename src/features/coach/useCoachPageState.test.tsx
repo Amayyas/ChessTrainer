@@ -75,20 +75,29 @@ describe('useCoachPageState', () => {
 
     act(() => result.current.game.move('e2', 'e4'))
     act(() => result.current.selectMode('analysis'))
-    expect(result.current.fenInput).toContain('rnbqkbnr/pppppppp') // after 1.e4, black to move
-    expect(result.current.fenInput).toContain(' b ')
+    // The box is seeded with the exact position, since loadFen replays it back.
+    expect(result.current.fenInput).toBe(result.current.game.fen)
 
     act(() => result.current.selectMode('game'))
     expect(result.current.game.sanHistory).toEqual([])
   })
 
-  it('rejects an invalid FEN and keeps the game untouched', () => {
+  it('rejects an invalid or empty FEN and keeps the game untouched', () => {
     const { result } = renderHook(() => useCoachPageState(), { wrapper: withRouter() })
     act(() => result.current.selectMode('analysis'))
+
     act(() => result.current.setFenInput('not a fen'))
     act(() => result.current.loadFen())
     expect(result.current.fenError).toBe('FEN invalide.')
+
+    // createGame('') returns a default game, so an empty box has to be caught
+    // on its own or the click silently does nothing.
+    act(() => result.current.setFenInput('   '))
+    act(() => result.current.loadFen())
+    expect(result.current.fenError).toBe('FEN invalide.')
+
     expect(result.current.game.turn).toBe('w')
+    expect(result.current.game.sanHistory).toEqual([])
   })
 
   it('reveals hints up to the cap and resets them when the position changes', () => {
