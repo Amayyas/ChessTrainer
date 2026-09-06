@@ -39,11 +39,12 @@ Pick the exact string in the **source** that the test's assertion stands on — 
 condition, a guard, a returned literal. Confirm it is there:
 
 ```bash
-grep -q '<anchor>' <source-file> || echo 'ANCHOR NOT FOUND — a mutation here would match nothing'
+grep -q '<anchor>' <source-file> || { echo 'ANCHOR NOT FOUND — a mutation here would match nothing'; exit 1; }
 ```
 
 An edit that matches nothing produces a green run indistinguishable from a
-passing check. If the anchor is not found, the mutation is wrong — rethink it.
+passing check, so this stops rather than warns — as `rules/testing.md` does. A
+non-zero exit here means the anchor is wrong: rethink it before going on.
 
 ## 3. Mutate the source, never the test
 
