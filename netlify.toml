@@ -64,9 +64,15 @@
 # lives in localStorage (persistSession), so an XSS would be an account
 # takeover, and a CSP is the defence-in-depth that makes an injection
 # unexploitable — but it can only be enforced once a real deploy confirms
-# nothing legitimate trips it. Report-Only surfaces every violation in the
-# browser console while breaking nothing; enforce it (rename the key to
-# `Content-Security-Policy`) after a week of clean reports.
+# nothing legitimate trips it.
+#
+# There is no `report-to` endpoint: Netlify offers no report sink and this file
+# cannot interpolate the Sentry DSN (which lives in an env var). Verification is
+# manual — open the deployed site, exercise every mode, and read the browser
+# console for `Report Only` violations. Enough traffic to matter goes through
+# the author's own browser at this stage. Wire Sentry's security endpoint as a
+# real sink before enforcing if that stops being true. Enforce (rename the key
+# to `Content-Security-Policy`) once a pass comes back clean.
 #
 # What each source has to cover:
 #   script-src  'wasm-unsafe-eval' — Stockfish compiles a .wasm module in the
