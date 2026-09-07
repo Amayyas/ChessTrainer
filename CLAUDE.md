@@ -53,6 +53,9 @@ through every unrelated session.
 - Releases are handled by release-please: it keeps one open "release PR" that
   bumps the version and updates `CHANGELOG.md`; merging it tags the commit.
   `feat` moves the minor, `fix`/`perf` the patch, everything else rides along.
+  It needs a `RELEASE_PLEASE_TOKEN` secret (a fine-grained PAT, Contents +
+  Pull requests write) — without it the release PR opens but CI will not run
+  on it until someone approves the run by hand.
 - **Never call a PR ready without querying its state.** Run `/pr-ready`, which
   checks all four blocking conditions — checks, approvals, branch freshness,
   unresolved threads — and confirms the state is stable across more than one
