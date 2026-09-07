@@ -3,32 +3,19 @@
 # bootstrap and every migration in order — the same order a fresh Supabase
 # project would see, which is the point: the tests must run against what a
 # deployment actually gets, not a hand-written copy of it.
+#
+# Leaves the container running so `npm run test:watch`-style loops reuse it.
+# `npm run ci` calls this then `npm run test:rls`; a stray container is
+# harmless and the next run removes it.
 set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# shellcheck source=scripts/pg-lib.sh
+source scripts/pg-lib.sh
 
 NAME=${RLS_DB_CONTAINER:-chesstrainer-rls}
 PORT=${RLS_DB_PORT:-55432}
 
-docker rm -f "$NAME" >/dev/null 2>&1 || true
-docker run -d --name "$NAME" \
-  -e POSTGRES_PASSWORD=test -e POSTGRES_DB=chesstrainer \
-  -p "$PORT":5432 postgres:16-alpine >/dev/null
-
-printf 'waiting for postgres'
-for _ in $(seq 1 60); do
-  if docker exec "$NAME" pg_isready -U postgres >/dev/null 2>&1; then break; fi
-  printf '.'; sleep 1
-done
-echo
-
-apply() {
-  docker cp "$1" "$NAME":/tmp/apply.sql >/dev/null
-  docker exec -i "$NAME" psql -U postgres -d chesstrainer -v ON_ERROR_STOP=1 -q -f /tmp/apply.sql
-}
-
-apply supabase/tests/bootstrap.sql
-for file in supabase/migrations/*.sql; do
-  echo "applying $(basename "$file")"
-  apply "$file"
-done
+pg_up "$NAME" "$PORT"
 
 echo "ready on postgres://postgres:test@localhost:$PORT/chesstrainer"
