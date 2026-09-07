@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Shared by rls-db.sh and gen-db-types.sh — source it, do not run it.
 #
 # `pg_up <container-name> <host-port>` removes any old container of that name,
@@ -20,7 +21,7 @@ pg_up() {
   # has listen_addresses empty, so a TCP check (-h localhost) only ever reaches
   # the real one, and querying the target database confirms it was created.
   printf 'waiting for postgres'
-  local ready= _
+  local ready='' _
   for _ in $(seq 1 60); do
     if docker exec "$name" pg_isready -h localhost -U postgres -d chesstrainer -q; then
       ready=1

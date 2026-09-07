@@ -254,3 +254,26 @@ jobs:
           name: lighthouse-report
           path: .lighthouseci/report/
           retention-days: 7
+
+  lint-ci:
+    name: Lint scripts & workflows
+    runs-on: ubuntu-latest
+    # A renamed matrix job once left branch protection waiting on a check that
+    # would never report again; a fat-fingered `uses:` or an unquoted glob in a
+    # run block is the same class of mistake. actionlint reads the workflows and
+    # shellcheck the scripts — neither needs the project installed.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: shellcheck
+        # -x so the two db scripts' `source scripts/pg-lib.sh` is followed.
+        run: git ls-files -z '*.sh' | xargs -0 shellcheck -x
+
+      - name: actionlint
+        run: |
+          bash <(curl -sSfL \
+            https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) \
+            1.7.7
+          ./actionlint -color
