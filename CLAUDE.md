@@ -45,7 +45,8 @@ through every unrelated session.
 ## Pull requests
 
 - `npm run ci` must pass locally before pushing. It runs format, lint,
-  typecheck, tests, build and the bundle size budget.
+  typecheck, the browser tests, the database policy tests (which need Docker —
+  it brings up its own Postgres), build and the bundle size budget.
 - `main` is protected: checks must pass, the branch must be current, and every
   review thread must be resolved.
 - **Never call a PR ready without querying its state.** Run `/pr-ready`, which

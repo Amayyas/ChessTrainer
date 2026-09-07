@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "size": "node scripts/check-bundle-size.mjs",
-    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build && npm run size",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run ci:rls && npm run build && npm run size",
+    "ci:rls": "bash scripts/rls-db.sh && npm run test:rls",
     "test:rls": "vitest run --config vitest.rls.config.ts",
     "db:test": "bash scripts/rls-db.sh",
     "db:types": "bash scripts/gen-db-types.sh"
