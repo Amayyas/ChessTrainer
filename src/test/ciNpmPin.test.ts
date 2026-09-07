@@ -69,6 +69,7 @@ describe('CI installs with a pinned npm', () => {
       'build',
       'lighthouse',
       'lint-ci',
+      'e2e',
     ])
   })
 
@@ -103,6 +104,7 @@ describe('CI installs with a pinned npm', () => {
       'policies',
       'build',
       'lighthouse',
+      'e2e',
     ])
   })
 })

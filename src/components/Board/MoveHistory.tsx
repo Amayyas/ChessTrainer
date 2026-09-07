@@ -76,7 +76,11 @@ export default function MoveHistory({
   }
 
   return (
-    <ol ref={scrollRef} className={cn('max-h-72 overflow-y-auto pr-1', className)}>
+    <ol
+      ref={scrollRef}
+      data-testid="move-history"
+      className={cn('max-h-72 overflow-y-auto pr-1', className)}
+    >
       {pairs.map((pair) => {
         const whiteIndex = (pair.number - 1) * 2
         const blackIndex = whiteIndex + 1

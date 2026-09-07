@@ -277,3 +277,41 @@ jobs:
             https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) \
             1.7.7
           ./actionlint -color
+
+  e2e:
+    name: Browser smoke
+    runs-on: ubuntu-latest
+    # jsdom stubs Worker and ResizeObserver, so the board, a played move and the
+    # engine actually running are covered nowhere else. Runs a headless Chromium
+    # against the built dist/, served the way Netlify serves it.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pin npm
+        run: npm i -g npm@${{ env.NPM_VERSION }}
+
+      - run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke tests
+        run: npm run test:e2e
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
