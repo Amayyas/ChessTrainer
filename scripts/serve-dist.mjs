@@ -17,7 +17,7 @@
  * Usage: node scripts/serve-dist.mjs [port]   (default 4173)
  */
 import { createServer } from 'node:http'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { extname, join, normalize, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
@@ -44,9 +44,10 @@ const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.xml', '
 /** `/assets/index-abc.js` -> { raw, gzip }, for every file under dist/. */
 const files = new Map()
 ;(function load(dir) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry)
-    if (statSync(full).isDirectory()) {
+  // withFileTypes so there is no stat between "is this a file" and reading it.
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) {
       load(full)
       continue
     }

@@ -103,9 +103,12 @@ check('the HTML is revalidated, the fingerprinted assets are immutable', async (
 check('the old netlify.app host redirects to the domain', async () => {
   const res = await fetch('https://chesstrainer-ai.netlify.app/', { redirect: 'manual' })
   assert([301, 308].includes(res.status), `expected a permanent redirect, got ${res.status}`)
+  const target = res.headers.get('location') ?? ''
+  // Compare the parsed origin, not a prefix: `https://chesstrainer.fr.evil.com`
+  // starts with the domain too.
   assert(
-    (res.headers.get('location') ?? '').startsWith('https://chesstrainer.fr'),
-    `redirects to ${res.headers.get('location')}, not the domain`,
+    URL.canParse(target) && new URL(target).origin === BASE,
+    `redirects to ${target || '(nothing)'}, not ${BASE}`,
   )
 })
 
