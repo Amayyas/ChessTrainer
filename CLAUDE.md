@@ -143,7 +143,9 @@ which is what keeps this file short — the engine calibration, the test
 procedure, and the migration rules each live next to the code they govern.
 
 `skills/*` are the slash commands. `/pr-ready` queries the four conditions that
-block a merge and reports each with its evidence. `/verify-test` runs the
+block a merge and reports each with its evidence; `/main-green` is its
+counterpart for after the merge — the CI run for main's current tip and the
+scheduled workflows that go red on their own schedule. `/verify-test` runs the
 "prove the test can fail" procedure — anchor, mutation, red run, restore — and
 reports the quoted failure. `/deploy-budget` measures the Netlify credit
 position rather than trusting the figures written above.
