@@ -4,16 +4,23 @@
 # It maintains one open "release PR" that accumulates the changes since the last
 # release and bumps package.json. Merging that PR tags the commit (vX.Y.Z),
 # publishes a GitHub release, and updates CHANGELOG.md. Nothing is released
-# automatically — the PR is the gate, and it runs the same CI as any other.
+# automatically — the PR is the gate.
 #
 # Only feat / fix / perf move the version; chore, ci, test, build, docs and
 # refactor ride along in the changelog (feat -> minor, fix|perf -> patch), so a
 # batch of tooling work alone opens no release PR.
+#
+# RELEASE_PLEASE_TOKEN: a fine-grained PAT with Contents + Pull requests write.
+# Without it the action falls back to GITHUB_TOKEN, which still opens the PR —
+# but GitHub will not run the required CI checks on a PR the Actions token
+# created, so the release PR sits un-mergeable until someone approves the run by
+# hand. With the PAT the PR is "from a user" and CI runs like any other.
 name: Release please
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,5 +33,6 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
