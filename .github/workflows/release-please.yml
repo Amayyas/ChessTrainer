@@ -1,0 +1,30 @@
+# Turns the Conventional Commits history into tags, GitHub releases and a
+# CHANGELOG.
+#
+# It maintains one open "release PR" that accumulates the changes since the last
+# release and bumps package.json. Merging that PR tags the commit (vX.Y.Z),
+# publishes a GitHub release, and updates CHANGELOG.md. Nothing is released
+# automatically — the PR is the gate, and it runs the same CI as any other.
+#
+# Only feat / fix / perf move the version; chore, ci, test, build, docs and
+# refactor ride along in the changelog (feat -> minor, fix|perf -> patch), so a
+# batch of tooling work alone opens no release PR.
+name: Release please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release PR / tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

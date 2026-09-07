@@ -45,10 +45,14 @@ through every unrelated session.
 ## Pull requests
 
 - `npm run ci` must pass locally before pushing. It runs format, lint,
-  typecheck, the browser tests, the database policy tests (which need Docker —
-  it brings up its own Postgres), build and the bundle size budget.
+  typecheck, the jsdom tests, the database policy tests (which need Docker — it
+  brings up its own Postgres), build and the bundle size budget. The Playwright
+  smoke tests (`npm run test:e2e`) are a CI job of their own, not part of it.
 - `main` is protected: checks must pass, the branch must be current, and every
   review thread must be resolved.
+- Releases are handled by release-please: it keeps one open "release PR" that
+  bumps the version and updates `CHANGELOG.md`; merging it tags the commit.
+  `feat` moves the minor, `fix`/`perf` the patch, everything else rides along.
 - **Never call a PR ready without querying its state.** Run `/pr-ready`, which
   checks all four blocking conditions — checks, approvals, branch freshness,
   unresolved threads — and confirms the state is stable across more than one
