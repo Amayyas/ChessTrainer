@@ -1,0 +1,35 @@
+# Checks the deployed frontend, the way keepalive.yml checks the backend.
+#
+# A Netlify deploy can succeed and still ship a broken SPA rewrite, a sitemap
+# that 404s, or drop the security headers. Nothing surfaced that — a visitor
+# would find it first.
+#
+# Run by hand after a deploy. The schedule is left commented until the current
+# main is actually deployed: builds are paused (see CLAUDE.md, "Deploy budget"),
+# so the live site is several releases behind and a scheduled run would just be
+# red every six hours. Uncomment it once a deploy passes this by hand.
+name: Site check
+
+on:
+  workflow_dispatch:
+    inputs:
+      base-url:
+        description: Base URL to check
+        default: https://chesstrainer.fr
+  # schedule:
+  #   - cron: '43 */6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check the deployed site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: check-deployed
+        run: node scripts/check-deployed.mjs "${{ inputs.base-url || 'https://chesstrainer.fr' }}"
