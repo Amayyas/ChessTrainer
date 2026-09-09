@@ -6,7 +6,7 @@ import {
   sortNewestFirst,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
-import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/progress'
 import type { Json } from '@/lib/database.types'
 import type { ProgressionInsert, ProgressionRow } from '@/lib/supabase'
 import { ACTIVITY_KINDS, type Activity, type ActivityKind } from '@/store/useProgressionStore'

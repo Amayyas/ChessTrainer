@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { XP_REWARDS, huntXp } from '@/features/progression/levels'
 import { emptyCounters } from '@/features/progression/challenges'
-import { EMPTY_PROGRESS, dayKey } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, dayKey } from '@/features/puzzle/progress'
 import { EMPTY_STATS, useProgressionStore } from '@/store/useProgressionStore'
 
 const store = () => useProgressionStore.getState()

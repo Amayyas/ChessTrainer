@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rowToSnapshot, snapshotKey, snapshotToRow } from '@/features/progression/sync'
 import { emptyCounters } from '@/features/progression/challenges'
-import { EMPTY_PROGRESS as EMPTY_PUZZLE_PROGRESS } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS as EMPTY_PUZZLE_PROGRESS } from '@/features/puzzle/progress'
 import type { ProgressionRow } from '@/lib/supabase'
 import { EMPTY_STATS, type ProgressionSnapshot } from '@/store/useProgressionStore'
 

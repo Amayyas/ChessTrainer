@@ -1,13 +1,8 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseUciMove } from '@/engine/uci'
-import {
-  DAILY_COUNT,
-  dailyPuzzles,
-  dayKey,
-  recordSolved,
-  type PuzzleProgress,
-} from '@/features/puzzle/dailySet'
+import { DAILY_COUNT, dailyPuzzles } from '@/features/puzzle/dailySet'
+import { dayKey, recordSolved, type PuzzleProgress } from '@/features/puzzle/progress'
 import type { Puzzle } from '@/features/puzzle/types'
 import type { PieceSymbol, Square } from '@/utils/chess'
 import { useProgressionStore } from '@/store/useProgressionStore'

@@ -1,4 +1,4 @@
-import { dayKey } from '@/features/puzzle/dailySet'
+import { dayKey } from '@/features/puzzle/progress'
 
 /** Counters that reset every calendar day, feeding the daily challenges. */
 export interface DailyCounters {
