@@ -30,7 +30,14 @@ const BUDGETS = {
   // HCE build. The budget leaves ~10% headroom; a jump past it means the net
   // changed.
   stockfish: { label: 'Stockfish (on demand)', maxGzipKb: 6 * KB },
+  // The puzzle dataset, bundled into the lazy PuzzlePage chunk. It must not be
+  // in the initial JS (a stray eager import of dailySet.ts once dragged the
+  // whole array into the entry chunk), and it is capped well above the ~1500
+  // puzzles the importer targets so a runaway pool trips it.
+  puzzles: { label: 'Puzzles (on demand)', maxGzipKb: 120 },
 }
+
+const PUZZLE_SRC = fileURLToPath(new URL('../src/features/puzzle/puzzles.ts', import.meta.url))
 
 const gzipKb = (file) => gzipSync(readFileSync(join(DIST, file))).length / KB
 
@@ -71,11 +78,45 @@ const initialCss = new Set()
 
 const allFiles = walk(DIST)
 const stockfish = allFiles.filter((f) => /stockfish/i.test(f))
-// Lazy route chunks: application .js outside the initial set. Stockfish is
-// excluded — it has its own budget, and it is the engine worker, not a route.
-const lazyJs = allFiles.filter(
-  (f) => f.endsWith('.js') && !initialJs.has(f) && !/stockfish/i.test(f),
-)
+// App JS only: the Stockfish worker is not a route chunk and carries no app code.
+const appJs = allFiles.filter((f) => f.endsWith('.js') && !/stockfish/i.test(f))
+
+// The control, read before any budget number: the puzzle dataset stays out of
+// the first-load bundle. A size table that all reads "OK" means nothing if the
+// wrong thing is being measured, so this runs and can exit before the table.
+let fingerprint
+try {
+  fingerprint = readFileSync(PUZZLE_SRC, 'utf8').match(/fen:\s*'([^']+)'/)?.[1]
+} catch {
+  console.error(`Cannot read ${relative(DIST, PUZZLE_SRC)} to fingerprint the puzzle dataset.\n`)
+  process.exit(1)
+}
+if (!fingerprint) {
+  console.error(
+    `No FEN found in ${relative(DIST, PUZZLE_SRC)} — the fingerprint regex needs a look.\n`,
+  )
+  process.exit(1)
+}
+// Which app chunks carry the dataset, found by a FEN lifted from its source.
+const puzzleChunks = appJs.filter((f) => readFileSync(join(DIST, f), 'utf8').includes(fingerprint))
+if (puzzleChunks.length === 0) {
+  console.error(
+    'The puzzle dataset is in no built chunk. Either the dataset changed shape and the ' +
+      'fingerprint regex no longer matches, or the build dropped it.\n',
+  )
+  process.exit(1)
+}
+const puzzlesInInitial = puzzleChunks.filter((f) => initialJs.has(f))
+if (puzzlesInInitial.length > 0) {
+  console.error(
+    `The puzzle dataset is in the initial bundle (${puzzlesInInitial.join(', ')}). ` +
+      'An eager import pulled it in; keep it behind the lazy PuzzlePage chunk.\n',
+  )
+  process.exit(1)
+}
+
+// Lazy route chunks: application .js outside the initial set.
+const lazyJs = appJs.filter((f) => !initialJs.has(f))
 const otherCss = allFiles.filter((f) => f.endsWith('.css') && !initialCss.has(f))
 
 const sum = (files) => files.reduce((total, f) => total + gzipKb(f), 0)
@@ -87,6 +128,7 @@ const groups = [
     budget: BUDGETS.stockfish,
     files: stockfish.filter((f) => f.endsWith('.js') || f.endsWith('.wasm')),
   },
+  { budget: BUDGETS.puzzles, files: puzzleChunks },
 ]
 
 let failed = false
