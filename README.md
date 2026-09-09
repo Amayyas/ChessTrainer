@@ -25,19 +25,20 @@ against the best line, and the best continuation drawn as an arrow. Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
 Finished games can be replayed move by move.
 
-**Battle** — six levels of opposition, roughly 550 to 2450 Elo. The Stockfish 11
-build shipped here exposes `Skill Level` rather than `UCI_Elo`, so the levels
-combine skill, allowed error and a search-depth cap on the weakest ones, which is
-the only way down to genuine novice strength.
+**Battle** — six levels of opposition, roughly 1100 to 2500 Elo. The engine is
+the Stockfish 18 `lite-single` build (NNUE, single-threaded), which exposes
+Stockfish's own `UCI_LimitStrength` + `UCI_Elo` strength model, calibrated by
+its authors over 1320–3190. The top four levels set `UCI_Elo` directly, so their
+rating is the number handed to the engine.
 
-Those figures are measured rather than claimed: each level was played against
-Stockfish 18 with `UCI_LimitStrength`, a calibrated opponent the shipped build
-cannot provide for itself. Only scores between 25% and 75% count, since outside
-that band the Elo formula stops discriminating — a 96% result is produced by a
-500 point gap and a 1500 point gap alike, which is how an earlier version of the
-ladder hid a chasm between its top two levels. `UCI_Elo` bottoms out at 1320, so
-the weakest level is chained from the one above it by self-play and is the least
-certain of the six. Treat every number as ±150.
+`UCI_Elo` bottoms out at 1320, and Stockfish 18 has no weaker setting — it no
+longer hangs pieces the way the old engine's Skill Level 0 did. The two lowest
+levels both sit at that floor and differ only by a shallow search-depth cap,
+which is the one lever left. Their ratings are a placement, not a measurement,
+and stay provisional until play-tested. Treat every number as ±150 — a way to
+place yourself, not a rating earned against humans. An earlier ladder read a 96%
+self-play score as precise and hid a 1500-point chasm between its top two levels
+behind it; adjacent levels are now checked by the gap between them.
 
 **Puzzles** — tactical positions to solve, tracked so you resume where you left
 off.

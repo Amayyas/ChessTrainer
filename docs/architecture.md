@@ -43,9 +43,9 @@ classDiagram
         -string scriptUrl
         +init() Promise
         +analyze(fen, depth) Promise~Analysis~
-        +setOption(name, value) Promise
         +configureLevel(level) Promise
         +dispose() void
+        -applyLevel() void
         -ensureWorker() Worker
         -send(command) void
     }
@@ -85,9 +85,8 @@ classDiagram
         +LevelId id
         +string label
         +number elo
-        +number skill
-        +number maxError
-        +number errorProbability
+        +string description
+        +number uciElo
         +number depth
         +number minDelayMs
         +number maxDelayMs
