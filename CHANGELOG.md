@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/Amayyas/ChessTrainer/compare/v2.0.1...v2.1.0) (2026-09-09)
+
+
+### Features
+
+* **engine:** calibrate battle difficulty with Stockfish 18's UCI_Elo ([bdf84e9](https://github.com/Amayyas/ChessTrainer/commit/bdf84e9869efc46b747402deb6b809b5d6fe5460))
+
 ## [2.0.1](https://github.com/Amayyas/ChessTrainer/compare/v2.0.0...v2.0.1) (2026-09-07)
 
 
