@@ -25,8 +25,9 @@ test('the landing renders, then hydrates into a working SPA', async ({ page }) =
 test('a move in Affrontement gets a reply from the engine', async ({ page }) => {
   await page.goto('/battle')
 
-  // Novice — depth 2, the quickest reply — then start. The start button only
-  // takes its "Commencer" label once the engine has loaded.
+  // Novice — the shallowest search on the ladder, so the quickest reply — then
+  // start. The start button only takes its "Commencer" label once the engine
+  // has loaded.
   await page.getByRole('button', { name: /Niveau 1 —/ }).click()
   await page.getByRole('button', { name: 'Commencer la partie' }).click({ timeout: 30_000 })
 

@@ -109,11 +109,13 @@ migrations by `npm run db:types` (needs Docker). A migration that changes a
 column has to regenerate them in the same commit — `database.types.test.ts`
 replays the migrations in plain Node and fails when the committed file drifts.
 
-Stockfish 11 runs single-threaded in a Web Worker. It exposes `Skill Level` but
-no `UCI_Elo`, which is why the difficulty ladder combines skill, allowed error
-and a search-depth cap. The Elo figures on those levels were measured by playing
-them against a calibrated Stockfish 18; see `src/engine/levels.ts` for the
-method and its caveats.
+Stockfish 18 (the `lite-single` NNUE build) runs single-threaded in a Web
+Worker, vendored into `public/stockfish/` from a pinned release rather than
+installed. It exposes `UCI_LimitStrength` + `UCI_Elo`, so the top four levels
+set their strength directly; the two below Stockfish's 1320 floor both pin it
+there and are told apart by a depth cap alone (`Skill Level` is inert once
+`UCI_LimitStrength` is on). See `src/engine/levels.ts` for the figures and
+their caveats.
 
 Sentry reports errors only, lazily loaded, with source maps uploaded at build
 time when `SENTRY_AUTH_TOKEN` is set.
@@ -171,8 +173,8 @@ add a test that fails when someone writes the numbers back in by hand.
 A snapshot, updated when something material changes rather than every session —
 enough to pick the work up on another machine without re-reading a transcript.
 
-**Shipped and verified in production:** the six-level difficulty ladder with
-measured Elo; the coach's seven-tier move grading with a legend; password
+**Shipped and verified in production:** the six-level difficulty ladder; the
+coach's seven-tier move grading with a legend; password
 recovery, tested end to end; a confirmation screen after registering, since
 sign-up returns no session while email confirmation is on; a lander that carries
 an emailed auth link to the screen it was for, whatever address Supabase drops
@@ -198,7 +200,8 @@ the curve was measured — at 1250 cp a slow mate reads 98.5%, at 600 cp it read
 87.6% — and the scale, not the evidence, decides the answer. It stays at 100%,
 because the grade already judges the move and accuracy judges how close to
 winning the player stayed. A forced mate is a forced mate. Stockfish stays
-single-threaded: the shipped
-package has no threaded build at all, so multithreading means replacing the
-engine, and a full coach analysis of a 40-move game measures 36 seconds on a
-desktop, which did not justify the risk.
+single-threaded: the migration to 18 took the `lite-single` build on purpose,
+because a threaded one needs `SharedArrayBuffer` and so COOP/COEP on every
+response. The coach's search depth (14) did not change in the migration, and a
+full 40-move analysis with the new build measured a few seconds on a desktop —
+the isolation headers buy nothing worth that constraint.

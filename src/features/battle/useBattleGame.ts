@@ -70,9 +70,10 @@ export const MAX_ENGINE_FAILURES = 3
 /**
  * How long one search may take before it counts as a failure.
  *
- * The ladder caps depth at 7, where this engine answers in well under a second,
- * so the budget is loose enough never to fire on a search that is merely
- * working. It is here for the wedged worker: a promise that never settles runs
+ * The ladder caps depth at 12 (Grand Maître), where Stockfish 18 lite answers
+ * in a few hundred ms on a desktop and comfortably inside a second or two on a
+ * slow phone, so the budget is loose enough never to fire on a search that is
+ * merely working. It is here for the wedged worker: a promise that never settles runs
  * none of the code below, so no move is played, no failure is counted, and
  * nothing gives up. With a clock the engine eventually flags; the default
  * control has no clock at all, and the board would simply stay frozen.

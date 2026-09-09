@@ -3,9 +3,9 @@ import type { EngineLevel } from '@/engine/levels'
 import { StockfishEngine, type Analysis } from '@/engine/stockfishEngine'
 
 export interface UseStockfishOptions {
-  /** Only boot the engine when true, so the 5 MB worker loads on demand. */
+  /** Only boot the engine when true, so the ~7 MB engine wasm loads on demand. */
   enabled?: boolean
-  /** Search depth; 12–18 is the useful range here. */
+  /** Search depth; 4–14 spans the battle ladder and the coach's fixed depth. */
   depth?: number
 }
 
@@ -23,7 +23,7 @@ export interface UseStockfish {
  */
 export function useStockfish({
   enabled = true,
-  depth = 15,
+  depth = 14,
 }: UseStockfishOptions = {}): UseStockfish {
   const engineRef = useRef<StockfishEngine | null>(null)
   const [isReady, setIsReady] = useState(false)

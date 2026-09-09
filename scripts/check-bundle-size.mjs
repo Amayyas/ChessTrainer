@@ -24,8 +24,12 @@ const BUDGETS = {
   initialJs: { label: 'Initial JavaScript', maxGzipKb: 200 },
   // Everything the first paint loads on top of the JS.
   css: { label: 'CSS', maxGzipKb: 50 },
-  // Loaded on demand when a mode that needs the engine is opened.
-  stockfish: { label: 'Stockfish (on demand)', maxGzipKb: 5 * KB },
+  // Loaded on demand when a mode that needs the engine is opened. Stockfish 18
+  // lite-single: the wasm carries the NNUE net (already-quantized binary, so it
+  // barely gzips) — ~5.5 MB gzipped for js + wasm, against ~0.65 MB for the old
+  // HCE build. The budget leaves ~10% headroom; a jump past it means the net
+  // changed.
+  stockfish: { label: 'Stockfish (on demand)', maxGzipKb: 6 * KB },
 }
 
 const gzipKb = (file) => gzipSync(readFileSync(join(DIST, file))).length / KB

@@ -1,40 +1,36 @@
 /**
  * Difficulty calibration for the battle mode.
  *
- * UCI_LimitStrength / UCI_Elo would be the natural choice, but the Stockfish 11
- * build we ship exposes neither — asking it for its options returns only
- * `Skill Level`, `Skill Level Maximum Error` and `Skill Level Probability`.
- * Levels therefore combine those three with a search-depth cap, which is the
- * only way down to genuine beginner strength.
+ * Stockfish 18 exposes `UCI_LimitStrength` + `UCI_Elo` (1320–3190) — a strength
+ * model the engine's own authors calibrated. Levels 3–6 set it directly, so
+ * their `elo` is the number fed to the engine, not a measurement against a
+ * yardstick.
  *
- * The weakening applies at every depth here, including the levels whose cap
- * sits below `1 + Skill Level`. Stockfish 11 also picks a weakened move at the
- * end of the search, not only when the loop reaches that depth. Verified rather
- * than assumed: on one middlegame position, 30 searches at depth 5 with Skill
- * Level 20 returned the same move 30 times, while the same depth with Avancé's
- * settings returned five different moves and the engine's own choice only 3
- * times. Do not remove maxError or errorProbability on the theory that they are
- * inert.
+ * `Skill Level` is *not* used. Measured, not assumed: under `UCI_LimitStrength`
+ * Stockfish derives its internal skill from `UCI_Elo` alone and ignores the
+ * `Skill Level` option — 12 searches at `UCI_Elo 1320` with `Skill Level 0`
+ * and 12 with `Skill Level 20` returned the same spread of moves. So the only
+ * lever left below the 1320 floor is the search-depth cap.
  *
- * ## Where the Elo figures come from
- *
- * Each level was played against Stockfish 18 with UCI_LimitStrength on, which
- * is a calibrated opponent this build cannot provide for itself. That reference
- * runs at a fixed 100ms per move while ours keeps its depth cap, so these are
- * measurements against a yardstick rather than ratings earned against humans.
- *
- * Only scores between roughly 25% and 75% were used. Outside that band the Elo
- * formula stops discriminating: a 96% score is produced by a 500-point gap and
- * by a 1500-point gap alike, which is exactly how an earlier version of this
- * ladder hid a chasm between its top two levels behind a healthy-looking
- * number.
- *
- * UCI_Elo bottoms out at 1320, so Novice sits below any available anchor. Its
- * figure is chained from Débutant through 20 self-play games instead, and is
- * the least certain of the six.
+ * Levels 1–2 both pin `UCI_Elo` at 1320 and differ only by that cap (depth 4
+ * vs 6). They are close on purpose: Stockfish 18 has no floor below ~1320. The
+ * old Skill-Level-0 engine hung pieces; this one does not — at `UCI_Elo 1320`,
+ * depth 4, it still grabbed a hanging queen in 8 of 10 tries. "Novice" here is
+ * a genuine beginner who plays sound moves and calculates little, not a player
+ * who blunders material. Their `elo` is a rough placement and the header marks
+ * it provisional: the recalibration pass (see below) still has to play levels
+ * 1–2 against a reference and settle the two numbers and the descriptions.
  *
  * Treat every number as ±150 and as a way for a player to place themselves,
- * not as a rating.
+ * not as a rating earned against humans. Never restate these figures in copy —
+ * import `ENGINE_LEVELS` and read `[0].elo` / `.at(-1).elo` (see
+ * `src/features/home/modes.ts`).
+ *
+ * Depths are capped low on purpose (4–12). `UCI_Elo` does the weakening; extra
+ * depth makes a rated bot no stronger, only slower — and a search that runs
+ * past the battle's 10s `SEARCH_TIMEOUT_MS`, three times over, gives up on the
+ * engine and freezes the board. Depth 12 measured a few hundred ms per move on
+ * a desktop; a slow phone has ample room under the deadline.
  */
 
 export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
@@ -42,17 +38,13 @@ export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
 export interface EngineLevel {
   id: LevelId
   label: string
-  /** Measured against Stockfish 18 at a stated UCI_Elo. See the note above. */
+  /** Player-facing strength, ±150. Provisional at the 1320 floor (see the header). */
   elo: number
   /** What this opponent actually does, for the player choosing a level. */
   description: string
-  /** Stockfish `Skill Level`, 0–20. */
-  skill: number
-  /** Stockfish `Skill Level Maximum Error`, in centipawns. */
-  maxError: number
-  /** Stockfish `Skill Level Probability`, 1–1000. Lower = errs more often. */
-  errorProbability: number
-  /** Search depth cap. */
+  /** Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below Stockfish's 1320 floor. */
+  uciElo: number
+  /** Search-depth cap handed to `go depth`; the only lever below the 1320 floor. */
   depth: number
   /** Simulated thinking time, so moves do not appear instantly. */
   minDelayMs: number
@@ -63,72 +55,60 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 550,
-    description: 'Laisse ses pièces en prise et ne voit pas les vôtres.',
-    skill: 0,
-    maxError: 900,
-    errorProbability: 10,
-    depth: 2,
+    elo: 1100,
+    description: 'Joue des coups sensés mais ne calcule qu’un coup à l’avance.',
+    uciElo: 1320,
+    depth: 4,
     minDelayMs: 300,
     maxDelayMs: 900,
   },
   {
     id: 2,
     label: 'Débutant',
-    elo: 1000,
-    description: 'Reprend une pièce, mais ne prépare rien.',
-    skill: 6,
-    maxError: 500,
-    errorProbability: 60,
-    depth: 4,
+    elo: 1300,
+    description: 'Reprend le matériel et évite les gaffes, mais ne prépare rien.',
+    uciElo: 1320,
+    depth: 6,
     minDelayMs: 400,
     maxDelayMs: 1100,
   },
   {
     id: 3,
     label: 'Intermédiaire',
-    elo: 1350,
+    elo: 1500,
     description: 'Calcule quelques coups d’avance et punit les erreurs simples.',
-    skill: 10,
-    maxError: 400,
-    errorProbability: 100,
-    depth: 5,
+    uciElo: 1500,
+    depth: 8,
     minDelayMs: 500,
     maxDelayMs: 1300,
   },
   {
     id: 4,
     label: 'Avancé',
-    elo: 2000,
+    elo: 1800,
     description: 'Joue proprement et sanctionne les combinaisons courtes.',
-    skill: 12,
-    maxError: 320,
-    errorProbability: 140,
-    depth: 6,
+    uciElo: 1800,
+    depth: 10,
     minDelayMs: 600,
     maxDelayMs: 1500,
   },
   {
     id: 5,
     label: 'Maître',
-    elo: 2250,
+    elo: 2100,
     description: 'Cherche loin et ne laisse presque rien passer.',
-    skill: 16,
-    maxError: 250,
-    errorProbability: 200,
-    depth: 6,
+    uciElo: 2100,
+    depth: 11,
     minDelayMs: 700,
     maxDelayMs: 1800,
   },
   {
     id: 6,
     label: 'Grand Maître',
-    elo: 2450,
+    elo: 2500,
     description: 'Punit la moindre imprécision et ne pardonne aucun coup approximatif.',
-    skill: 16,
-    maxError: 220,
-    errorProbability: 250,
-    depth: 7,
+    uciElo: 2500,
+    depth: 12,
     minDelayMs: 800,
     maxDelayMs: 2000,
   },
