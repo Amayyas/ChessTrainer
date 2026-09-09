@@ -14,7 +14,7 @@ import {
   type DailyCounters,
 } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/dailySet'
+import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/progress'
 
 /**
  * The runtime list is the source of truth and the type follows it, as the hunt
