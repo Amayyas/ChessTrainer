@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StockfishEngine } from '@/engine/stockfishEngine'
+import { getLevel } from '@/engine/levels'
 
 /**
  * The engine's failure modes, not its happy path (uci.ts covers the parsing).
@@ -66,6 +67,43 @@ describe('StockfishEngine', () => {
     const engine = new StockfishEngine('/x/stockfish.js')
     const analysis = await engine.analyze('fen', 12)
     expect(analysis).toMatchObject({ bestMove: 'e2e4', scoreCp: 30, depth: 12 })
+  })
+
+  it('calibrates strength with UCI_LimitStrength and the level UCI_Elo, nothing else', async () => {
+    // Stockfish 18 plays at full strength until UCI_LimitStrength is on, and
+    // rejects a UCI_Elo it never got a limit flag for. It must send the flag
+    // and the level's own number — and must not send `Skill Level`, which
+    // Stockfish ignores while UCI_LimitStrength is on (engine/levels.ts).
+    const engine = new StockfishEngine('/x/stockfish.js')
+    const level = getLevel(3)
+    await engine.configureLevel(level)
+
+    const options = workers[0]?.posted.filter((c) => c.startsWith('setoption')) ?? []
+    expect(options).toEqual([
+      'setoption name UCI_LimitStrength value true',
+      `setoption name UCI_Elo value ${level.uciElo}`,
+    ])
+  })
+
+  it('re-sends the calibration to a worker booted to replace a wedged one', async () => {
+    // A recycled worker is a blank Stockfish. Nothing upstream re-runs
+    // configureLevel, so without this the battle plays the rest of the game
+    // against a full-strength engine after a single timeout.
+    behaviour = 'no-bestmove'
+    const engine = new StockfishEngine('/x/stockfish.js', { analysisTimeoutMs: 30 })
+    const level = getLevel(2)
+    await engine.configureLevel(level)
+    await expect(engine.analyze('fen', 6)).rejects.toThrow(/timed out/)
+    expect(workers[0]?.terminated).toBe(true)
+
+    behaviour = 'ready'
+    await engine.analyze('fen', 6)
+
+    const replacement = workers[1]?.posted.filter((c) => c.startsWith('setoption')) ?? []
+    expect(replacement).toEqual([
+      'setoption name UCI_LimitStrength value true',
+      `setoption name UCI_Elo value ${level.uciElo}`,
+    ])
   })
 
   it('rejects init() when the worker never reports readiness', async () => {

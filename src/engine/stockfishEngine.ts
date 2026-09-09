@@ -19,9 +19,9 @@ export const DEFAULT_SCRIPT_URL = '/stockfish/stockfish.js'
 
 /**
  * How long a single search may run before the worker is presumed wedged.
- * Single-threaded Stockfish 11 finishes the depths this app asks for (the
- * coach's 14, the battle's depth caps) in seconds, so this sits well clear of
- * a legitimate search while still bounding a stalled one.
+ * Single-threaded Stockfish 18 (lite net) finishes the depths this app asks for
+ * (the coach's 14, the battle's depth caps) in seconds, so this sits well clear
+ * of a legitimate search while still bounding a stalled one.
  */
 const DEFAULT_ANALYSIS_TIMEOUT_MS = 20_000
 /** How long the engine has to report readiness after it is booted. */
@@ -76,6 +76,15 @@ export class StockfishEngine {
   private readonly initTimeoutMs: number
   private readonly analysisTimeoutMs: number
   /**
+   * The difficulty last asked for, re-sent to every worker this engine boots.
+   * A worker recycled on a timeout starts at full strength; without this the
+   * battle would silently switch to an unlimited opponent after one hiccup,
+   * since nothing upstream re-runs configureLevel. `applied` tracks whether the
+   * *current* worker has had it, so a level that has not changed is sent once.
+   */
+  private level: EngineLevel | null = null
+  private levelApplied = false
+  /**
    * Bumped every time the worker is discarded. A timeout started against one
    * worker must not tear down its replacement: when dispose() or an earlier
    * timeout has already recycled, the stale timer's expiry finds a newer
@@ -100,6 +109,8 @@ export class StockfishEngine {
     }
     this.listeners.clear()
     this.readyPromise = null
+    // The replacement worker is a blank Stockfish: its calibration is owed again.
+    this.levelApplied = false
   }
 
   /** Recycles only if nothing has replaced the worker this timeout was watching. */
@@ -123,19 +134,28 @@ export class StockfishEngine {
   }
 
   /**
-   * Applies a UCI option. Used to calibrate playing strength;
-   * see engine/levels.ts for why Skill Level replaces UCI_Elo here.
+   * Calibrates playing strength to a difficulty level, and remembers it so a
+   * recycled worker is calibrated the same way rather than left unlimited.
+   *
+   * Stockfish 18's own `UCI_Elo` model does the weakening. `Skill Level` is not
+   * sent: under `UCI_LimitStrength` Stockfish derives its internal skill from
+   * `UCI_Elo` alone and ignores the option (see engine/levels.ts). Below the
+   * engine's Elo floor the only remaining lever is the `go depth` cap, which
+   * lives on the level. Idempotent: re-running it on a level change resets it.
    */
-  async setOption(name: string, value: string | number): Promise<void> {
+  async configureLevel(level: EngineLevel): Promise<void> {
+    this.level = level
+    this.levelApplied = false
     await this.init()
-    this.send(`setoption name ${name} value ${value}`)
+    this.applyLevel()
   }
 
-  /** Calibrates playing strength to a difficulty level. */
-  async configureLevel(level: EngineLevel): Promise<void> {
-    await this.setOption('Skill Level', level.skill)
-    await this.setOption('Skill Level Maximum Error', level.maxError)
-    await this.setOption('Skill Level Probability', level.errorProbability)
+  /** Sends the remembered calibration, once per worker. A no-op with no level. */
+  private applyLevel(): void {
+    if (!this.level || this.levelApplied) return
+    this.levelApplied = true
+    this.send('setoption name UCI_LimitStrength value true')
+    this.send(`setoption name UCI_Elo value ${this.level.uciElo}`)
   }
 
   /** Boots the engine and resolves once it reports readiness (uciok + readyok). */
@@ -149,6 +169,8 @@ export class StockfishEngine {
           this.send('isready')
         } else if (line.startsWith('readyok')) {
           this.listeners.delete(onLine)
+          // Re-arm strength on a freshly booted worker before anyone searches.
+          this.applyLevel()
           resolve()
         }
       }
@@ -244,5 +266,6 @@ export class StockfishEngine {
     if (this.worker) this.send('quit')
     this.recycleWorker()
     this.queue = Promise.resolve()
+    this.level = null
   }
 }
