@@ -24,7 +24,8 @@
     "ci:rls": "bash scripts/rls-db.sh && npm run test:rls",
     "test:rls": "vitest run --config vitest.rls.config.ts",
     "db:test": "bash scripts/rls-db.sh",
-    "db:types": "bash scripts/gen-db-types.sh"
+    "db:types": "bash scripts/gen-db-types.sh",
+    "vendor:stockfish": "node scripts/vendor-stockfish.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
@@ -37,7 +38,6 @@
     "react-chessboard": "^4.7.3",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.3",
-    "stockfish": "^11.0.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
