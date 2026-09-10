@@ -54,3 +54,26 @@ test('the Piece Hunt renders its own board, no engine', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Chasse aux Pièces' })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Choisissez votre championne/i })).toBeVisible()
 })
+
+test('the puzzle page switches to free practice and serves a board', async ({ page }) => {
+  const errors: Error[] = []
+  page.on('pageerror', (error) => errors.push(error))
+
+  await page.goto('/puzzle')
+  // The daily series is the default view; its board renders in a browser.
+  await expect(page.getByRole('heading', { level: 1, name: 'Puzzles' })).toBeVisible()
+  await expect(page.locator('[data-square]').first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Entraînement libre' }).click()
+  await expect(page.getByText(/Entraînement libre —/)).toBeVisible()
+
+  // The difficulty picker actually drives the session: the pressed state moves.
+  const debutant = page.getByRole('button', { name: 'Débutant' })
+  await debutant.click()
+  await expect(debutant).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Intermédiaire' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  expect(errors).toEqual([])
+})
