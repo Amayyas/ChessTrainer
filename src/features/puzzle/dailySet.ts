@@ -23,8 +23,11 @@ function seedFromDay(key: string): number {
 }
 
 /**
- * The day's series: a stable selection for that date, ordered from easiest to
- * hardest so the set ramps up.
+ * The day's series: a stable selection for that date, one puzzle from each of
+ * `count` equal rating slices so the set always ramps from easy to hard.
+ *
+ * A uniform shuffle over the 1500-puzzle pool could hand a beginner five 2000+
+ * puzzles on some days; slicing by rating first rules that out.
  */
 export function dailyPuzzles(
   day: string,
@@ -32,16 +35,14 @@ export function dailyPuzzles(
   count: number = DAILY_COUNT,
 ): Puzzle[] {
   const random = mulberry32(seedFromDay(day))
-  const indices = pool.map((_, index) => index)
+  const byRating = [...pool].sort((a, b) => a.rating - b.rating)
+  const slices = Math.min(count, byRating.length)
 
-  // Fisher-Yates with the seeded generator.
-  for (let i = indices.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1))
-    ;[indices[i], indices[j]] = [indices[j]!, indices[i]!]
+  const picked: Puzzle[] = []
+  for (let slice = 0; slice < slices; slice += 1) {
+    const start = Math.floor((slice * byRating.length) / slices)
+    const end = Math.floor(((slice + 1) * byRating.length) / slices)
+    picked.push(byRating[start + Math.floor(random() * (end - start))]!)
   }
-
-  return indices
-    .slice(0, Math.min(count, pool.length))
-    .map((index) => pool[index]!)
-    .sort((a, b) => a.rating - b.rating)
+  return picked
 }

@@ -31,13 +31,26 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 }
 
 /**
- * French labels for the themes the generator can derive on its own. Lichess's
- * hand-curated tags (déviation, surcharge, zugzwang…) cannot be imported here,
- * so the set is limited to what is reliably detectable from the engine's line.
+ * French labels for the puzzle themes. The slugs are assigned by
+ * scripts/import-lichess-puzzles.mjs, which maps a Lichess tag to one of these
+ * — mates keep the `mat-en-N` form, since the dataset test reads N back out of
+ * it. `gain-materiel` is the catch-all for a tactic with no sharper motif.
  */
+const THEME_LABELS: Record<string, string> = {
+  fourchette: 'Fourchette',
+  clouage: 'Clouage',
+  enfilade: 'Enfilade',
+  'attaque-decouverte': 'Attaque à la découverte',
+  'echec-double': 'Échec double',
+  sacrifice: 'Sacrifice',
+  deviation: 'Déviation',
+  attraction: 'Attraction',
+  'piece-en-prise': 'Pièce en prise',
+  'gain-materiel': 'Gain de matériel',
+}
+
 export function themeLabel(theme: string): string {
   const mate = theme.match(/^mat-en-(\d+)$/)
   if (mate) return `Mat en ${mate[1]}`
-  if (theme === 'fourchette') return 'Fourchette'
-  return 'Gain de matériel'
+  return THEME_LABELS[theme] ?? 'Gain de matériel'
 }

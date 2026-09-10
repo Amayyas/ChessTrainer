@@ -1,16 +1,19 @@
 import { Chess } from 'chess.js'
 import { describe, expect, it } from 'vitest'
 import { PUZZLES } from '@/features/puzzle/puzzles'
-import { difficultyOf } from '@/features/puzzle/types'
+import { difficultyOf, themeLabel } from '@/features/puzzle/types'
 
 /**
- * The dataset is generated, so it is validated here rather than trusted: a
- * puzzle whose solution does not replay is exactly the "solved but marked
- * wrong" failure this mode must never have.
+ * The dataset is imported and re-screened by scripts/import-lichess-puzzles.mjs,
+ * so it is validated here rather than trusted: a puzzle whose solution does not
+ * replay is exactly the "solved but marked wrong" failure this mode must never
+ * have.
  */
 describe('PUZZLES dataset', () => {
-  it('is not empty and has unique ids', () => {
-    expect(PUZZLES.length).toBeGreaterThanOrEqual(20)
+  it('holds a real pool with unique ids', () => {
+    // The importer fills ten rating buckets to 150 each; well under 1000 means a
+    // bucket starved or the run broke.
+    expect(PUZZLES.length).toBeGreaterThanOrEqual(1000)
     const ids = PUZZLES.map((puzzle) => puzzle.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
@@ -24,6 +27,12 @@ describe('PUZZLES dataset', () => {
       expect(puzzle.solution.length).toBeGreaterThan(0)
       // The solver plays first and last, so the line has an odd number of plies.
       expect(puzzle.solution.length % 2).toBe(1)
+      // Mates run to mate-in-3 (5 plies); other lines stop at two solver moves.
+      expect(puzzle.solution.length).toBeLessThanOrEqual(5)
+      // Loose band around the importer's 700–2200 window — a tripwire, not a
+      // restatement.
+      expect(puzzle.rating).toBeGreaterThanOrEqual(600)
+      expect(puzzle.rating).toBeLessThanOrEqual(2400)
 
       for (const uci of puzzle.solution) {
         const applied = chess.move({
@@ -35,6 +44,14 @@ describe('PUZZLES dataset', () => {
       }
     },
   )
+
+  it('gives every theme a French label of its own', () => {
+    const generic = themeLabel('gain-materiel')
+    for (const theme of new Set(PUZZLES.map((puzzle) => puzzle.theme))) {
+      if (theme === 'gain-materiel') continue
+      expect(themeLabel(theme)).not.toBe(generic)
+    }
+  })
 
   it.each(
     PUZZLES.filter((puzzle) => puzzle.theme.startsWith('mat-en-')).map((p) => [p.id, p] as const),
