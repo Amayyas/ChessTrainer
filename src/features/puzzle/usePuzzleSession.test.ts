@@ -104,8 +104,9 @@ describe('usePuzzleSession', () => {
     expect(result.current.fen).not.toBe(fenBefore)
   })
 
-  it('solves a one-move puzzle and records the score and streak', () => {
+  it('solves a one-move puzzle and records the score, streak and solved id', () => {
     const { result } = renderHook(() => usePuzzleSession())
+    const solvedId = result.current.puzzle!.id
     // Walk the whole solution, playing only the solver's plies.
     const solution = result.current.puzzle!.solution
 
@@ -125,6 +126,7 @@ describe('usePuzzleSession', () => {
     expect(result.current.scores[0]!.points).toBe(BASE_POINTS)
     expect(result.current.progress.streak).toBe(1)
     expect(result.current.progress.totalSolved).toBe(1)
+    expect(result.current.progress.seenPuzzleIds).toContain(solvedId)
   })
 
   it('reveals three hints, each costing points', () => {
