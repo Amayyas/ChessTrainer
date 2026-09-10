@@ -6,7 +6,7 @@ import {
   sortNewestFirst,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
-import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/progress'
+import { EMPTY_PROGRESS, SEEN_CAP, type PuzzleProgress } from '@/features/puzzle/progress'
 import type { Json } from '@/lib/database.types'
 import type { ProgressionInsert, ProgressionRow } from '@/lib/supabase'
 import { ACTIVITY_KINDS, type Activity, type ActivityKind } from '@/store/useProgressionStore'
@@ -94,14 +94,28 @@ function normaliseHuntScores(value: unknown): Scoreboard {
   return board
 }
 
+const asIds = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []
+
+function normaliseDailySeries(value: unknown): PuzzleProgress['dailySeries'] {
+  if (typeof value !== 'object' || value === null) return null
+  const raw = value as Record<string, unknown>
+  if (!isDayKey(raw.day) || !Array.isArray(raw.ids)) return null
+  return { day: raw.day, ids: asIds(raw.ids) }
+}
+
 function normalisePuzzleProgress(value: unknown): PuzzleProgress {
-  if (typeof value !== 'object' || value === null) return { ...EMPTY_PROGRESS }
+  if (typeof value !== 'object' || value === null) {
+    return { ...EMPTY_PROGRESS, seenPuzzleIds: [], dailySeries: null }
+  }
   const raw = value as Record<string, unknown>
   return {
     lastSolvedDay: isDayKey(raw.lastSolvedDay) ? raw.lastSolvedDay : null,
     streak: isCount(raw.streak) ? raw.streak : 0,
     bestStreak: isCount(raw.bestStreak) ? raw.bestStreak : 0,
     totalSolved: isCount(raw.totalSolved) ? raw.totalSolved : 0,
+    seenPuzzleIds: asIds(raw.seenPuzzleIds).slice(-SEEN_CAP),
+    dailySeries: normaliseDailySeries(raw.dailySeries),
   }
 }
 

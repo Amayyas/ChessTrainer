@@ -2,7 +2,8 @@ import { Chess } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseUciMove } from '@/engine/uci'
 import { DAILY_COUNT, dailyPuzzles } from '@/features/puzzle/dailySet'
-import { dayKey, recordSolved, type PuzzleProgress } from '@/features/puzzle/progress'
+import { dayKey, markSeen, recordSolved, type PuzzleProgress } from '@/features/puzzle/progress'
+import { PUZZLES } from '@/features/puzzle/puzzles'
 import type { Puzzle } from '@/features/puzzle/types'
 import type { PieceSymbol, Square } from '@/utils/chess'
 import { useProgressionStore } from '@/store/useProgressionStore'
@@ -90,7 +91,34 @@ export function usePuzzleSession(): UsePuzzleSession {
   // elapsed-time timer re-renders constantly — leaving `index` and `ply`
   // pointing into a different puzzle.
   const [today] = useState(() => dayKey())
-  const puzzles = useMemo(() => dailyPuzzles(today), [today])
+  const setProgress = useProgressionStore((state) => state.setPuzzleProgress)
+  // Both snapshotted at mount, like `today`: a day's series is fixed once
+  // picked, so working through it — which grows the solved list — cannot
+  // reshuffle it, and reopening the day resumes the same five.
+  const [savedSeries] = useState(() => useProgressionStore.getState().puzzleProgress.dailySeries)
+  const [seenAtStart] = useState(() => useProgressionStore.getState().puzzleProgress.seenPuzzleIds)
+
+  const puzzles = useMemo<Puzzle[]>(() => {
+    if (savedSeries?.day === today) {
+      const byId = new Map(PUZZLES.map((puzzle) => [puzzle.id, puzzle]))
+      const resolved = savedSeries.ids
+        .map((id) => byId.get(id))
+        .filter((p): p is Puzzle => Boolean(p))
+      // Fall through to a fresh pick if the pool was regenerated under it.
+      if (resolved.length === savedSeries.ids.length && resolved.length > 0) return resolved
+    }
+    return dailyPuzzles(today, seenAtStart)
+  }, [today, savedSeries, seenAtStart])
+
+  // Persist the day's picks the first time they are computed.
+  useEffect(() => {
+    if (savedSeries?.day !== today && puzzles.length > 0) {
+      setProgress((current) => ({
+        ...current,
+        dailySeries: { day: today, ids: puzzles.map((puzzle) => puzzle.id) },
+      }))
+    }
+  }, [today, savedSeries, puzzles, setProgress])
 
   const [index, setIndex] = useState(0)
   const [ply, setPly] = useState(0)
@@ -107,7 +135,6 @@ export function usePuzzleSession(): UsePuzzleSession {
   // In the progression store rather than its own localStorage key, so the
   // streak belongs to the player and not to the browser they used.
   const progress = useProgressionStore((state) => state.puzzleProgress)
-  const setProgress = useProgressionStore((state) => state.setPuzzleProgress)
 
   const puzzle = puzzles[index] ?? null
 
@@ -200,7 +227,10 @@ export function usePuzzleSession(): UsePuzzleSession {
             elapsedMs: Date.now() - startedAt,
           },
         ])
-        setProgress((current) => recordSolved(current, today))
+        setProgress((current) => ({
+          ...recordSolved(current, today),
+          seenPuzzleIds: markSeen(current.seenPuzzleIds, puzzle.id),
+        }))
       }
       return true
     },

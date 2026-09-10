@@ -14,7 +14,7 @@ import {
   type DailyCounters,
 } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { EMPTY_PROGRESS, type PuzzleProgress } from '@/features/puzzle/progress'
+import { EMPTY_PROGRESS, mergeSeenPuzzleIds, type PuzzleProgress } from '@/features/puzzle/progress'
 
 /**
  * The runtime list is the source of truth and the type follows it, as the hunt
@@ -398,7 +398,17 @@ export const useProgressionStore = create<ProgressionState>()(
             stats: { ...EMPTY_STATS, ...stats },
             unlockedBadges,
             huntScores,
-            puzzleProgress: { ...EMPTY_PROGRESS, ...puzzleProgress },
+            puzzleProgress: {
+              ...EMPTY_PROGRESS,
+              ...puzzleProgress,
+              // The streak and totals above take the server copy, but the
+              // solved-id list is a log — union it, or a guest's solves are
+              // dropped on sign-in and one device clobbers the other's.
+              seenPuzzleIds: mergeSeenPuzzleIds(
+                get().puzzleProgress.seenPuzzleIds,
+                puzzleProgress.seenPuzzleIds,
+              ),
+            },
             // Merged, not replaced. The fields above are totals, where the
             // server copy must win or a second device would double count.
             // This one is a log: a game reviewed while the pull was in flight
@@ -438,7 +448,7 @@ export const useProgressionStore = create<ProgressionState>()(
     },
     {
       name: 'chesstrainer.progression',
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         // Records written before progression had an owner carry no way of
         // telling one player's work from another's. Zustand merges them over
@@ -461,6 +471,22 @@ export const useProgressionStore = create<ProgressionState>()(
         if (version < 2) {
           const record = persisted as Record<string, unknown>
           return { ...record, huntScores: {}, puzzleProgress: EMPTY_PROGRESS }
+        }
+        // Version 2 had no record of which puzzles had been solved, so the
+        // daily series could repeat them. Seed the new fields; the streak and
+        // totals they sit beside are kept.
+        if (version < 3) {
+          const record = persisted as Record<string, unknown>
+          const puzzle = record.puzzleProgress
+          return {
+            ...record,
+            puzzleProgress: {
+              ...EMPTY_PROGRESS,
+              ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
+              seenPuzzleIds: [],
+              dailySeries: null,
+            },
+          }
         }
         return persisted
       },

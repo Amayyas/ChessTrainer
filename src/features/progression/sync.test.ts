@@ -151,7 +151,14 @@ describe('hunt board and puzzle streak now travel with the account', () => {
   it('reads the puzzle streak back, and repairs a partial one', () => {
     const full = rowToSnapshot(
       row({
-        puzzle_progress: { lastSolvedDay: '2026-08-12', streak: 3, bestStreak: 5, totalSolved: 11 },
+        puzzle_progress: {
+          lastSolvedDay: '2026-08-12',
+          streak: 3,
+          bestStreak: 5,
+          totalSolved: 11,
+          seenPuzzleIds: ['ct-0007', 42, 'ct-0009'],
+          dailySeries: { day: '2026-08-12', ids: ['ct-0007', 3, 'ct-0011'] },
+        },
       }),
     )
     expect(full.puzzleProgress).toEqual({
@@ -159,14 +166,19 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       streak: 3,
       bestStreak: 5,
       totalSolved: 11,
+      // non-strings dropped from both lists
+      seenPuzzleIds: ['ct-0007', 'ct-0009'],
+      dailySeries: { day: '2026-08-12', ids: ['ct-0007', 'ct-0011'] },
     })
 
-    const partial = rowToSnapshot(row({ puzzle_progress: { streak: 2 } }))
+    const partial = rowToSnapshot(row({ puzzle_progress: { streak: 2, dailySeries: 'nope' } }))
     expect(partial.puzzleProgress).toEqual({
       lastSolvedDay: null,
       streak: 2,
       bestStreak: 0,
       totalSolved: 0,
+      seenPuzzleIds: [],
+      dailySeries: null,
     })
   })
 
@@ -176,7 +188,14 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       stats: EMPTY_STATS,
       unlockedBadges: [],
       huntScores: { q: [entry] },
-      puzzleProgress: { lastSolvedDay: '2026-08-12', streak: 3, bestStreak: 5, totalSolved: 11 },
+      puzzleProgress: {
+        lastSolvedDay: '2026-08-12',
+        streak: 3,
+        bestStreak: 5,
+        totalSolved: 11,
+        seenPuzzleIds: [],
+        dailySeries: null,
+      },
       accuracyHistory: [],
       daily: emptyCounters('2026-08-17'),
       activities: [],

@@ -305,6 +305,43 @@ describe('persisted storage migration', () => {
     expect(store().xp).toBe(250)
     expect(store().ownerId).toBe('user-a')
   })
+
+  it('adds the solved-puzzle list to a version-2 record, keeping the streak', async () => {
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 400,
+          stats: EMPTY_STATS,
+          daily: { day: '2026-08-12' },
+          activities: [],
+          unlockedBadges: [],
+          pendingBadges: [],
+          huntScores: {},
+          puzzleProgress: {
+            lastSolvedDay: '2026-08-12',
+            streak: 4,
+            bestStreak: 6,
+            totalSolved: 20,
+          },
+          ownerId: 'user-a',
+        },
+        version: 2,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().puzzleProgress).toEqual({
+      lastSolvedDay: '2026-08-12',
+      streak: 4,
+      bestStreak: 6,
+      totalSolved: 20,
+      seenPuzzleIds: [],
+      dailySeries: null,
+    })
+    expect(store().xp).toBe(400)
+  })
 })
 
 describe('legacy keys are cleared whichever version is migrated', () => {
@@ -374,6 +411,17 @@ describe('hydrating the day and the feed', () => {
     })
     expect(store().daily.huntScore).toBe(0)
     expect(store().daily.day).toBe(dayKey())
+  })
+
+  it('unions the solved-puzzle list rather than taking the server copy', () => {
+    // A log, not a total: a guest's solves must survive sign-in, and neither
+    // device should clobber the other's.
+    store().setPuzzleProgress((p) => ({ ...p, seenPuzzleIds: ['ct-0001', 'ct-0002'] }))
+    store().hydrate({
+      ...blank(),
+      puzzleProgress: { ...EMPTY_PROGRESS, seenPuzzleIds: ['ct-0002', 'ct-0009'] },
+    })
+    expect(store().puzzleProgress.seenPuzzleIds.sort()).toEqual(['ct-0001', 'ct-0002', 'ct-0009'])
   })
 
   it('keeps two different events that happen to share an id', () => {

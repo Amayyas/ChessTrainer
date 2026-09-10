@@ -28,21 +28,39 @@ function seedFromDay(key: string): number {
  *
  * A uniform shuffle over the 1500-puzzle pool could hand a beginner five 2000+
  * puzzles on some days; slicing by rating first rules that out.
+ *
+ * `seen` (ids already solved, oldest first) is drawn from last: a slice serves
+ * an unseen puzzle while it has one, then falls back to the one solved longest
+ * ago. The series therefore stays fresh for hundreds of days and only repeats
+ * once a whole difficulty band is used up.
  */
 export function dailyPuzzles(
   day: string,
+  seen: readonly string[] = [],
   pool: readonly Puzzle[] = PUZZLES,
   count: number = DAILY_COUNT,
 ): Puzzle[] {
   const random = mulberry32(seedFromDay(day))
   const byRating = [...pool].sort((a, b) => a.rating - b.rating)
   const slices = Math.min(count, byRating.length)
+  const seenAt = new Map(seen.map((id, order) => [id, order]))
 
   const picked: Puzzle[] = []
   for (let slice = 0; slice < slices; slice += 1) {
     const start = Math.floor((slice * byRating.length) / slices)
     const end = Math.floor(((slice + 1) * byRating.length) / slices)
-    picked.push(byRating[start + Math.floor(random() * (end - start))]!)
+    const inSlice = byRating.slice(start, end)
+    const roll = random()
+
+    const unseen = inSlice.filter((puzzle) => !seenAt.has(puzzle.id))
+    if (unseen.length > 0) {
+      picked.push(unseen[Math.floor(roll * unseen.length)]!)
+    } else {
+      // The whole band is used up: replay one of the few solved longest ago,
+      // varied by the day so it is not the same puzzle here every morning.
+      const byAge = [...inSlice].sort((a, b) => seenAt.get(a.id)! - seenAt.get(b.id)!)
+      picked.push(byAge[Math.floor(roll * Math.min(3, byAge.length))]!)
+    }
   }
   return picked
 }
