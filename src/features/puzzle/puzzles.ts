@@ -1,11 +1,11 @@
 /**
  * Tactical puzzles for the puzzle mode.
  *
- * Generated and verified by scripts/generate-puzzles.mjs: every solution is
- * Stockfish's own best line, kept only when it is decisively better than the
- * second-best move, so a correct answer can never be marked wrong. Bundling
- * them keeps the puzzles offline, deterministic and free of a runtime
- * dependency on an external database.
+ * Imported from the Lichess Open Database (https://database.lichess.org, CC0)
+ * by scripts/import-lichess-puzzles.mjs, then re-screened: a puzzle is kept
+ * only when the vendored Stockfish agrees its first move is uniquely and
+ * decisively best, so a correct answer can never be marked wrong. Bundling the
+ * set keeps the puzzles offline and free of a runtime database dependency.
  *
  * DO NOT EDIT BY HAND — regenerate with the script.
  */

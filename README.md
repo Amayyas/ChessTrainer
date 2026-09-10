@@ -446,6 +446,10 @@ accepted, so you can tell a finding from a design decision.
 licence ships alongside the binary in
 [`public/stockfish/`](public/stockfish/LICENSE.txt).
 
+The puzzles are imported from the
+[Lichess Open Database](https://database.lichess.org) (CC0) and re-screened with
+Stockfish — see [`scripts/import-lichess-puzzles.mjs`](scripts/import-lichess-puzzles.mjs).
+
 ## Licence
 
 Copyright © 2026 Amayyas Aouadene. Released under the
