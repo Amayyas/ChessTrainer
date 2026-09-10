@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ENGINE_LEVELS, getLevel, thinkingDelay } from '@/engine/levels'
+import { ENGINE_LEVELS, UCI_ELO_FLOOR, getLevel, thinkingDelay } from '@/engine/levels'
 
 describe('ENGINE_LEVELS', () => {
   it('offers six levels', () => {
@@ -25,11 +25,12 @@ describe('ENGINE_LEVELS', () => {
     }
   })
 
-  it('gets stronger with every level, on a dial the engine acts on', () => {
-    // `uciElo` is non-decreasing and `depth` strictly increasing, so every step
-    // up is a real change in play — not a config value that never reaches the
-    // engine. (The two floor levels share uciElo 1320 and are told apart by
-    // depth alone; `Skill Level` would be ignored there, so it is not used.)
+  it('moves a real engine parameter at every step', () => {
+    // `uciElo` non-decreasing and `depth` strictly increasing: no step is a
+    // config value that never reaches the engine. From level 3 up, `uciElo`
+    // does the work. Levels 1–2 both sit at the 1320 floor, where the play-test
+    // (scripts/calibrate-levels.mjs) found neither lever separates them — their
+    // elo gap is a placement, not a measured strength difference (levels.ts).
     for (let i = 1; i < ENGINE_LEVELS.length; i += 1) {
       const previous = ENGINE_LEVELS[i - 1]!
       const current = ENGINE_LEVELS[i]!
@@ -40,9 +41,11 @@ describe('ENGINE_LEVELS', () => {
 
   it('pins the first level at the engine floor with the shallowest search', () => {
     // Stockfish 18 has no strength below UCI_Elo 1320, so the weakest level
-    // sits there and leans on the one lever left — the depth cap.
+    // sits there. The depth cap does not weaken it further — the play-test
+    // measured depth 2, 4, 6 and 10 all playing the same — but it stays the
+    // shallowest anyway, and the ladder still steps here.
     const novice = ENGINE_LEVELS[0]!
-    expect(novice.uciElo).toBe(1320)
+    expect(novice.uciElo).toBe(UCI_ELO_FLOOR)
     expect(novice.depth).toBe(Math.min(...ENGINE_LEVELS.map((level) => level.depth)))
     expect(novice.elo).toBeLessThan(ENGINE_LEVELS[1]!.elo)
   })
@@ -55,8 +58,8 @@ describe('ENGINE_LEVELS', () => {
 
   it('keeps every Stockfish option inside its supported range', () => {
     for (const level of ENGINE_LEVELS) {
-      // UCI_Elo 1320–3190; sending below the floor is an error, not a weaker bot.
-      expect(level.uciElo).toBeGreaterThanOrEqual(1320)
+      // UCI_Elo floor–3190; sending below the floor is an error, not a weaker bot.
+      expect(level.uciElo).toBeGreaterThanOrEqual(UCI_ELO_FLOOR)
       expect(level.uciElo).toBeLessThanOrEqual(3190)
       // Depth is capped low on purpose — a long search past the battle's
       // SEARCH_TIMEOUT_MS is abandoned and counts against the engine. 14 is the

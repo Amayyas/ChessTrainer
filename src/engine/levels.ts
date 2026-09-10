@@ -9,17 +9,21 @@
  * `Skill Level` is *not* used. Measured, not assumed: under `UCI_LimitStrength`
  * Stockfish derives its internal skill from `UCI_Elo` alone and ignores the
  * `Skill Level` option — 12 searches at `UCI_Elo 1320` with `Skill Level 0`
- * and 12 with `Skill Level 20` returned the same spread of moves. So the only
- * lever left below the 1320 floor is the search-depth cap.
+ * and 12 with `Skill Level 20` returned the same spread of moves.
  *
- * Levels 1–2 both pin `UCI_Elo` at 1320 and differ only by that cap (depth 4
- * vs 6). They are close on purpose: Stockfish 18 has no floor below ~1320. The
- * old Skill-Level-0 engine hung pieces; this one does not — at `UCI_Elo 1320`,
- * depth 4, it still grabbed a hanging queen in 8 of 10 tries. "Novice" here is
- * a genuine beginner who plays sound moves and calculates little, not a player
- * who blunders material. Their `elo` is a rough placement and the header marks
- * it provisional: the recalibration pass (see below) still has to play levels
- * 1–2 against a reference and settle the two numbers and the descriptions.
+ * Levels 1 and 2 both pin `UCI_Elo` at 1320: Stockfish 18 has no strength below
+ * it. A play-test settled what that means — `scripts/calibrate-levels.mjs`, ~50
+ * games per matchup. Near the floor nothing separates the two. The depth cap is
+ * inert: level 1 played level 2 (depth 4 vs 6) dead even across three runs, and
+ * played the same at depth 2 and depth 10; a depth-2 engine still scored 51%
+ * against a `UCI_Elo 1320` reference. `UCI_Elo` barely moves down here too — a
+ * 1400 setting gained about 40 Elo. So levels 1–2 are close by nature, both
+ * about 1320; level 2's deeper cap costs nothing and stays for the rare sharp
+ * position, and the `elo` gap below is a placement, not a measured difference.
+ * Not from the calibration but consistent with it: a quick probe at `UCI_Elo
+ * 1320`, depth 4 saw the engine grab a hanging queen 8 times in 10 — it takes
+ * free material rather than hanging its own. "Novice" is a real beginner who
+ * plays sound moves and calculates little, not one who blunders pieces.
  *
  * Treat every number as ±150 and as a way for a player to place themselves,
  * not as a rating earned against humans. Never restate these figures in copy —
@@ -38,26 +42,29 @@ export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
 export interface EngineLevel {
   id: LevelId
   label: string
-  /** Player-facing strength, ±150. Provisional at the 1320 floor (see the header). */
+  /** Player-facing strength, ±150 — a way to place yourself, not a rating. */
   elo: number
   /** What this opponent actually does, for the player choosing a level. */
   description: string
-  /** Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below Stockfish's 1320 floor. */
+  /** Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below `UCI_ELO_FLOOR`. */
   uciElo: number
-  /** Search-depth cap handed to `go depth`; the only lever below the 1320 floor. */
+  /** Search-depth cap handed to `go depth`. Keeps a move fast; `UCI_Elo` does the weakening (see the header). */
   depth: number
   /** Simulated thinking time, so moves do not appear instantly. */
   minDelayMs: number
   maxDelayMs: number
 }
 
+/** The bottom of Stockfish 18's `UCI_Elo` range — it plays no weaker than this. */
+export const UCI_ELO_FLOOR = 1320
+
 export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 1100,
-    description: 'Joue des coups sensés mais ne calcule qu’un coup à l’avance.',
-    uciElo: 1320,
+    elo: 1300,
+    description: 'Joue des coups sensés mais voit rarement au-delà du coup suivant.',
+    uciElo: UCI_ELO_FLOOR,
     depth: 4,
     minDelayMs: 300,
     maxDelayMs: 900,
@@ -65,9 +72,9 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 2,
     label: 'Débutant',
-    elo: 1300,
-    description: 'Reprend le matériel et évite les gaffes, mais ne prépare rien.',
-    uciElo: 1320,
+    elo: 1350,
+    description: 'Repère les prises et les échecs, mais n’a pas encore de plan.',
+    uciElo: UCI_ELO_FLOOR,
     depth: 6,
     minDelayMs: 400,
     maxDelayMs: 1100,

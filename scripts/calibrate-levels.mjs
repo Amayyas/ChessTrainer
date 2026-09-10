@@ -8,9 +8,11 @@
  * references and against each other, then prints the logistic-implied Elo so
  * `src/engine/levels.ts` can carry an honest figure instead of a placeholder.
  *
- * Deterministic: fixed engines + a fixed opening book, each opening played from
- * both sides. Re-running reproduces the table. Needs `npx playwright install
- * chromium` once (same as the puzzle importer).
+ * A fixed opening book, each line played from both sides, keeps the sample
+ * comparable run to run — but Stockfish's `UCI_LimitStrength` picks moves with
+ * time-seeded randomness, so the result is not deterministic. At 26 openings
+ * (52 games/matchup) a score carries roughly ±90 Elo; run it twice and average.
+ * Needs `npx playwright install chromium` once (same as the puzzle importer).
  *
  *   node scripts/calibrate-levels.mjs [--openings N]
  *
@@ -21,10 +23,20 @@
 import { Chess } from 'chess.js'
 import { chromium } from '@playwright/test'
 import { bootEngine, servePublic } from './lib/stockfish-harness.mjs'
-import { ENGINE_LEVELS } from '../src/engine/levels.ts'
+
+/** Levels 1 and 2 as shipped — keep in step with src/engine/levels.ts. Held here
+ *  rather than imported: nothing else in scripts/ imports a .ts module, and
+ *  type-stripping only lands in the supported Node range from 22.18. */
+const L1 = { uciElo: 1320, depth: 4 }
+const L2 = { uciElo: 1320, depth: 6 }
 
 const openingsArg = process.argv.indexOf('--openings')
-const OPENINGS = openingsArg > 0 ? Number(process.argv[openingsArg + 1]) : 26
+const rawOpenings = openingsArg > 0 ? Number(process.argv[openingsArg + 1]) : 26
+if (!Number.isInteger(rawOpenings) || rawOpenings < 1) {
+  console.error(`--openings needs a positive integer (got ${process.argv[openingsArg + 1]})`)
+  process.exit(1)
+}
+const OPENINGS = rawOpenings
 
 /** Past a level's own depth cap, `UCI_Elo` governs strength — so a reference at
  *  this depth plays its full rated strength and no more. */
@@ -153,8 +165,8 @@ async function matchup(browser, url, label, a, b) {
 
 // --- run ------------------------------------------------------------------
 
-const [l1, l2] = ENGINE_LEVELS
-const asLevel = (level) => ({ options: limitStrength(level.uciElo), depth: level.depth })
+/** A level at the 1320 floor with a given depth cap. */
+const floor = (depth) => ({ options: limitStrength(L1.uciElo), depth })
 const asRef = (elo) => ({ options: limitStrength(elo), depth: REFERENCE_DEPTH })
 
 const { server, port } = await servePublic()
@@ -162,25 +174,25 @@ const url = `http://localhost:${port}/`
 const browser = await chromium.launch()
 
 process.stderr.write(
-  `calibrating L1 (uciElo ${l1.uciElo}, depth ${l1.depth}) and ` +
-    `L2 (uciElo ${l2.uciElo}, depth ${l2.depth}) over ${BOOK.length} openings x2\n`,
+  `calibrating L1 (uciElo ${L1.uciElo}, depth ${L1.depth}) and ` +
+    `L2 (uciElo ${L2.uciElo}, depth ${L2.depth}) over ${BOOK.length} openings x2\n`,
 )
 
-// As configured, L1 and L2 both sit at the uciElo 1320 floor. These rows show
-// that, and bracket each level on the engine's own scale.
+const run = (label, a, b) => matchup(browser, url, label, a, b)
 const results = []
-results.push(await matchup(browser, url, 'L1 vs L2 (both at floor)', asLevel(l1), asLevel(l2)))
-results.push(await matchup(browser, url, 'L1 vs ref 1320', asLevel(l1), asRef(1320)))
-results.push(await matchup(browser, url, 'L1 vs ref 1400', asLevel(l1), asRef(1400)))
-results.push(await matchup(browser, url, 'L2 vs ref 1320', asLevel(l2), asRef(1320)))
-results.push(await matchup(browser, url, 'L2 vs ref 1400', asLevel(l2), asRef(1400)))
-results.push(await matchup(browser, url, 'L2 vs ref 1500', asLevel(l2), asRef(1500)))
 
-// The fix: lift L2 off the floor to uciElo 1400, keeping its depth 6. These
-// rows check that this opens a real gap above L1 and lands L2 near 1400.
-const l2Fixed = { options: limitStrength(1400), depth: l2.depth }
-results.push(await matchup(browser, url, 'L1 vs L2@1400', asLevel(l1), l2Fixed))
-results.push(await matchup(browser, url, 'L2@1400 vs ref 1400', l2Fixed, asRef(1400)))
+// The problem: the two levels as shipped (both uciElo 1320, depth 4 vs 6) are
+// the same opponent, and where that opponent lands on the engine's own scale.
+results.push(await run(`L1 d${L1.depth} vs L2 d${L2.depth}`, floor(L1.depth), floor(L2.depth)))
+results.push(await run(`L1 d${L1.depth} vs ref 1320`, floor(L1.depth), asRef(1320)))
+results.push(await run(`L2 d${L2.depth} vs ref 1320`, floor(L2.depth), asRef(1320)))
+
+// Is the depth cap a lever at the floor, going shallower or deeper? These decide
+// whether level 2 can be given a real gap by depth alone.
+results.push(await run(`L1 d${L1.depth} vs d2`, floor(L1.depth), floor(2)))
+results.push(await run('d2 vs ref 1320', floor(2), asRef(1320)))
+results.push(await run(`L1 d${L1.depth} vs d10`, floor(L1.depth), floor(10)))
+results.push(await run('d10 vs ref 1500', floor(10), asRef(1500)))
 
 await browser.close()
 server.close()
@@ -202,12 +214,12 @@ process.stdout.write(`# Battle level 1-2 calibration
 
 Run: ${new Date().toISOString()} — ${BOOK.length} openings, both colours (${BOOK.length * 2} games/matchup).
 Engine: vendored Stockfish 18 lite-single. References: UCI_LimitStrength + UCI_Elo, depth ${REFERENCE_DEPTH}.
-L1 = uciElo ${l1.uciElo} depth ${l1.depth}. L2 = uciElo ${l2.uciElo} depth ${l2.depth}.
+L1 = uciElo ${L1.uciElo} depth ${L1.depth}. L2 = uciElo ${L2.uciElo} depth ${L2.depth}.
 
 ${table}
 
-Reading (see .claude/rules/engine.md): a % outside ~25-75 only bounds a level.
-"L1 vs L2" is the gap the depth cap alone produces. The "L2 vs ref" rows bracket
-L2 on the engine's own Elo scale; L1 follows from L2's bracket minus the
-head-to-head gap, cross-checked against "L1 vs ref 1320".
+Reading (see .claude/rules/engine.md): a % outside ~25-75 only bounds a level,
+and a run carries ~±90 Elo — average two. "L1 d4 vs L2 d6" is the gap the shipped
+config produces. The "vs d2" / "vs d10" rows ask whether the depth cap is a lever
+at all near the floor; "vs ref" rows place a config on the engine's own scale.
 `)

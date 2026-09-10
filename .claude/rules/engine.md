@@ -26,13 +26,20 @@ Two things that were measured rather than assumed, both counter-intuitive:
 
 - **`Skill Level` is inert under `UCI_LimitStrength`.** Stockfish derives its
   internal skill from `UCI_Elo` alone and ignores the option — so it is not
-  sent. Below the 1320 floor the only lever left is the `go depth` cap.
-- **Stockfish 18 has no floor below ~1320.** At `UCI_Elo 1320`, depth 4, it
-  still grabbed a hanging queen in 8 of 10 tries. The old Skill-Level-0 engine
-  hung pieces; this one does not. Levels 1–2 are a genuine beginner who plays
-  sound moves, not one who blunders material, and both sit at 1320 differing
-  only by depth (4 vs 6). Their `elo` is provisional until the recalibration
-  pass play-tests them.
+  sent. At the 1320 floor the `go depth` cap is the only knob left — and the
+  play-test found it does nothing (see below).
+- **Stockfish 18 has no floor below ~1320, and nothing separates two levels
+  sitting on it.** `scripts/calibrate-levels.mjs` (~50 games/matchup) settled
+  levels 1–2: they play each other dead even across three runs, level 1 plays
+  the same at depth 2, 4, 6 and 10, and a depth-2 engine still scores 51%
+  against a 1320 reference. `UCI_Elo` barely moves down here too (a 1400 setting
+  bought ~40 Elo). Both play about 1320; their `elo` gap is a placement, not a
+  measured difference. Run the script twice and average — `UCI_LimitStrength`
+  picks moves with time-seeded randomness, so a matchup carries ~±90 Elo. Not
+  from the calibration but consistent with it: a quick probe at `UCI_Elo 1320`,
+  depth 4 saw the engine grab a hanging queen 8 times in 10 — it takes free
+  material rather than hanging its own, so "Novice" is a beginner who plays
+  soundly, not one who blunders pieces.
 
 Before changing a level, read the header of `src/engine/levels.ts`. Every Elo
 figure is worth ±150 — a way for a player to place themselves, not a rating.
