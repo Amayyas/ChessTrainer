@@ -67,6 +67,18 @@ const PIECE_NAMES: Record<string, string> = {
   k: 'roi',
 }
 
+/** Whether the move is legal from `fen` and delivers checkmate. */
+export function deliversMate(fen: string, from: string, to: string, promotion?: string): boolean {
+  const chess = new Chess(fen)
+  try {
+    chess.move({ from, to, promotion })
+  } catch {
+    // chess.js throws on an illegal move.
+    return false
+  }
+  return chess.isCheckmate()
+}
+
 /**
  * Runs the daily puzzle series: validates each move against
  * the stored solution, plays the opponent's reply, tracks errors, hints and
@@ -82,6 +94,9 @@ export function usePuzzleSession(): UsePuzzleSession {
 
   const [index, setIndex] = useState(0)
   const [ply, setPly] = useState(0)
+  // The player's own last move, when it was an accepted alternative mate and so
+  // differs from the stored line — the board shows theirs, not the canonical one.
+  const [playedFinal, setPlayedFinal] = useState<string | null>(null)
   const [errors, setErrors] = useState(0)
   const [hintLevel, setHintLevel] = useState(0)
   const [feedback, setFeedback] = useState<MoveFeedback>(null)
@@ -96,11 +111,14 @@ export function usePuzzleSession(): UsePuzzleSession {
 
   const puzzle = puzzles[index] ?? null
 
-  // A board replaying the solution up to the current ply.
+  // A board replaying the solution up to the current ply. Once solved with an
+  // accepted alternative mate, the last move played is the player's own.
   const board = useMemo(() => {
     if (!puzzle) return null
+    const line = puzzle.solution.slice(0, ply)
+    if (playedFinal && ply === puzzle.solution.length) line[line.length - 1] = playedFinal
     const chess = new Chess(puzzle.fen)
-    for (const uci of puzzle.solution.slice(0, ply)) {
+    for (const uci of line) {
       const move = parseUciMove(uci)
       if (!move) break
       try {
@@ -110,7 +128,7 @@ export function usePuzzleSession(): UsePuzzleSession {
       }
     }
     return chess
-  }, [puzzle, ply])
+  }, [puzzle, ply, playedFinal])
 
   const fen = board?.fen() ?? new Chess().fen()
 
@@ -143,13 +161,25 @@ export function usePuzzleSession(): UsePuzzleSession {
         parsed.to === to &&
         (parsed.promotion === undefined || parsed.promotion === promotion)
 
-      if (!matches) {
+      // A finishing checkmate often has a legal twin, so when the stored final
+      // move mates, any move that also mates is accepted. Deliberate: the move
+      // that teaches the puzzle is the first one (which the importer screens
+      // strictly), the last is just the finish, and it is the convention of the
+      // Lichess set these come from. The importer relies on this — it does not
+      // screen a final ply that is itself a checkmate, whatever the theme.
+      const isFinalPly = ply === puzzle.solution.length - 1
+      const finalMoveMates =
+        isFinalPly && deliversMate(board.fen(), parsed.from, parsed.to, parsed.promotion)
+      const alsoMates = !matches && finalMoveMates && deliversMate(board.fen(), from, to, promotion)
+
+      if (!matches && !alsoMates) {
         setErrors((count) => count + 1)
         setFeedback('wrong')
         return false
       }
 
       lastMoveRef.current = { from, to }
+      if (alsoMates) setPlayedFinal(from + to + (promotion ?? ''))
       setFeedback('correct')
 
       // The solver's move, then the opponent's scripted reply.
@@ -215,6 +245,7 @@ export function usePuzzleSession(): UsePuzzleSession {
     setFeedback(null)
     setStartedAt(Date.now())
     setElapsedMs(0)
+    setPlayedFinal(null)
     lastMoveRef.current = null
   }, [])
 
@@ -228,6 +259,7 @@ export function usePuzzleSession(): UsePuzzleSession {
     setScores([])
     setStartedAt(Date.now())
     setElapsedMs(0)
+    setPlayedFinal(null)
     lastMoveRef.current = null
   }, [])
 

@@ -5,11 +5,33 @@ import {
   BASE_POINTS,
   ERROR_COST,
   HINT_COST,
+  deliversMate,
   scorePuzzle,
   usePuzzleSession,
 } from '@/features/puzzle/usePuzzleSession'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
+
+describe('deliversMate', () => {
+  // Two moves mate here — Qd7# and Ra8#. A mate puzzle's stored line names only
+  // one; attempt() accepts the other on the final ply rather than mark it wrong.
+  const twoMates = '3k4/8/3KQ3/8/8/8/8/R7 w - - 0 1'
+
+  it('accepts a legal move that checkmates', () => {
+    expect(deliversMate(twoMates, 'e6', 'd7')).toBe(true)
+    expect(deliversMate(twoMates, 'a1', 'a8')).toBe(true)
+  })
+
+  it('rejects a legal move that only checks', () => {
+    // Qe8+ is legal but the bare king captures it.
+    expect(deliversMate(twoMates, 'e6', 'e8')).toBe(false)
+  })
+
+  it('rejects an illegal move', () => {
+    expect(deliversMate(twoMates, 'e6', 'e2', 'q')).toBe(false)
+    expect(deliversMate(twoMates, 'h1', 'h2')).toBe(false)
+  })
+})
 
 describe('scorePuzzle', () => {
   it('awards full points for a flawless solve', () => {
