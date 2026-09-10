@@ -30,6 +30,9 @@ export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   avance: 'Avancé',
 }
 
+/** The bands in order, easiest first — for a difficulty picker. */
+export const DIFFICULTIES = Object.keys(DIFFICULTY_LABELS) as Difficulty[]
+
 /**
  * French labels for the puzzle themes. The slugs are assigned by
  * scripts/import-lichess-puzzles.mjs, which maps a Lichess tag to one of these

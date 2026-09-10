@@ -1,21 +1,24 @@
-import { Chess } from 'chess.js'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { parseUciMove } from '@/engine/uci'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DAILY_COUNT, dailyPuzzles } from '@/features/puzzle/dailySet'
 import { dayKey, markSeen, recordSolved, type PuzzleProgress } from '@/features/puzzle/progress'
 import { PUZZLES } from '@/features/puzzle/puzzles'
 import type { Puzzle } from '@/features/puzzle/types'
-import type { PieceSymbol, Square } from '@/utils/chess'
+import {
+  scorePuzzle,
+  usePuzzleRunner,
+  type PuzzleRunner,
+  type SolvedResult,
+} from '@/features/puzzle/usePuzzleRunner'
 import { useProgressionStore } from '@/store/useProgressionStore'
 
-/** Points a flawless puzzle is worth. */
-export const BASE_POINTS = 100
-/** Deducted per hint revealed. */
-export const HINT_COST = 10
-/** Deducted per wrong move. */
-export const ERROR_COST = 15
-
-export type MoveFeedback = 'correct' | 'wrong' | null
+export {
+  BASE_POINTS,
+  ERROR_COST,
+  HINT_COST,
+  deliversMate,
+  scorePuzzle,
+} from '@/features/puzzle/usePuzzleRunner'
+export type { MoveFeedback } from '@/features/puzzle/usePuzzleRunner'
 
 export interface PuzzleScore {
   puzzleId: string
@@ -25,73 +28,31 @@ export interface PuzzleScore {
   elapsedMs: number
 }
 
-/** Score for one puzzle, never below zero. */
-export function scorePuzzle(errors: number, hints: number): number {
-  return Math.max(0, BASE_POINTS - hints * HINT_COST - errors * ERROR_COST)
-}
-
-export interface UsePuzzleSession {
+export interface UsePuzzleSession extends PuzzleRunner {
   puzzles: Puzzle[]
   index: number
   puzzle: Puzzle | null
-  /** Position shown on the board. */
-  fen: string
-  /** Whose move it is in the puzzle. */
-  solverColor: 'w' | 'b'
-  feedback: MoveFeedback
-  errors: number
-  hintLevel: number
-  hintMessages: string[]
-  isSolved: boolean
   /** Every puzzle of the day is done. */
   isSessionOver: boolean
   scores: PuzzleScore[]
   totalPoints: number
-  elapsedMs: number
   progress: PuzzleProgress
-  /** Attempts a solver move; returns true when it was the expected one. */
-  attempt: (from: Square, to: Square, promotion?: PieceSymbol) => boolean
-  revealHint: () => void
   next: () => void
   restart: () => void
-  getLegalTargets: (square: Square) => Square[]
-  isPromotion: (from: Square, to: Square) => boolean
-  lastMove: { from: Square; to: Square } | null
-}
-
-const PIECE_NAMES: Record<string, string> = {
-  p: 'pion',
-  n: 'cavalier',
-  b: 'fou',
-  r: 'tour',
-  q: 'dame',
-  k: 'roi',
-}
-
-/** Whether the move is legal from `fen` and delivers checkmate. */
-export function deliversMate(fen: string, from: string, to: string, promotion?: string): boolean {
-  const chess = new Chess(fen)
-  try {
-    chess.move({ from, to, promotion })
-  } catch {
-    // chess.js throws on an illegal move.
-    return false
-  }
-  return chess.isCheckmate()
 }
 
 /**
- * Runs the daily puzzle series: validates each move against
- * the stored solution, plays the opponent's reply, tracks errors, hints and
- * score, and keeps the daily streak.
+ * Runs the daily puzzle series: five puzzles for the calendar day, the streak
+ * and XP recorded on each solve, a bilan at the end.
  */
 export function usePuzzleSession(): UsePuzzleSession {
-  // The day is locked when the session starts. Recomputing it per render would
-  // swap the whole series out from under a puzzle in progress at midnight — the
-  // elapsed-time timer re-renders constantly — leaving `index` and `ply`
-  // pointing into a different puzzle.
+  // The day is locked when the session starts, so the series does not swap out
+  // from under a puzzle in progress at midnight.
   const [today] = useState(() => dayKey())
   const setProgress = useProgressionStore((state) => state.setPuzzleProgress)
+  const recordPuzzle = useProgressionStore((state) => state.recordPuzzle)
+  const progress = useProgressionStore((state) => state.puzzleProgress)
+
   // Both snapshotted at mount, like `today`: a day's series is fixed once
   // picked, so working through it — which grows the solved list — cannot
   // reshuffle it, and reopening the day resumes the same five.
@@ -121,218 +82,63 @@ export function usePuzzleSession(): UsePuzzleSession {
   }, [today, savedSeries, puzzles, setProgress])
 
   const [index, setIndex] = useState(0)
-  const [ply, setPly] = useState(0)
-  // The player's own last move, when it was an accepted alternative mate and so
-  // differs from the stored line — the board shows theirs, not the canonical one.
-  const [playedFinal, setPlayedFinal] = useState<string | null>(null)
-  const [errors, setErrors] = useState(0)
-  const [hintLevel, setHintLevel] = useState(0)
-  const [feedback, setFeedback] = useState<MoveFeedback>(null)
-  const [isSolved, setIsSolved] = useState(false)
+  const [epoch, setEpoch] = useState(0)
   const [scores, setScores] = useState<PuzzleScore[]>([])
-  const [startedAt, setStartedAt] = useState(() => Date.now())
-  const [elapsedMs, setElapsedMs] = useState(0)
-  // In the progression store rather than its own localStorage key, so the
-  // streak belongs to the player and not to the browser they used.
-  const progress = useProgressionStore((state) => state.puzzleProgress)
 
   const puzzle = puzzles[index] ?? null
 
-  // A board replaying the solution up to the current ply. Once solved with an
-  // accepted alternative mate, the last move played is the player's own.
-  const board = useMemo(() => {
-    if (!puzzle) return null
-    const line = puzzle.solution.slice(0, ply)
-    if (playedFinal && ply === puzzle.solution.length) line[line.length - 1] = playedFinal
-    const chess = new Chess(puzzle.fen)
-    for (const uci of line) {
-      const move = parseUciMove(uci)
-      if (!move) break
-      try {
-        chess.move({ from: move.from, to: move.to, promotion: move.promotion })
-      } catch {
-        break
+  const onSolved = useCallback(
+    (result: SolvedResult) => {
+      if (!puzzle) return
+      const puzzleId = puzzle.id
+      // First time this puzzle is solved, ever — a replay of a finished series
+      // must not pay out XP, the solve count or the streak badge a second time.
+      const firstSolve = !useProgressionStore
+        .getState()
+        .puzzleProgress.seenPuzzleIds.includes(puzzleId)
+
+      setScores((all) => [
+        ...all,
+        { puzzleId, points: scorePuzzle(result.errors, result.hints), ...result },
+      ])
+      setProgress((current) => ({
+        // Advance the streak and totals on a puzzle's first solve, and on the
+        // first solve of a new day even if the series has recycled a seen one —
+        // but never again when replaying puzzles already solved today.
+        ...(firstSolve || current.lastSolvedDay !== today ? recordSolved(current, today) : current),
+        seenPuzzleIds: markSeen(current.seenPuzzleIds, puzzleId),
+      }))
+
+      if (firstSolve) {
+        recordPuzzle({
+          flawless: result.errors === 0 && result.hints === 0,
+          // The streak after this solve, which recordSolved has just advanced.
+          streak: useProgressionStore.getState().puzzleProgress.streak,
+        })
       }
-    }
-    return chess
-  }, [puzzle, ply, playedFinal])
-
-  const fen = board?.fen() ?? new Chess().fen()
-
-  // Timer for the current puzzle.
-  useEffect(() => {
-    if (isSolved) return
-    const id = setInterval(() => setElapsedMs(Date.now() - startedAt), 250)
-    return () => clearInterval(id)
-  }, [startedAt, isSolved])
-
-  // Clear the green/red flash shortly after it is shown.
-  useEffect(() => {
-    if (!feedback) return
-    const id = setTimeout(() => setFeedback(null), 600)
-    return () => clearTimeout(id)
-  }, [feedback])
-
-  const lastMoveRef = useRef<{ from: Square; to: Square } | null>(null)
-
-  const attempt = useCallback(
-    (from: Square, to: Square, promotion?: PieceSymbol) => {
-      if (!puzzle || isSolved || !board) return false
-
-      const expected = puzzle.solution[ply]
-      const parsed = expected ? parseUciMove(expected) : null
-      if (!parsed) return false
-
-      const matches =
-        parsed.from === from &&
-        parsed.to === to &&
-        (parsed.promotion === undefined || parsed.promotion === promotion)
-
-      // A finishing checkmate often has a legal twin, so when the stored final
-      // move mates, any move that also mates is accepted. Deliberate: the move
-      // that teaches the puzzle is the first one (which the importer screens
-      // strictly), the last is just the finish, and it is the convention of the
-      // Lichess set these come from. The importer relies on this — it does not
-      // screen a final ply that is itself a checkmate, whatever the theme.
-      const isFinalPly = ply === puzzle.solution.length - 1
-      const finalMoveMates =
-        isFinalPly && deliversMate(board.fen(), parsed.from, parsed.to, parsed.promotion)
-      const alsoMates = !matches && finalMoveMates && deliversMate(board.fen(), from, to, promotion)
-
-      if (!matches && !alsoMates) {
-        setErrors((count) => count + 1)
-        setFeedback('wrong')
-        return false
-      }
-
-      lastMoveRef.current = { from, to }
-      if (alsoMates) setPlayedFinal(from + to + (promotion ?? ''))
-      setFeedback('correct')
-
-      // The solver's move, then the opponent's scripted reply.
-      const nextPly = ply + 1
-      const finished = nextPly >= puzzle.solution.length
-      setPly(finished ? nextPly : nextPly + 1)
-
-      if (finished) {
-        setIsSolved(true)
-        const points = scorePuzzle(errors, hintLevel)
-        setScores((all) => [
-          ...all,
-          {
-            puzzleId: puzzle.id,
-            points,
-            errors,
-            hints: hintLevel,
-            elapsedMs: Date.now() - startedAt,
-          },
-        ])
-        setProgress((current) => ({
-          ...recordSolved(current, today),
-          seenPuzzleIds: markSeen(current.seenPuzzleIds, puzzle.id),
-        }))
-      }
-      return true
     },
-    [puzzle, isSolved, board, ply, errors, hintLevel, startedAt, setProgress, today],
+    [puzzle, today, setProgress, recordPuzzle],
   )
 
-  const hintMessages = useMemo(() => {
-    if (!puzzle || !board) return []
-    const expected = puzzle.solution[ply]
-    const parsed = expected ? parseUciMove(expected) : null
-    if (!parsed) return []
+  const runner = usePuzzleRunner(puzzle, onSolved, epoch)
 
-    const piece = board.get(parsed.from as Square)
-    const name = piece ? (PIECE_NAMES[piece.type] ?? 'pièce') : 'pièce'
-
-    // Third level spells the move out in algebraic notation.
-    let san: string | null = null
-    try {
-      const probe = new Chess(board.fen())
-      san = probe.move({ from: parsed.from, to: parsed.to, promotion: parsed.promotion }).san
-    } catch {
-      san = null
-    }
-
-    return [
-      `Cherchez un coup de votre ${name}.`,
-      `La pièce à jouer est en ${parsed.from}.`,
-      san ? `Le coup à jouer est ${san}.` : `Jouez ${parsed.from}–${parsed.to}.`,
-    ]
-  }, [puzzle, board, ply])
-
-  const revealHint = useCallback(() => {
-    if (!isSolved) setHintLevel((level) => Math.min(3, level + 1))
-  }, [isSolved])
-
-  const next = useCallback(() => {
-    setIndex((current) => current + 1)
-    setPly(0)
-    setErrors(0)
-    setHintLevel(0)
-    setIsSolved(false)
-    setFeedback(null)
-    setStartedAt(Date.now())
-    setElapsedMs(0)
-    setPlayedFinal(null)
-    lastMoveRef.current = null
-  }, [])
-
+  const next = useCallback(() => setIndex((current) => current + 1), [])
   const restart = useCallback(() => {
     setIndex(0)
-    setPly(0)
-    setErrors(0)
-    setHintLevel(0)
-    setIsSolved(false)
-    setFeedback(null)
     setScores([])
-    setStartedAt(Date.now())
-    setElapsedMs(0)
-    setPlayedFinal(null)
-    lastMoveRef.current = null
+    setEpoch((current) => current + 1)
   }, [])
 
-  const getLegalTargets = useCallback(
-    (square: Square): Square[] => {
-      if (!board) return []
-      return Array.from(new Set(board.moves({ square, verbose: true }).map((move) => move.to)))
-    },
-    [board],
-  )
-
-  const isPromotion = useCallback(
-    (from: Square, to: Square): boolean => {
-      if (!board) return false
-      return board
-        .moves({ square: from, verbose: true })
-        .some((move) => move.to === to && Boolean(move.promotion))
-    },
-    [board],
-  )
-
   return {
+    ...runner,
     puzzles,
     index,
     puzzle,
-    fen,
-    solverColor: puzzle?.sideToMove ?? 'w',
-    feedback,
-    errors,
-    hintLevel,
-    hintMessages,
-    isSolved,
     isSessionOver: index >= Math.min(DAILY_COUNT, puzzles.length),
     scores,
     totalPoints: scores.reduce((sum, score) => sum + score.points, 0),
-    elapsedMs,
     progress,
-    attempt,
-    revealHint,
     next,
     restart,
-    getLegalTargets,
-    isPromotion,
-    lastMove: lastMoveRef.current,
   }
 }

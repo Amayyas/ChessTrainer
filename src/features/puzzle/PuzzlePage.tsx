@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
-import { usePuzzleSession, HINT_COST, scorePuzzle } from '@/features/puzzle/usePuzzleSession'
-import { DIFFICULTY_LABELS, difficultyOf, themeLabel } from '@/features/puzzle/types'
-import { useProgressionStore } from '@/store/useProgressionStore'
+import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
+import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
+import { usePracticeSession } from '@/features/puzzle/usePracticeSession'
+import { DIFFICULTIES, DIFFICULTY_LABELS, difficultyOf, themeLabel } from '@/features/puzzle/types'
+import type { Puzzle } from '@/features/puzzle/types'
 import { cn } from '@/utils/cn'
 
 /** Seconds, or m:ss once past a minute. */
@@ -14,31 +16,146 @@ function formatDuration(ms: number): string {
   return `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')}`
 }
 
-/**
- * Puzzle mode: a daily series of tactical positions with
- * real-time validation, progressive hints, scoring and a daily streak.
- */
-export default function PuzzlePage() {
+function Pill({
+  selected,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={cn(
+        'rounded-full border px-3 py-1 text-sm transition-colors',
+        selected
+          ? 'border-or bg-or/15 font-semibold text-ebene'
+          : 'border-ebene/15 text-ardoise hover:border-ebene/30 hover:text-ebene',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+/** The board and its side card — shared by the daily series and free practice. */
+function PuzzleBoard({
+  runner,
+  puzzle,
+  solvedActions,
+}: {
+  runner: PuzzleRunner
+  puzzle: Puzzle
+  solvedActions: ReactNode
+}) {
+  const difficulty = difficultyOf(puzzle.rating)
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="mx-auto w-full max-w-[560px] self-start">
+        {/* Green on a correct move, red on a wrong one. */}
+        <div
+          className={cn(
+            'rounded-md ring-4 transition-colors duration-200',
+            runner.feedback === 'correct' && 'ring-emerald-500',
+            runner.feedback === 'wrong' && 'ring-red-500',
+            !runner.feedback && 'ring-transparent',
+          )}
+        >
+          <ChessBoard
+            fen={runner.fen}
+            turn={runner.solverColor}
+            orientation={runner.solverColor === 'w' ? 'white' : 'black'}
+            interactive={!runner.isSolved}
+            onMove={runner.attempt}
+            getLegalTargets={runner.getLegalTargets}
+            isPromotion={runner.isPromotion}
+            lastMove={runner.lastMove}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <Card className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="gold">{themeLabel(puzzle.theme)}</Badge>
+            <Badge variant="neutral">{DIFFICULTY_LABELS[difficulty]}</Badge>
+            <Badge variant="neutral">{puzzle.rating} Elo</Badge>
+          </div>
+
+          <p className="text-sm text-ardoise">
+            {runner.solverColor === 'w' ? 'Les blancs jouent' : 'Les noirs jouent'} et gagnent.
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
+              <p className="font-display text-lg font-bold text-ebene">
+                {formatDuration(runner.elapsedMs)}
+              </p>
+              <p className="text-ardoise">Temps</p>
+            </div>
+            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
+              <p className="font-display text-lg font-bold text-ebene">{runner.errors}</p>
+              <p className="text-ardoise">Erreurs</p>
+            </div>
+            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
+              <p className="font-display text-lg font-bold text-ebene">
+                {scorePuzzle(runner.errors, runner.hintLevel)}
+              </p>
+              <p className="text-ardoise">Points</p>
+            </div>
+          </div>
+
+          {runner.isSolved ? (
+            <div className="flex flex-col gap-3">
+              <Badge variant="success">Résolu !</Badge>
+              {solvedActions}
+            </div>
+          ) : (
+            <div>
+              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
+              {runner.hintLevel === 0 ? (
+                <p className="text-sm text-ardoise">
+                  Bloqué ? Chaque indice coûte {HINT_COST} points.
+                </p>
+              ) : (
+                <ul className="space-y-1 text-sm text-ebene">
+                  {runner.hintMessages.slice(0, runner.hintLevel).map((message, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="font-semibold text-or">{i + 1}.</span>
+                      {message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                disabled={runner.hintLevel >= 3}
+                onClick={runner.revealHint}
+              >
+                {runner.hintLevel === 0
+                  ? 'Demander un indice'
+                  : runner.hintLevel >= 3
+                    ? 'Tous les indices révélés'
+                    : `Indice suivant (−${HINT_COST} pts)`}
+              </Button>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function DailyView() {
   const session = usePuzzleSession()
-  const { puzzle, feedback, progress } = session
-  const recordPuzzle = useProgressionStore((state) => state.recordPuzzle)
-
-  // Award XP for each newly solved puzzle, exactly once.
-  const recordedCount = useRef(0)
-  useEffect(() => {
-    // Restarting the series clears the scores, so the marker rewinds with it.
-    if (session.scores.length < recordedCount.current) recordedCount.current = 0
-    if (session.scores.length === recordedCount.current) return
-
-    const fresh = session.scores.slice(recordedCount.current)
-    recordedCount.current = session.scores.length
-    for (const score of fresh) {
-      recordPuzzle({
-        flawless: score.errors === 0 && score.hints === 0,
-        streak: progress.streak,
-      })
-    }
-  }, [session.scores, progress.streak, recordPuzzle])
+  const { puzzle, progress } = session
 
   const streakBadge = (
     <Badge variant={progress.streak > 0 ? 'gold' : 'neutral'}>
@@ -88,8 +205,6 @@ export default function PuzzlePage() {
     )
   }
 
-  const difficulty = difficultyOf(puzzle.rating)
-
   return (
     <div>
       <PageHeader
@@ -97,104 +212,90 @@ export default function PuzzlePage() {
         subtitle={`Puzzle ${session.index + 1} sur ${session.puzzles.length} — trouvez le meilleur coup.`}
         actions={streakBadge}
       />
+      <PuzzleBoard
+        runner={session}
+        puzzle={puzzle}
+        solvedActions={
+          <Button onClick={session.next}>
+            {session.index + 1 >= session.puzzles.length ? 'Voir le bilan' : 'Puzzle suivant'}
+          </Button>
+        }
+      />
+    </div>
+  )
+}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="mx-auto w-full max-w-[560px] self-start">
-          {/* Green on a correct move, red on a wrong one. */}
-          <div
-            className={cn(
-              'rounded-md ring-4 transition-colors duration-200',
-              feedback === 'correct' && 'ring-emerald-500',
-              feedback === 'wrong' && 'ring-red-500',
-              !feedback && 'ring-transparent',
-            )}
-          >
-            <ChessBoard
-              fen={session.fen}
-              turn={session.solverColor}
-              orientation={session.solverColor === 'w' ? 'white' : 'black'}
-              interactive={!session.isSolved}
-              onMove={session.attempt}
-              getLegalTargets={session.getLegalTargets}
-              isPromotion={session.isPromotion}
-              lastMove={session.lastMove}
-            />
-          </div>
-        </div>
+function PracticeView() {
+  const session = usePracticeSession()
 
-        <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="gold">{themeLabel(puzzle.theme)}</Badge>
-              <Badge variant="neutral">{DIFFICULTY_LABELS[difficulty]}</Badge>
-              <Badge variant="neutral">{puzzle.rating} Elo</Badge>
-            </div>
+  const picker = (
+    <div className="flex flex-wrap gap-2" role="group" aria-label="Difficulté">
+      {DIFFICULTIES.map((band) => (
+        <Pill
+          key={band}
+          selected={session.difficulty === band}
+          onClick={() => session.setDifficulty(band)}
+        >
+          {DIFFICULTY_LABELS[band]}
+        </Pill>
+      ))}
+    </div>
+  )
 
-            <p className="text-sm text-ardoise">
-              {session.solverColor === 'w' ? 'Les blancs jouent' : 'Les noirs jouent'} et gagnent.
-            </p>
+  return (
+    <div>
+      <PageHeader
+        title="Puzzles"
+        subtitle={`Entraînement libre — ${session.solved} résolu${session.solved > 1 ? 's' : ''}, ${session.totalPoints} pts.`}
+        actions={picker}
+      />
+      {session.puzzle ? (
+        <PuzzleBoard
+          runner={session}
+          puzzle={session.puzzle}
+          solvedActions={<Button onClick={session.next}>Puzzle suivant</Button>}
+        />
+      ) : (
+        <Card className="mx-auto max-w-xl text-center">
+          <p className="text-ardoise">
+            Vous avez résolu tous les puzzles {DIFFICULTY_LABELS[session.difficulty].toLowerCase()}{' '}
+            de cette session. Changez de difficulté pour continuer.
+          </p>
+        </Card>
+      )}
+    </div>
+  )
+}
 
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-                <p className="font-display text-lg font-bold text-ebene">
-                  {formatDuration(session.elapsedMs)}
-                </p>
-                <p className="text-ardoise">Temps</p>
-              </div>
-              <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-                <p className="font-display text-lg font-bold text-ebene">{session.errors}</p>
-                <p className="text-ardoise">Erreurs</p>
-              </div>
-              <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-                <p className="font-display text-lg font-bold text-ebene">
-                  {scorePuzzle(session.errors, session.hintLevel)}
-                </p>
-                <p className="text-ardoise">Points</p>
-              </div>
-            </div>
+/**
+ * Puzzle mode: a daily series that feeds the streak, and a free-practice tab
+ * with no daily cap. Both share the board, hints and scoring.
+ */
+export default function PuzzlePage() {
+  const [tab, setTab] = useState<'daily' | 'practice'>('daily')
+  // Mount practice the first time its tab is opened, then keep both views alive
+  // so switching tabs never throws away a series or a practice run in progress.
+  const [practiceOpened, setPracticeOpened] = useState(false)
+  if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
 
-            {session.isSolved ? (
-              <div className="flex flex-col gap-3">
-                <Badge variant="success">Résolu !</Badge>
-                <Button onClick={session.next}>
-                  {session.index + 1 >= session.puzzles.length ? 'Voir le bilan' : 'Puzzle suivant'}
-                </Button>
-              </div>
-            ) : (
-              <div>
-                <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
-                {session.hintLevel === 0 ? (
-                  <p className="text-sm text-ardoise">
-                    Bloqué ? Chaque indice coûte {HINT_COST} points.
-                  </p>
-                ) : (
-                  <ul className="space-y-1 text-sm text-ebene">
-                    {session.hintMessages.slice(0, session.hintLevel).map((message, index) => (
-                      <li key={index} className="flex gap-2">
-                        <span className="font-semibold text-or">{index + 1}.</span>
-                        {message}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2"
-                  disabled={session.hintLevel >= 3}
-                  onClick={session.revealHint}
-                >
-                  {session.hintLevel === 0
-                    ? 'Demander un indice'
-                    : session.hintLevel >= 3
-                      ? 'Tous les indices révélés'
-                      : `Indice suivant (−${HINT_COST} pts)`}
-                </Button>
-              </div>
-            )}
-          </Card>
-        </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-2" role="group" aria-label="Mode de jeu">
+        <Pill selected={tab === 'daily'} onClick={() => setTab('daily')}>
+          Série du jour
+        </Pill>
+        <Pill selected={tab === 'practice'} onClick={() => setTab('practice')}>
+          Entraînement libre
+        </Pill>
       </div>
+      <div hidden={tab !== 'daily'}>
+        <DailyView />
+      </div>
+      {practiceOpened && (
+        <div hidden={tab !== 'practice'}>
+          <PracticeView />
+        </div>
+      )}
     </div>
   )
 }
