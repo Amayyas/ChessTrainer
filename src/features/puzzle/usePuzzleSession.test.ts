@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { parseUciMove } from '@/engine/uci'
+import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import {
   BASE_POINTS,
   ERROR_COST,
@@ -102,6 +103,7 @@ describe('usePuzzleSession', () => {
     expect(result.current.feedback).toBe('correct')
     expect(result.current.errors).toBe(0)
     expect(result.current.fen).not.toBe(fenBefore)
+    expect(result.current.lastMove).toEqual({ from: expected.from, to: expected.to })
   })
 
   it('solves a one-move puzzle and records the score, streak and solved id', () => {
@@ -127,6 +129,64 @@ describe('usePuzzleSession', () => {
     expect(result.current.progress.streak).toBe(1)
     expect(result.current.progress.totalSolved).toBe(1)
     expect(result.current.progress.seenPuzzleIds).toContain(solvedId)
+    // XP is awarded by the hook, not the page.
+    expect(useProgressionStore.getState().xp).toBeGreaterThan(0)
+    expect(useProgressionStore.getState().stats.puzzlesSolved).toBe(1)
+  })
+
+  it('records the streak as it stands after the solve, not before', () => {
+    const { result } = renderHook(() => usePuzzleSession())
+    const solution = result.current.puzzle!.solution
+
+    for (let ply = 0; ply < solution.length; ply += 2) {
+      const move = parseUciMove(solution[ply]!)!
+      act(() => {
+        result.current.attempt(
+          move.from as Square,
+          move.to as Square,
+          move.promotion as PieceSymbol | undefined,
+        )
+      })
+    }
+
+    expect(result.current.progress.streak).toBe(1)
+    // The best-streak stat must not trail the live streak by a day.
+    expect(useProgressionStore.getState().stats.bestPuzzleStreak).toBe(1)
+  })
+
+  it('does not re-award XP or solve counts when a finished series is replayed', () => {
+    const { result } = renderHook(() => usePuzzleSession())
+
+    const solveSeries = () => {
+      while (result.current.puzzle && !result.current.isSessionOver) {
+        const solution = result.current.puzzle.solution
+        for (let ply = 0; ply < solution.length; ply += 2) {
+          const move = parseUciMove(solution[ply]!)!
+          act(() => {
+            result.current.attempt(
+              move.from as Square,
+              move.to as Square,
+              move.promotion as PieceSymbol | undefined,
+            )
+          })
+        }
+        act(() => result.current.next())
+      }
+    }
+
+    solveSeries()
+    const xp = useProgressionStore.getState().xp
+    const solved = useProgressionStore.getState().stats.puzzlesSolved
+    expect(solved).toBe(DAILY_COUNT)
+    expect(result.current.progress.totalSolved).toBe(DAILY_COUNT)
+
+    act(() => result.current.restart())
+    solveSeries()
+
+    expect(useProgressionStore.getState().xp).toBe(xp)
+    expect(useProgressionStore.getState().stats.puzzlesSolved).toBe(solved)
+    // recordSolved does not run on the replay either, so its totals hold.
+    expect(result.current.progress.totalSolved).toBe(DAILY_COUNT)
   })
 
   it('reveals three hints, each costing points', () => {
@@ -146,11 +206,23 @@ describe('usePuzzleSession', () => {
     const { result } = renderHook(() => usePuzzleSession())
     const first = result.current.puzzle!.id
 
+    // Play the opening move so there is a highlight and an error count to clear.
+    const opening = parseUciMove(result.current.puzzle!.solution[0]!)!
+    act(() => {
+      result.current.attempt(
+        opening.from as Square,
+        opening.to as Square,
+        opening.promotion as PieceSymbol | undefined,
+      )
+    })
+    expect(result.current.lastMove).not.toBeNull()
+
     act(() => result.current.next())
 
     expect(result.current.puzzle!.id).not.toBe(first)
     expect(result.current.errors).toBe(0)
     expect(result.current.hintLevel).toBe(0)
     expect(result.current.isSolved).toBe(false)
+    expect(result.current.lastMove).toBeNull()
   })
 })
