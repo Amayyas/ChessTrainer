@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Badge, Card, PageHeader, Spinner } from '@/components/UI'
+import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import {
   useLeaderboard,
@@ -36,28 +37,23 @@ function Segmented<T extends string>({
   label: string
 }) {
   return (
-    <div
-      role="group"
+    <ToggleGroup
+      type="single"
+      value={value}
+      // Radix lets a single-value group be emptied by pressing the option that
+      // is already on. A filter has no empty state — there is no "no period" —
+      // so the deselection is dropped rather than passed on.
+      onValueChange={(next) => {
+        if (next) onChange(next as T)
+      }}
       aria-label={label}
-      className="inline-flex flex-wrap gap-1 rounded-lg bg-ebene/5 p-1"
     >
       {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          aria-pressed={value === option.value}
-          className={cn(
-            'rounded-md px-3 py-1 text-sm transition-colors',
-            value === option.value
-              ? 'bg-white font-semibold text-ebene shadow-sm'
-              : 'font-medium text-ardoise hover:text-ebene',
-          )}
-        >
+        <ToggleGroupItem key={option.value} value={option.value}>
           {option.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 
