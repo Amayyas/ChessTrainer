@@ -96,8 +96,8 @@ export default function LandingPage() {
           </h2>
           <p className="mt-3 max-w-2xl text-ivoire/70">
             Le mode Affrontement propose {ENGINE_LEVELS.length} adversaires, de {LEVEL_FLOOR} à{' '}
-            {LEVEL_CEILING} Elo. Chaque niveau a été mesuré en le faisant jouer contre un
-            Stockfish&nbsp;18 calibré — ce ne sont pas des étiquettes posées au hasard.
+            {LEVEL_CEILING} Elo. Chaque niveau s&apos;appuie sur le modèle de force de
+            Stockfish&nbsp;18 — pas sur des étiquettes posées au hasard.
           </p>
           <ol className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {ENGINE_LEVELS.map((level) => (

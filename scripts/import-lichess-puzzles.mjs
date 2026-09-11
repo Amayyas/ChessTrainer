@@ -21,14 +21,14 @@
  * Progress and the summary go to stderr; only the file goes to stdout.
  */
 import { createReadStream } from 'node:fs'
-import { open, readFile } from 'node:fs/promises'
+import { open } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
-import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { createZstdDecompress } from 'node:zlib'
 import { Chess } from 'chess.js'
 import { chromium } from '@playwright/test'
 import prettier from 'prettier'
+import { bootEngine, servePublic } from './lib/stockfish-harness.mjs'
 
 /** Where the workflow redirects stdout — used to resolve the Prettier config. */
 const PUZZLE_OUT = fileURLToPath(new URL('../src/features/puzzle/puzzles.ts', import.meta.url))
@@ -135,84 +135,6 @@ function toPuzzle(row) {
   }
 
   return { id: '', fen: solverFen, solution, theme, rating, sideToMove }
-}
-
-/** Serves public/ so the worker script and its wasm load same-origin. */
-async function servePublic() {
-  const root = fileURLToPath(new URL('../public/', import.meta.url))
-  const types = { '.js': 'text/javascript', '.wasm': 'application/wasm', '.html': 'text/html' }
-  const server = createServer(async (req, res) => {
-    const url = req.url.split('?')[0]
-    if (url === '/') {
-      res.setHeader('content-type', 'text/html')
-      res.end('<!doctype html><title>screen</title>')
-      return
-    }
-    try {
-      const path = fileURLToPath(new URL(`.${url}`, `file://${root}`))
-      if (!path.startsWith(root)) throw new Error('outside public/')
-      const body = await readFile(path)
-      res.setHeader(
-        'content-type',
-        types[path.slice(path.lastIndexOf('.'))] ?? 'application/octet-stream',
-      )
-      res.end(body)
-    } catch {
-      res.statusCode = 404
-      res.end()
-    }
-  })
-  await new Promise((resolve) => server.listen(0, resolve))
-  return { server, port: server.address().port }
-}
-
-/** Boots one Stockfish worker in the page and returns a search function. */
-async function bootEngine(page) {
-  await page.evaluate(
-    () =>
-      new Promise((resolve) => {
-        const sf = new Worker('/stockfish/stockfish.js')
-        globalThis.__sf = sf
-        globalThis.__send = (cmd) => sf.postMessage(cmd)
-        sf.onmessage = (event) => {
-          const line = String(event.data)
-          if (/^uciok/.test(line)) sf.postMessage('isready')
-          else if (/^readyok/.test(line) && !globalThis.__ready) {
-            globalThis.__ready = true
-            resolve()
-          }
-          globalThis.__onLine?.(line)
-        }
-        sf.postMessage('uci')
-        sf.postMessage('setoption name MultiPV value 2')
-      }),
-  )
-
-  return (fen, depth) =>
-    page.evaluate(
-      ({ fen, depth }) =>
-        new Promise((resolve) => {
-          const lines = new Map()
-          globalThis.__onLine = (line) => {
-            const mv = line.match(/multipv (\d+)/)
-            const score = line.match(/score (cp|mate) (-?\d+)/)
-            if (line.startsWith('info') && score) {
-              lines.set(mv ? Number(mv[1]) : 1, { kind: score[1], value: Number(score[2]) })
-            }
-            const best = line.match(/^bestmove (\S+)/)
-            if (best) {
-              globalThis.__onLine = null
-              resolve({ best: best[1], first: lines.get(1) ?? null, second: lines.get(2) ?? null })
-            }
-          }
-          // ucinewgame clears killers and history, so an earlier position's
-          // search cannot bias the move ordering of this one.
-          globalThis.__send('ucinewgame')
-          globalThis.__send('position fen ' + fen)
-          globalThis.__send('go depth ' + depth)
-        }),
-      { fen, depth },
-    )
 }
 
 /** cp from the side to move's frame, a mate scaled so a faster one scores well
@@ -357,7 +279,10 @@ const { server, port } = await servePublic()
 const browser = await chromium.launch()
 const page = await browser.newPage()
 await page.goto(`http://localhost:${port}/`)
-const search = await bootEngine(page)
+const search = await bootEngine(page, {
+  name: 'screen',
+  options: ['setoption name MultiPV value 2'],
+})
 
 const kept = []
 for (const [index, puzzle] of candidates.entries()) {
