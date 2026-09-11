@@ -8,9 +8,13 @@ export interface NavItem {
   /** Read by screen readers in place of the glyph (accessibility). */
   description: string
   /**
-   * The mobile bottom bar exposes the dashboard, the 4 game modes and the
-   * profile. The leaderboard stays on the sidebar; there is no room for a
-   * seventh, and it is reachable from the dashboard.
+   * The mobile bottom bar exposes the dashboard and the 4 game modes, and
+   * spends its sixth and last column on the button that opens the full menu.
+   *
+   * It used to spend that column on the profile, which left the leaderboard
+   * reachable from no mobile screen at all — there is no header on small
+   * widths, so the bar is the only chrome. Everything now lives in the sheet
+   * behind that sixth column, the profile included.
    */
   inBottomBar: boolean
   /** Fallback for the bottom bar: at 375px an item only gets about 75px. */
@@ -67,7 +71,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Profil',
     glyph: '♚',
     description: 'Profil et progression',
-    inBottomBar: true,
+    inBottomBar: false,
   },
 ]
 
