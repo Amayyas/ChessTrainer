@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
@@ -229,17 +230,24 @@ function PracticeView() {
   const session = usePracticeSession()
 
   const picker = (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Difficulté">
+    <ToggleGroup
+      type="single"
+      variant="plain"
+      value={session.difficulty}
+      // There is no "no difficulty": pressing the chosen band again would leave
+      // the practice session with nothing to draw puzzles from.
+      onValueChange={(next) => {
+        if (next) session.setDifficulty(next as (typeof DIFFICULTIES)[number])
+      }}
+      aria-label="Difficulté"
+      className="flex flex-wrap gap-2"
+    >
       {DIFFICULTIES.map((band) => (
-        <Pill
-          key={band}
-          selected={session.difficulty === band}
-          onClick={() => session.setDifficulty(band)}
-        >
+        <ToggleGroupItem key={band} value={band} className="rounded-full py-1 text-center">
           {DIFFICULTY_LABELS[band]}
-        </Pill>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 
   return (

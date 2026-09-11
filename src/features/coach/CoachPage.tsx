@@ -1,6 +1,7 @@
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import QualityLegend from '@/features/coach/QualityLegend'
 import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 
@@ -67,27 +68,23 @@ export default function CoachPage() {
           <Card className="flex h-fit flex-col gap-5">
             {!inReplay && (
               <div>
-                <div
-                  role="group"
+                <ToggleGroup
+                  type="single"
+                  value={coach.mode}
+                  // The coach is in one mode or the other. Radix would let the
+                  // chosen one be pressed off, leaving neither.
+                  onValueChange={(next) => {
+                    if (next) coach.selectMode(next as 'game' | 'analysis')
+                  }}
                   aria-label="Mode du coach"
-                  className="inline-flex rounded-lg bg-ebene/5 p-1"
+                  className="flex-nowrap"
                 >
                   {(['game', 'analysis'] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => coach.selectMode(value)}
-                      aria-pressed={coach.mode === value}
-                      className={
-                        coach.mode === value
-                          ? 'rounded-md bg-white px-3 py-1 text-sm font-semibold text-ebene shadow-sm'
-                          : 'rounded-md px-3 py-1 text-sm font-medium text-ardoise hover:text-ebene'
-                      }
-                    >
+                    <ToggleGroupItem key={value} value={value}>
                       {value === 'game' ? 'Partie' : 'Analyse libre'}
-                    </button>
+                    </ToggleGroupItem>
                   ))}
-                </div>
+                </ToggleGroup>
 
                 {coach.mode === 'analysis' && (
                   <div className="mt-3">

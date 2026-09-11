@@ -14,6 +14,10 @@ function renderCoach() {
 
 // The board itself needs a real browser (Worker + measured width); these tests
 // cover the free-analysis wiring, which is independent of the board rendering.
+//
+// The mode switch is queried as a radio rather than a button. It was a pair of
+// buttons carrying aria-pressed; a choice between two modes is a radio group,
+// and the toggle group it moved to says so.
 describe('CoachPage free analysis', () => {
   it('starts in game mode with White to move', () => {
     renderCoach()
@@ -23,7 +27,7 @@ describe('CoachPage free analysis', () => {
 
   it('loads a pasted FEN as the starting position', () => {
     renderCoach()
-    fireEvent.click(screen.getByRole('button', { name: 'Analyse libre' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Analyse libre' }))
 
     const input = screen.getByLabelText(/Position de départ/)
     // Position after 1.e4 — Black to move.
@@ -35,9 +39,24 @@ describe('CoachPage free analysis', () => {
     expect(screen.getByText('Trait aux noirs')).toBeInTheDocument()
   })
 
+  it('will not let both modes be off at once', () => {
+    renderCoach()
+    const analysis = screen.getByRole('radio', { name: 'Analyse libre' })
+
+    fireEvent.click(analysis)
+    expect(screen.getByLabelText(/Position de départ/)).toBeInTheDocument()
+
+    // Radix deselects on a second press of the option already on. The coach
+    // would then be in neither mode, and the FEN field would vanish with no
+    // game mode selected to fall back to.
+    fireEvent.click(analysis)
+    expect(analysis).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByLabelText(/Position de départ/)).toBeInTheDocument()
+  })
+
   it('rejects an invalid FEN with an error message', () => {
     renderCoach()
-    fireEvent.click(screen.getByRole('button', { name: 'Analyse libre' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Analyse libre' }))
 
     fireEvent.change(screen.getByLabelText(/Position de départ/), {
       target: { value: 'not a fen' },

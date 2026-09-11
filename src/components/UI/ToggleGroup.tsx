@@ -20,16 +20,22 @@ import { cn } from '@/utils/cn'
  * nothing at all. Radix gives the group one tab stop and walks the options with
  * the arrows.
  *
- * Two looks, because the app has two: `segmented` is the filter pill on a
- * tinted track, `plain` is a grid of bordered cards. The variant is set once on
- * the group and reaches the items through context, which is shadcn's own
- * arrangement.
+ * Three looks, because the app has three: `segmented` is a pill on a tinted
+ * track, `plain` a grid of bordered cards, `tiles` a row of square glyphs. The
+ * variant is set once on the group and reaches the items through context, which
+ * is shadcn's own arrangement.
+ *
+ * Not everything with aria-pressed belongs here. A single two-state button —
+ * the coach's "show the arrow" — is exactly what aria-pressed is for, and it
+ * stays as it is. The pattern this replaces is the other one: aria-pressed used
+ * to express a choice among several.
  */
 const groupVariants = cva('', {
   variants: {
     variant: {
       segmented: 'inline-flex flex-wrap gap-1 rounded-lg bg-foreground/5 p-1',
       plain: 'grid gap-2',
+      tiles: 'flex flex-wrap gap-1',
     },
   },
   defaultVariants: { variant: 'segmented' },
@@ -48,6 +54,11 @@ const itemVariants = cva('transition-colors disabled:pointer-events-none disable
         'text-muted-foreground hover:border-foreground/30 hover:text-foreground',
         'data-[state=on]:border-primary data-[state=on]:bg-primary/15',
         'data-[state=on]:font-semibold data-[state=on]:text-foreground',
+      ),
+      tiles: cn(
+        'flex h-10 w-10 items-center justify-center rounded-lg text-xl',
+        'bg-foreground/5 text-muted-foreground hover:text-foreground',
+        'data-[state=on]:bg-primary/25 data-[state=on]:text-foreground',
       ),
     },
   },
