@@ -36,8 +36,22 @@ describe('Modal', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
 
     const dialog = await screen.findByRole('dialog')
-    expect(dialog).toHaveAttribute('aria-modal', 'true')
     expect(dialog).toHaveAccessibleName('Confirmation')
+  })
+
+  it('takes the rest of the page out of the accessibility tree', async () => {
+    render(<Harness />)
+    const trigger = screen.getByRole('button', { name: 'Ouvrir' })
+    await userEvent.click(trigger)
+    await screen.findByRole('dialog')
+
+    // This used to be an aria-modal="true" assertion. Radix deliberately does
+    // not set that attribute — several screen readers ignore it — and marks
+    // everything outside the portal aria-hidden instead. The guarantee is the
+    // same and stronger, so the test asks for the guarantee: the button that
+    // opened the dialog is still on the page, and no longer reachable.
+    expect(trigger).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ouvrir' })).not.toBeInTheDocument()
   })
 
   it('closes on Escape', async () => {

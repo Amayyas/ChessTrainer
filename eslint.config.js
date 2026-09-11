@@ -52,7 +52,21 @@ export default tseslint.config(
     rules: {
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true, allowExportNames: ['buttonVariants', 'badgeVariants'] },
+        {
+          allowConstantExport: true,
+          // The cva() calls, plus the Radix primitives re-exported under the
+          // project's own name — `const Dialog = DialogPrimitive.Root` is a
+          // component, but an alias of an import is not something the rule can
+          // see through.
+          allowExportNames: [
+            'buttonVariants',
+            'badgeVariants',
+            'Dialog',
+            'DialogClose',
+            'DialogPortal',
+            'DialogTrigger',
+          ],
+        },
       ],
     },
   },
