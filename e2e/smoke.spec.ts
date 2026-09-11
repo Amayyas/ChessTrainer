@@ -28,7 +28,11 @@ test('a move in Affrontement gets a reply from the engine', async ({ page }) => 
   // Novice — the shallowest search on the ladder, so the quickest reply — then
   // start. The start button only takes its "Commencer" label once the engine
   // has loaded.
-  await page.getByRole('button', { name: /Niveau 1 —/ }).click()
+  //
+  // A radio, not a button: the three settings were rows of buttons carrying
+  // aria-pressed and are toggle groups now, so the level is one option of a
+  // radiogroup.
+  await page.getByRole('radio', { name: /Niveau 1 —/ }).click()
   await page.getByRole('button', { name: 'Commencer la partie' }).click({ timeout: 30_000 })
 
   const e2 = page.locator('[data-square="e2"]')
@@ -64,15 +68,19 @@ test('the puzzle page switches to free practice and serves a board', async ({ pa
   await expect(page.getByRole('heading', { level: 1, name: 'Puzzles' })).toBeVisible()
   await expect(page.locator('[data-square]').first()).toBeVisible()
 
-  await page.getByRole('button', { name: 'Entraînement libre' }).click()
+  // A tab, not a button. The two views are a tablist now: each control owns a
+  // panel, which a pair of pressed buttons never expressed.
+  await page.getByRole('tab', { name: 'Entraînement libre' }).click()
   await expect(page.getByText(/Entraînement libre —/)).toBeVisible()
 
-  // The difficulty picker actually drives the session: the pressed state moves.
-  const debutant = page.getByRole('button', { name: 'Débutant' })
+  // The difficulty picker actually drives the session: the checked state moves.
+  // aria-checked rather than aria-pressed, for the same reason as the battle
+  // settings — a choice among several is a radiogroup.
+  const debutant = page.getByRole('radio', { name: 'Débutant' })
   await debutant.click()
-  await expect(debutant).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.getByRole('button', { name: 'Intermédiaire' })).toHaveAttribute(
-    'aria-pressed',
+  await expect(debutant).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByRole('radio', { name: 'Intermédiaire' })).toHaveAttribute(
+    'aria-checked',
     'false',
   )
   expect(errors).toEqual([])
