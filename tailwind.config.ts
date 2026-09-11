@@ -1,7 +1,14 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
 import tailwindcssAnimate from 'tailwindcss-animate'
-import { danger, fonts, palette, radius, semanticTheme } from './src/lib/design-tokens'
+import {
+  danger,
+  fonts,
+  inverseTheme,
+  palette,
+  radius,
+  semanticTheme,
+} from './src/lib/design-tokens'
 
 /**
  * The theme is read from src/lib/design-tokens.ts rather than written here, so
@@ -15,9 +22,15 @@ import { danger, fonts, palette, radius, semanticTheme } from './src/lib/design-
  * instead of in a single sweep.
  */
 
-/** Writes the shadcn variables onto `:root`, straight from the tokens. */
-const semanticVariables = plugin(({ addBase }) => {
+/**
+ * Writes the shadcn variables onto `:root`, straight from the tokens, and the
+ * ebony set onto `.theme-inverse`. A component inside one of those sections
+ * needs no variant and no `dark:` prefix: it reads the same class names and the
+ * cascade hands it the other palette.
+ */
+const semanticVariables = plugin(({ addBase, addComponents }) => {
   addBase({ ':root': { ...semanticTheme, '--radius': radius } })
+  addComponents({ '.theme-inverse': { ...inverseTheme } })
 })
 
 /** `hsl(var(--x) / <alpha-value>)`, so `bg-primary/50` still works. */

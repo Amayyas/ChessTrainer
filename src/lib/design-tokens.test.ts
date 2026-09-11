@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { board, brand, danger, fonts, palette, semanticTheme, surface } from '@/lib/design-tokens'
+import {
+  board,
+  brand,
+  danger,
+  fonts,
+  inverseTheme,
+  palette,
+  semanticTheme,
+  surface,
+} from '@/lib/design-tokens'
 
 /**
  * `H S% L%` back to `#RRGGBB`, so the table below can be checked against the
@@ -136,6 +145,23 @@ describe('design tokens', () => {
       '--ring',
     ]
     expect(Object.keys(semanticTheme).sort()).toEqual([...required].sort())
+  })
+
+  it('gives the ebony surfaces the same variables, not a subset', () => {
+    // A component inside .theme-inverse reads whichever names it was written
+    // against. One missing here paints transparent on the dark band only, which
+    // is the kind of defect that reaches production because the light page it
+    // was checked on was fine.
+    expect(Object.keys(inverseTheme).sort()).toEqual(Object.keys(semanticTheme).sort())
+  })
+
+  it('flips the ground and the ink, and leaves gold alone', () => {
+    expect(hslTripleToHex(inverseTheme['--background'])).toBe(palette.ebene.DEFAULT)
+    expect(hslTripleToHex(inverseTheme['--foreground'])).toBe(palette.ivoire.DEFAULT)
+    // Gold is the accent on both grounds, with ebony readable on top of it, so
+    // it is the one pair that does not invert.
+    expect(inverseTheme['--primary']).toBe(semanticTheme['--primary'])
+    expect(inverseTheme['--primary-foreground']).toBe(semanticTheme['--primary-foreground'])
   })
 
   it('keeps the hairline between the two colours it blends', () => {

@@ -80,6 +80,26 @@ describe('LandingPage', () => {
     )
   })
 
+  it('styles those two with the button, on a section that inverts the palette', () => {
+    renderLanding()
+
+    const primary = screen.getByRole('link', { name: 'Essayer le coach' })
+    const secondary = screen.getByRole('link', { name: 'Créer un compte' })
+
+    // They were two hand-written class strings carrying a comment that admitted
+    // as much: "styled to match the primary Button without being one". They are
+    // the Button now, lent to the links through asChild.
+    expect(primary).toHaveClass('bg-primary', 'text-primary-foreground')
+    expect(primary.closest('button')).toBeNull()
+    expect(secondary).toHaveClass('border-foreground/20')
+
+    // And the mechanism that makes the outline one legible on the ebony band.
+    // Without theme-inverse, border-foreground/20 is ebony on ebony: the button
+    // is still there, and nobody can see it.
+    expect(primary.closest('.theme-inverse')).not.toBeNull()
+    expect(secondary.closest('.theme-inverse')).not.toBeNull()
+  })
+
   it('counts modes and tiers nowhere in its static prose', () => {
     // The home page said "cinq niveaux" for two releases after there were six,
     // because the count was prose. The mode and grading sections are written to

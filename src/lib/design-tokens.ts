@@ -155,6 +155,47 @@ export const semanticTheme = {
 } as const
 
 /**
+ * The same names again, for the ebony surfaces: the landing's hero band, the
+ * sidebar, the bottom bar, the mobile sheet.
+ *
+ * Without it, a shadcn component dropped on one of those reads `text-foreground`
+ * as ebony and disappears into the background it is sitting on — which is why
+ * the landing's two calls to action were a pair of hand-written class strings
+ * with a comment saying they were "styled to match the primary Button without
+ * being one". The Tailwind plugin exposes this as `.theme-inverse`, and any
+ * component inside one picks the inverted pair up through the cascade, with no
+ * variant of its own and no `dark:` prefix on anything.
+ *
+ * Gold stays gold. It is the one colour that does not flip: it is the accent on
+ * both grounds, and ebony stays the readable text on top of it.
+ */
+export const inverseTheme = {
+  '--background': hslTriple(palette.ebene.DEFAULT),
+  '--foreground': hslTriple(palette.ivoire.DEFAULT),
+  '--card': hslTriple(palette.ebene.light),
+  '--card-foreground': hslTriple(palette.ivoire.DEFAULT),
+  '--popover': hslTriple(palette.ebene.light),
+  '--popover-foreground': hslTriple(palette.ivoire.DEFAULT),
+  '--primary': hslTriple(palette.or.DEFAULT),
+  '--primary-foreground': hslTriple(palette.ebene.DEFAULT),
+  '--secondary': hslTriple(palette.ivoire.DEFAULT),
+  '--secondary-foreground': hslTriple(palette.ebene.DEFAULT),
+  '--muted': hslTriple(palette.ebene.light),
+  // The ivory the dark surfaces already use for secondary text, made opaque:
+  // it was written `text-ivoire/70` in every one of them.
+  '--muted-foreground': hslTriple(mix(palette.ivoire.DEFAULT, palette.ebene.DEFAULT, 0.7)),
+  '--accent': hslTriple(palette.ebene.light),
+  '--accent-foreground': hslTriple(palette.ivoire.DEFAULT),
+  '--destructive': hslTriple(danger),
+  '--destructive-foreground': hslTriple(surface),
+  // `border-white/10`, which is what all three dark surfaces draw their
+  // hairlines with today, resolved against ebony.
+  '--border': hslTriple(mix(surface, palette.ebene.DEFAULT, 0.1)),
+  '--input': hslTriple(mix(surface, palette.ebene.DEFAULT, 0.1)),
+  '--ring': hslTriple(palette.or.DEFAULT),
+} as const
+
+/**
  * The corner radius shadcn derives its `lg`, `md` and `sm` from.
  *
  * Deliberately Tailwind's own `rounded-lg`, not the project's `rounded-xl`.
