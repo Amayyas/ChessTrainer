@@ -1,11 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Link, useLocation, useOutlet } from 'react-router-dom'
+import { useLocation, useOutlet } from 'react-router-dom'
 import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 import BottomBar from '@/components/Layout/BottomBar'
+import Footer from '@/components/Layout/Footer'
 import Sidebar from '@/components/Layout/Sidebar'
 import SkipLink from '@/components/Layout/SkipLink'
 import { pageTransition, pageVariants } from '@/lib/motion'
-import { ROUTES } from '@/routes'
 
 export default function AppLayout() {
   const location = useLocation()
@@ -37,20 +37,10 @@ export default function AppLayout() {
             </motion.div>
           </AnimatePresence>
 
-          {/* The page footer, at every width — it used to live in the sidebar
-              on desktop too, duplicated here for mobile where the sidebar is
-              hidden. The landing carries its own footer with the same links,
-              so it opts out. */}
-          {location.pathname !== ROUTES.home && (
-            <p className="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-ardoise">
-              <Link to={ROUTES.legal} className="underline underline-offset-2">
-                Mentions légales
-              </Link>
-              <Link to={ROUTES.privacy} className="underline underline-offset-2">
-                Confidentialité
-              </Link>
-            </p>
-          )}
+          {/* One footer for the whole site. It used to exist three times over —
+              the sidebar's links on desktop, a bare pair here for the screens
+              where the sidebar is hidden, and the landing's own. */}
+          <Footer />
         </div>
       </main>
     </div>
