@@ -13,13 +13,16 @@ export default function AppLayout() {
   const reduceMotion = useReducedMotion()
 
   return (
-    <div className="min-h-dvh bg-ivoire">
+    // A column the height of the viewport, so the footer below can be pushed to
+    // the bottom of a short page instead of floating up under the content.
+    <div className="flex min-h-dvh flex-col bg-ivoire">
       <SkipLink />
       <Sidebar />
       <BottomBar />
 
-      {/* md:pl-64 clears the desktop sidebar. */}
-      <main id="contenu" className="px-4 pt-6 md:pl-64 md:pr-8">
+      {/* flex-1 takes the slack, which is what keeps the footer down.
+          md:pl-64 clears the desktop sidebar. */}
+      <main id="contenu" className="flex-1 px-4 pt-6 md:pl-64 md:pr-8">
         <div className="mx-auto max-w-6xl">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div

@@ -77,3 +77,28 @@ test('the puzzle page switches to free practice and serves a board', async ({ pa
   )
   expect(errors).toEqual([])
 })
+
+test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {
+  // jsdom has no layout, so the unit suite can assert the footer exists but not
+  // where it lands. The Piece Hunt's chooser is short enough that the page does
+  // not scroll — which is exactly where a footer that merely follows the content
+  // floats up to the middle, the bug this checks for.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/hunt')
+  await expect(page.getByRole('heading', { level: 1, name: 'Chasse aux Pièces' })).toBeVisible()
+
+  const gap = await page.evaluate(() => {
+    const footer = document.querySelector('footer')!.getBoundingClientRect()
+    return {
+      fromBottom: window.innerHeight - footer.bottom,
+      scrolls: document.documentElement.scrollHeight > window.innerHeight + 2,
+    }
+  })
+
+  // The control: if the page scrolled, a footer at the end of the content would
+  // pass this for the wrong reason, so the premise is asserted too.
+  expect(gap.scrolls).toBe(false)
+  // Only the layout's own bottom padding separates it from the viewport edge.
+  expect(gap.fromBottom).toBeLessThanOrEqual(48)
+  expect(gap.fromBottom).toBeGreaterThanOrEqual(0)
+})
