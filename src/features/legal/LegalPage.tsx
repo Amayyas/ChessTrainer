@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/UI'
 import { Section } from '@/features/legal/shared'
+import { brand } from '@/lib/design-tokens'
 
 /**
  * Legal notice, which French law requires of any published website. The
@@ -41,7 +42,7 @@ export default function LegalPage() {
           Son code source complet est disponible sur{' '}
           <a
             className="font-semibold text-ebene underline"
-            href="https://github.com/Amayyas/ChessTrainer"
+            href={brand.sourceUrl}
             target="_blank"
             rel="noreferrer"
           >

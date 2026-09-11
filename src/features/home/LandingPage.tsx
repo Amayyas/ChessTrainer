@@ -159,31 +159,6 @@ export default function LandingPage() {
           </ul>
         </div>
       </section>
-
-      <footer className="border-t border-ebene/10 pt-8 text-sm text-ardoise">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-display font-bold text-ebene">{brand.fullName}</p>
-          <nav aria-label="Pied de page" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to={ROUTES.legal} className="underline-offset-2 hover:text-ebene hover:underline">
-              Mentions légales
-            </Link>
-            <Link
-              to={ROUTES.privacy}
-              className="underline-offset-2 hover:text-ebene hover:underline"
-            >
-              Confidentialité
-            </Link>
-            <a
-              href="https://github.com/Amayyas/ChessTrainer"
-              target="_blank"
-              rel="noreferrer"
-              className="underline-offset-2 hover:text-ebene hover:underline"
-            >
-              Code source (AGPL)
-            </a>
-          </nav>
-        </div>
-      </footer>
     </div>
   )
 }
