@@ -22,11 +22,59 @@ export const palette = {
 /** Danger, kept apart from the identity: it means "wrong", not "brand". */
 export const danger = '#DC2626'
 
-/** `#RRGGBB` with an alpha channel, as a CSS colour. */
-function alpha(hex: string, opacity: number): string {
+/** The one colour that is not in the palette: the surface a card sits on. */
+export const surface = '#FFFFFF'
+
+/** `#RRGGBB` to its three channels, 0–255. */
+function channels(hex: string): [number, number, number] {
   const value = hex.replace('#', '')
   const [r, g, b] = [0, 2, 4].map((i) => Number.parseInt(value.slice(i, i + 2), 16))
+  return [r ?? 0, g ?? 0, b ?? 0]
+}
+
+/** `#RRGGBB` with an alpha channel, as a CSS colour. */
+function alpha(hex: string, opacity: number): string {
+  const [r, g, b] = channels(hex)
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
+
+/** `ratio` of `top` laid over `bottom`, as an opaque `#RRGGBB`. */
+function mix(top: string, bottom: string, ratio: number): string {
+  const [tr, tg, tb] = channels(top)
+  const [br, bg, bb] = channels(bottom)
+  const blend = (t: number, b: number) => Math.round(t * ratio + b * (1 - ratio))
+  return `#${[blend(tr, br), blend(tg, bg), blend(tb, bb)]
+    .map((c) => c.toString(16).padStart(2, '0').toUpperCase())
+    .join('')}`
+}
+
+/**
+ * `#RRGGBB` as the bare `H S% L%` triple, with no `hsl()` around it.
+ *
+ * That shape is what lets a Tailwind colour be written `hsl(var(--x) /
+ * <alpha-value>)`, so `bg-primary/50` keeps working on a variable the same way
+ * it does on a hex literal. Two decimals, because rounding the lightness to a
+ * whole percent moves `ivoire` by a step of red and the page background would
+ * no longer match the `bg-ivoire` used beside it.
+ */
+function hslTriple(hex: string): string {
+  const [r, g, b] = channels(hex).map((c) => c / 255) as [number, number, number]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  const lightness = (max + min) / 2
+
+  let hue = 0
+  if (delta !== 0) {
+    if (max === r) hue = ((g - b) / delta) % 6
+    else if (max === g) hue = (b - r) / delta + 2
+    else hue = (r - g) / delta + 4
+    hue = (hue * 60 + 360) % 360
+  }
+
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1))
+  const trim = (n: number) => Number(n.toFixed(2))
+  return `${trim(hue)} ${trim(saturation * 100)}% ${trim(lightness * 100)}%`
 }
 
 /**
@@ -54,6 +102,70 @@ export const board = {
   /** The best-move arrow the coach draws. */
   arrow: palette.or.DEFAULT,
 } as const
+
+/**
+ * The hairline that separates two surfaces. shadcn components ask for a solid
+ * `--border`, while the hand-written components used `ebene/20` over whatever
+ * was behind them. This is that blend made opaque, so the two read alike.
+ */
+const hairline = mix(palette.ebene.DEFAULT, palette.ivoire.DEFAULT, 0.18)
+
+/**
+ * The palette expressed under the names shadcn components use.
+ *
+ * Every shadcn component is written against `bg-primary`, `text-muted-
+ * foreground`, `border-border` and the rest, never against a colour. Pointing
+ * those names at this palette is what makes a component pulled from
+ * ui.shadcn.com arrive in gold and ivory rather than in its default zinc, with
+ * no class rewritten by hand in the component file.
+ *
+ * Tailwind reads it through the plugin in `tailwind.config.ts`, which writes
+ * these onto `:root`. So the palette above stays the only place a colour is
+ * chosen, and the bridge cannot drift from it.
+ */
+export const semanticTheme = {
+  /** The page, and the ink on it. */
+  '--background': hslTriple(palette.ivoire.DEFAULT),
+  '--foreground': hslTriple(palette.ebene.DEFAULT),
+  /** Cards and popovers: white, lifted off the ivory page. */
+  '--card': hslTriple(surface),
+  '--card-foreground': hslTriple(palette.ebene.DEFAULT),
+  '--popover': hslTriple(surface),
+  '--popover-foreground': hslTriple(palette.ebene.DEFAULT),
+  /**
+   * Gold, with ebony on top. Gold text on a light surface reaches only 2.3:1
+   * and fails WCAG AA, which is why the foreground here is not ivory.
+   */
+  '--primary': hslTriple(palette.or.DEFAULT),
+  '--primary-foreground': hslTriple(palette.ebene.DEFAULT),
+  '--secondary': hslTriple(palette.ebene.DEFAULT),
+  '--secondary-foreground': hslTriple(palette.ivoire.DEFAULT),
+  /** The quiet pair: a deeper ivory, with slate on it. */
+  '--muted': hslTriple(palette.ivoire.dark),
+  '--muted-foreground': hslTriple(palette.ardoise),
+  /** What a row or a menu item turns when the pointer is over it. */
+  '--accent': hslTriple(palette.ivoire.dark),
+  '--accent-foreground': hslTriple(palette.ebene.DEFAULT),
+  '--destructive': hslTriple(danger),
+  '--destructive-foreground': hslTriple(surface),
+  '--border': hslTriple(hairline),
+  '--input': hslTriple(hairline),
+  /** The focus ring was already gold, per the accessibility rule in index.css. */
+  '--ring': hslTriple(palette.or.DEFAULT),
+} as const
+
+/**
+ * The corner radius shadcn derives its `lg`, `md` and `sm` from.
+ *
+ * Deliberately Tailwind's own `rounded-lg`, not the project's `rounded-xl`.
+ * Pointing it at `0.875rem` to match the buttons would have moved all 29
+ * `rounded-lg` corners already written across the app, silently, in a commit
+ * about something else. At `0.5rem` the derived `lg` and `md` come out equal to
+ * the values those classes already have, so this override changes nothing on
+ * screen. Components that want the rounder corner ask for `rounded-xl`, as they
+ * already do.
+ */
+export const radius = '0.5rem'
 
 export const fonts = {
   display: ['"Playfair Display"', 'Georgia', 'serif'],
