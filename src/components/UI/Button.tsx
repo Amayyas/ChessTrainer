@@ -21,7 +21,12 @@ import { cn } from '@/utils/cn'
 const buttonVariants = cva(
   cn(
     'inline-flex items-center justify-center rounded-xl font-semibold',
-    'transition-colors transition-transform',
+    // One transition-property class, not two. `transition-colors` beside
+    // `transition-transform` sets the same property twice: tailwind-merge keeps
+    // the later one and Tailwind's own rule order would have done the same, so
+    // the pair silently reduced to the transform and every hover colour
+    // snapped. Card.tsx already had it in this shape.
+    'transition-[color,background-color,border-color,box-shadow,transform]',
     'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
     // The press was a Framer Motion `whileTap` on a motion.button. In CSS it
     // costs no animation runtime, honours the reduced-motion query without a
@@ -34,8 +39,17 @@ const buttonVariants = cva(
       variant: {
         // Gold with ebony on it. Gold text on a light surface reaches 2.3:1 and
         // fails WCAG AA, which is what fixes the direction of this pair.
+        //
+        // `bg-or-light` is a palette literal where its neighbours use tokens,
+        // and it is safe where they would not be: gold is the one pair that
+        // .theme-inverse leaves alone, so the hover cannot drift from the rest
+        // on a dark surface.
         primary: 'bg-primary text-primary-foreground shadow-gold hover:bg-or-light',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-ebene-light',
+        // The hover is a token too, not `bg-ebene-light`. Inside .theme-inverse
+        // the secondary pair flips to ebony-on-ivory, and a hard ebony hover
+        // there painted the surface dark while the label stayed dark with it:
+        // about 1.2:1, which is an invisible label.
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/90',
         ghost: 'bg-transparent text-foreground hover:bg-foreground/5',
         outline:
           'border border-foreground/20 text-foreground hover:border-foreground/40 hover:bg-foreground/5',
@@ -89,6 +103,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   ref,
 ) {
   const Comp = asChild ? Slot : 'button'
+  const isInert = Boolean(disabled) || isLoading
 
   return (
     <Comp
@@ -96,10 +111,18 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       // A Slot child brings its own element, and `type` and `disabled` belong
       // to form controls. Spelling them onto an <a> emits attributes that mean
       // nothing there, and React warns about the boolean one.
-      {...(asChild ? {} : { type: type ?? 'button', disabled: disabled || isLoading })}
-      aria-disabled={asChild && (disabled || isLoading) ? true : undefined}
+      {...(asChild ? {} : { type: type ?? 'button', disabled: isInert })}
+      aria-disabled={asChild && isInert ? true : undefined}
       aria-busy={isLoading || undefined}
-      className={cn(buttonVariants({ variant, size, fullWidth }), className)}
+      className={cn(
+        buttonVariants({ variant, size, fullWidth }),
+        // A slotted element takes none of that. `disabled:` never matches on an
+        // anchor, so a disabled asChild button announced itself as disabled and
+        // navigated anyway, on click and on Enter. The state has to be spelled
+        // out in classes that do apply.
+        asChild && isInert && 'pointer-events-none cursor-not-allowed opacity-50',
+        className,
+      )}
       {...props}
     >
       {/* Slot merges into exactly one element child, so the spinner cannot be

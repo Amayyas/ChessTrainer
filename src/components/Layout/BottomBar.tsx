@@ -1,7 +1,10 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BOTTOM_BAR_ITEMS } from '@/components/Layout/navigation'
 import { cn } from '@/utils/cn'
+
+/** Tailwind's `md`, which is where the bar gives way to the sidebar. */
+const SIDEBAR_QUERY = '(min-width: 768px)'
 
 /**
  * Dynamic, and it has to stay that way: this bar renders in the entry chunk of
@@ -22,6 +25,26 @@ export default function BottomBar() {
    */
   const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
+
+  /**
+   * The bar is md:hidden; the sheet is portaled to the body and is not. Opening
+   * the menu on a phone and then rotating it left the sheet covering a page
+   * that already had its sidebar back, with the button holding aria-expanded
+   * now hidden — only Escape or the X could close it.
+   */
+  useEffect(() => {
+    if (!open) return
+    const query = window.matchMedia(SIDEBAR_QUERY)
+    if (query.matches) {
+      setOpen(false)
+      return
+    }
+    const close = (event: MediaQueryListEvent) => {
+      if (event.matches) setOpen(false)
+    }
+    query.addEventListener('change', close)
+    return () => query.removeEventListener('change', close)
+  }, [open])
 
   return (
     <>

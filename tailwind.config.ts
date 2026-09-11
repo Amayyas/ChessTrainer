@@ -87,9 +87,11 @@ export default {
         xl: '0.875rem',
         '2xl': '1.25rem',
         // shadcn components ask for these three and derive them from --radius.
-        // See the note on `radius` in design-tokens.ts: the values below come
-        // out equal to Tailwind's own lg and md, so nothing already written
-        // moves.
+        // See the note on `radius` in design-tokens.ts: lg and md come out
+        // equal to Tailwind's own, so the 37 corners already written do not
+        // move. sm does not — it goes from 2px to 4px — and that is only
+        // harmless because nothing in src/ uses rounded-sm. Anything that
+        // starts to will get the larger corner.
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',

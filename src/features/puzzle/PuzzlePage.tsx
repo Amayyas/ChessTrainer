@@ -282,11 +282,13 @@ export default function PuzzlePage() {
       <TabsContent value="daily" forceMount hidden={tab !== 'daily'}>
         <DailyView />
       </TabsContent>
-      {practiceOpened && (
-        <TabsContent value="practice" forceMount hidden={tab !== 'practice'}>
-          <PracticeView />
-        </TabsContent>
-      )}
+      {/* The panel is always rendered, and only the view inside it waits for
+          the first visit. Gating the panel itself left the trigger's
+          aria-controls pointing at an element that did not exist, because Radix
+          emits that attribute whether or not the panel is there. */}
+      <TabsContent value="practice" forceMount hidden={tab !== 'practice'}>
+        {practiceOpened && <PracticeView />}
+      </TabsContent>
     </Tabs>
   )
 }
