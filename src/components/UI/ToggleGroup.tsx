@@ -1,30 +1,77 @@
 import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group'
-import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  type ComponentPropsWithoutRef,
+  type ElementRef,
+} from 'react'
 import { cn } from '@/utils/cn'
 
 /**
- * A row of mutually exclusive choices — a filter, not a set of tabs.
+ * A row of mutually exclusive choices — a filter or a setting, not a set of
+ * tabs.
  *
- * It replaces a hand-written control that was a div of buttons carrying
- * aria-pressed. That was announced correctly and could not be driven: every
- * option was its own tab stop, and the arrow keys did nothing. Radix gives the
- * group one tab stop and moves between the options with the arrow keys, which
- * is what the pattern is supposed to do.
+ * It replaces two hand-written controls that were divs of buttons carrying
+ * aria-pressed. A screen reader announced them correctly, which is why nothing
+ * ever looked wrong, but they could not be driven: every option was its own tab
+ * stop — thirteen of them on the battle setup card — and the arrow keys did
+ * nothing at all. Radix gives the group one tab stop and walks the options with
+ * the arrows.
  *
- * shadcn's version carries a variant and a size through a React context.
- * Neither is used here — the app has exactly one segmented control — so the
- * context is gone and the classes sit on the item directly.
+ * Two looks, because the app has two: `segmented` is the filter pill on a
+ * tinted track, `plain` is a grid of bordered cards. The variant is set once on
+ * the group and reaches the items through context, which is shadcn's own
+ * arrangement.
  */
+const groupVariants = cva('', {
+  variants: {
+    variant: {
+      segmented: 'inline-flex flex-wrap gap-1 rounded-lg bg-foreground/5 p-1',
+      plain: 'grid gap-2',
+    },
+  },
+  defaultVariants: { variant: 'segmented' },
+})
+
+const itemVariants = cva('transition-colors disabled:pointer-events-none disabled:opacity-50', {
+  variants: {
+    variant: {
+      segmented: cn(
+        'rounded-md px-3 py-1 text-sm font-medium text-muted-foreground hover:text-foreground',
+        'data-[state=on]:bg-card data-[state=on]:font-semibold',
+        'data-[state=on]:text-foreground data-[state=on]:shadow-sm',
+      ),
+      plain: cn(
+        'rounded-xl border border-foreground/15 px-3 py-2 text-left text-sm',
+        'text-muted-foreground hover:border-foreground/30 hover:text-foreground',
+        'data-[state=on]:border-primary data-[state=on]:bg-primary/15',
+        'data-[state=on]:font-semibold data-[state=on]:text-foreground',
+      ),
+    },
+  },
+  defaultVariants: { variant: 'segmented' },
+})
+
+type GroupVariant = NonNullable<VariantProps<typeof groupVariants>['variant']>
+
+const ToggleGroupContext = createContext<GroupVariant>('segmented')
+
 const ToggleGroup = forwardRef<
   ElementRef<typeof ToggleGroupPrimitive.Root>,
-  ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>
->(function ToggleGroup({ className, ...props }, ref) {
+  ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> & VariantProps<typeof groupVariants>
+>(function ToggleGroup({ className, variant, children, ...props }, ref) {
   return (
     <ToggleGroupPrimitive.Root
       ref={ref}
-      className={cn('inline-flex flex-wrap gap-1 rounded-lg bg-foreground/5 p-1', className)}
+      className={cn(groupVariants({ variant }), className)}
       {...props}
-    />
+    >
+      <ToggleGroupContext.Provider value={variant ?? 'segmented'}>
+        {children}
+      </ToggleGroupContext.Provider>
+    </ToggleGroupPrimitive.Root>
   )
 })
 
@@ -32,17 +79,11 @@ const ToggleGroupItem = forwardRef<
   ElementRef<typeof ToggleGroupPrimitive.Item>,
   ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>
 >(function ToggleGroupItem({ className, ...props }, ref) {
+  const variant = useContext(ToggleGroupContext)
   return (
     <ToggleGroupPrimitive.Item
       ref={ref}
-      className={cn(
-        'rounded-md px-3 py-1 text-sm transition-colors',
-        'font-medium text-muted-foreground hover:text-foreground',
-        'data-[state=on]:bg-card data-[state=on]:font-semibold data-[state=on]:text-foreground',
-        'data-[state=on]:shadow-sm',
-        'disabled:pointer-events-none disabled:opacity-50',
-        className,
-      )}
+      className={cn(itemVariants({ variant }), className)}
       {...props}
     />
   )

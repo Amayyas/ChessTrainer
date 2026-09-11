@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { ENGINE_LEVELS, type LevelId } from '@/engine/levels'
 import { TIME_CONTROLS, type TimeControlId } from '@/hooks/useChessClock'
 import { Button, Card } from '@/components/UI'
+import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import type { BattleConfig, ColorChoice } from '@/features/battle/useBattleGame'
-import { cn } from '@/utils/cn'
 
 interface BattleSetupProps {
   onStart: (config: BattleConfig) => void
@@ -17,29 +17,49 @@ const COLOR_CHOICES: { value: ColorChoice; label: string; glyph: string }[] = [
   { value: 'random', label: 'Aléatoire', glyph: '⚄' },
 ]
 
-function OptionButton({
-  selected,
-  onClick,
+/**
+ * One setting: a heading, and the group of choices it names.
+ *
+ * The heading labels the group through aria-labelledby rather than merely
+ * sitting above it. Before, a screen reader met three unnamed collections of
+ * pressed buttons, and which setting it was in was prose beside them.
+ */
+function Setting<T extends string>({
+  title,
+  value,
+  onChange,
+  className,
   children,
 }: {
-  selected: boolean
-  onClick: () => void
-  children: React.ReactNode
+  title: string
+  value: T
+  onChange: (value: T) => void
+  className?: string
+  children: ReactNode
 }) {
+  const headingId = useId()
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cn(
-        'rounded-xl border px-3 py-2 text-left text-sm transition-colors',
-        selected
-          ? 'border-or bg-or/15 font-semibold text-ebene'
-          : 'border-ebene/15 text-ardoise hover:border-ebene/30 hover:text-ebene',
-      )}
-    >
-      {children}
-    </button>
+    <div>
+      <h2 id={headingId} className="mb-3 font-display text-lg font-bold text-foreground">
+        {title}
+      </h2>
+      <ToggleGroup
+        type="single"
+        variant="plain"
+        value={value}
+        // A setting has no empty state, and Radix would give it one: pressing
+        // the option already on deselects it. The colour would become neither
+        // white nor black, and the game would start on whatever that means.
+        onValueChange={(next) => {
+          if (next) onChange(next as T)
+        }}
+        aria-labelledby={headingId}
+        className={className}
+      >
+        {children}
+      </ToggleGroup>
+    </div>
   )
 }
 
@@ -51,59 +71,53 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
 
   return (
     <Card className="mx-auto flex max-w-xl flex-col gap-6">
-      <div>
-        <h2 className="mb-3 font-display text-lg font-bold text-ebene">Niveau de l'IA</h2>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {ENGINE_LEVELS.map((level) => (
-            <OptionButton
-              key={level.id}
-              selected={levelId === level.id}
-              onClick={() => setLevelId(level.id)}
-            >
-              <span className="block">
-                Niveau {level.id} — {level.label}
-              </span>
-              <span className="text-xs text-ardoise">
-                <span className="font-semibold text-ebene">~{level.elo} Elo</span> ·{' '}
-                {level.description}
-              </span>
-            </OptionButton>
-          ))}
-        </div>
-      </div>
+      <Setting
+        title="Niveau de l'IA"
+        value={String(levelId)}
+        onChange={(next) => setLevelId(Number(next) as LevelId)}
+        className="sm:grid-cols-2"
+      >
+        {ENGINE_LEVELS.map((level) => (
+          <ToggleGroupItem key={level.id} value={String(level.id)}>
+            <span className="block">
+              Niveau {level.id} — {level.label}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">~{level.elo} Elo</span> ·{' '}
+              {level.description}
+            </span>
+          </ToggleGroupItem>
+        ))}
+      </Setting>
 
-      <div>
-        <h2 className="mb-3 font-display text-lg font-bold text-ebene">Votre couleur</h2>
-        <div className="grid grid-cols-3 gap-2">
-          {COLOR_CHOICES.map((choice) => (
-            <OptionButton
-              key={choice.value}
-              selected={colorChoice === choice.value}
-              onClick={() => setColorChoice(choice.value)}
-            >
-              <span aria-hidden="true" className="mr-1 text-lg">
-                {choice.glyph}
-              </span>
-              {choice.label}
-            </OptionButton>
-          ))}
-        </div>
-      </div>
+      <Setting
+        title="Votre couleur"
+        value={colorChoice}
+        onChange={setColorChoice}
+        className="grid-cols-3"
+      >
+        {COLOR_CHOICES.map((choice) => (
+          <ToggleGroupItem key={choice.value} value={choice.value}>
+            <span aria-hidden="true" className="mr-1 text-lg">
+              {choice.glyph}
+            </span>
+            {choice.label}
+          </ToggleGroupItem>
+        ))}
+      </Setting>
 
-      <div>
-        <h2 className="mb-3 font-display text-lg font-bold text-ebene">Cadence</h2>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {TIME_CONTROLS.map((control) => (
-            <OptionButton
-              key={control.id}
-              selected={timeControlId === control.id}
-              onClick={() => setTimeControlId(control.id)}
-            >
-              {control.label}
-            </OptionButton>
-          ))}
-        </div>
-      </div>
+      <Setting
+        title="Cadence"
+        value={timeControlId}
+        onChange={setTimeControlId}
+        className="sm:grid-cols-2"
+      >
+        {TIME_CONTROLS.map((control) => (
+          <ToggleGroupItem key={control.id} value={control.id}>
+            {control.label}
+          </ToggleGroupItem>
+        ))}
+      </Setting>
 
       <Button
         size="lg"
