@@ -2,9 +2,6 @@ import { Link } from 'react-router-dom'
 import { brand } from '@/lib/design-tokens'
 import { ROUTES } from '@/routes'
 
-/** Where the source lives — the licence obliges the link, so it is not decorative. */
-const SOURCE_URL = 'https://github.com/Amayyas/ChessTrainer'
-
 /**
  * The site footer, rendered once by AppLayout so every route carries the same
  * one — the legal notice has to be reachable from anywhere, and the AGPL wants
@@ -24,7 +21,7 @@ export default function Footer() {
             Confidentialité
           </Link>
           <a
-            href={SOURCE_URL}
+            href={brand.sourceUrl}
             target="_blank"
             rel="noreferrer"
             className="underline-offset-2 hover:text-ebene hover:underline"

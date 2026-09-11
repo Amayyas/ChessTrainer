@@ -18,8 +18,8 @@ export default function AppLayout() {
       <Sidebar />
       <BottomBar />
 
-      {/* pb-20 clears the mobile bottom bar; md:pl-64 clears the desktop sidebar. */}
-      <main id="contenu" className="px-4 pb-20 pt-6 md:pb-8 md:pl-64 md:pr-8">
+      {/* md:pl-64 clears the desktop sidebar. */}
+      <main id="contenu" className="px-4 pt-6 md:pl-64 md:pr-8">
         <div className="mx-auto max-w-6xl">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -36,13 +36,20 @@ export default function AppLayout() {
               <RouteErrorBoundary>{outlet}</RouteErrorBoundary>
             </motion.div>
           </AnimatePresence>
-
-          {/* One footer for the whole site. It used to exist three times over —
-              the sidebar's links on desktop, a bare pair here for the screens
-              where the sidebar is hidden, and the landing's own. */}
-          <Footer />
         </div>
       </main>
+
+      {/* One footer for the whole site — it used to exist three times over: the
+          sidebar's links on desktop, a bare pair for the screens where the
+          sidebar is hidden, and the landing's own. Kept outside <main> on
+          purpose: a <footer> nested in main is a generic element, and only a
+          top-level one maps to the contentinfo landmark. pb-20 clears the
+          mobile bottom bar. */}
+      <div className="px-4 pb-20 md:pb-8 md:pl-64 md:pr-8">
+        <div className="mx-auto max-w-6xl">
+          <Footer />
+        </div>
+      </div>
     </div>
   )
 }
