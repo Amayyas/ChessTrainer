@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
@@ -15,32 +16,6 @@ function formatDuration(ms: number): string {
   const seconds = Math.round(ms / 1000)
   if (seconds < 60) return `${seconds} s`
   return `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')}`
-}
-
-function Pill({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean
-  onClick: () => void
-  children: ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={cn(
-        'rounded-full border px-3 py-1 text-sm transition-colors',
-        selected
-          ? 'border-or bg-or/15 font-semibold text-ebene'
-          : 'border-ebene/15 text-ardoise hover:border-ebene/30 hover:text-ebene',
-      )}
-    >
-      {children}
-    </button>
-  )
 }
 
 /** The board and its side card — shared by the daily series and free practice. */
@@ -287,23 +262,31 @@ export default function PuzzlePage() {
   if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex gap-2" role="group" aria-label="Mode de jeu">
-        <Pill selected={tab === 'daily'} onClick={() => setTab('daily')}>
-          Série du jour
-        </Pill>
-        <Pill selected={tab === 'practice'} onClick={() => setTab('practice')}>
-          Entraînement libre
-        </Pill>
-      </div>
-      <div hidden={tab !== 'daily'}>
+    <Tabs
+      value={tab}
+      onValueChange={(next) => setTab(next as 'daily' | 'practice')}
+      className="flex flex-col gap-4"
+    >
+      <TabsList aria-label="Mode de jeu">
+        <TabsTrigger value="daily">Série du jour</TabsTrigger>
+        <TabsTrigger value="practice">Entraînement libre</TabsTrigger>
+      </TabsList>
+
+      {/* forceMount and hidden together, and both are needed. Radix unmounts an
+          inactive panel by default, which is what the flag above exists to
+          prevent: switching tabs would throw away a series or a practice run in
+          progress. But forceMount also stops Radix setting hidden — it computes
+          it from the same flag — so without the explicit one here both panels
+          would be on screen at once. The caller's props are spread after its
+          own, so this wins. */}
+      <TabsContent value="daily" forceMount hidden={tab !== 'daily'}>
         <DailyView />
-      </div>
+      </TabsContent>
       {practiceOpened && (
-        <div hidden={tab !== 'practice'}>
+        <TabsContent value="practice" forceMount hidden={tab !== 'practice'}>
           <PracticeView />
-        </div>
+        </TabsContent>
       )}
-    </div>
+    </Tabs>
   )
 }

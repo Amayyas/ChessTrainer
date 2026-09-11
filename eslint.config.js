@@ -69,6 +69,7 @@ export default tseslint.config(
             'SheetClose',
             'SheetPortal',
             'SheetTrigger',
+            'Tabs',
           ],
         },
       ],
