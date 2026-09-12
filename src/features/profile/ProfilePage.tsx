@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
@@ -98,24 +99,23 @@ export default function ProfilePage() {
 
                 <div>
                   <p className="mb-1 text-xs font-medium text-ardoise">Avatar</p>
-                  <div role="group" aria-label="Choisir un avatar" className="flex flex-wrap gap-1">
+                  <ToggleGroup
+                    type="single"
+                    variant="tiles"
+                    value={authProfile.avatar_piece}
+                    // Pressing the current avatar again would ask the server to
+                    // store no avatar at all.
+                    onValueChange={(next) => {
+                      if (next) void updateProfile({ avatar_piece: next as AvatarPiece })
+                    }}
+                    aria-label="Choisir un avatar"
+                  >
                     {AVATAR_PIECES.map((piece: AvatarPiece) => (
-                      <button
-                        key={piece}
-                        type="button"
-                        aria-pressed={authProfile.avatar_piece === piece}
-                        onClick={() => void updateProfile({ avatar_piece: piece })}
-                        className={cn(
-                          'flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-colors',
-                          authProfile.avatar_piece === piece
-                            ? 'bg-or/25 text-ebene'
-                            : 'bg-ebene/5 text-ardoise hover:text-ebene',
-                        )}
-                      >
+                      <ToggleGroupItem key={piece} value={piece}>
                         {AVATAR_GLYPHS[piece]}
-                      </button>
+                      </ToggleGroupItem>
                     ))}
-                  </div>
+                  </ToggleGroup>
                 </div>
 
                 <Button variant="outline" size="sm" onClick={() => void signOut()}>

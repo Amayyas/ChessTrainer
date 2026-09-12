@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import type { Square } from 'react-chessboard/dist/chessboard/types'
-import { Aurora } from '@/components/UI'
+import { Aurora, Button } from '@/components/UI'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
 import { board, brand } from '@/lib/design-tokens'
@@ -24,13 +24,6 @@ import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
  * measured figures, because those numbers were prose. LandingPage.test.tsx
  * fails if anyone writes them back by hand.
  */
-
-/** Ebony-band CTA, styled to match the primary Button without being one. */
-const CTA_PRIMARY =
-  'inline-flex h-12 items-center justify-center rounded-xl bg-or px-6 text-sm font-semibold text-ebene shadow-gold transition-colors hover:bg-or-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ebene'
-
-const CTA_GHOST =
-  'inline-flex h-12 items-center justify-center rounded-xl border border-ivoire/25 px-6 text-sm font-semibold text-ivoire transition-colors hover:border-ivoire/50 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ebene'
 
 const LEVEL_FLOOR = ENGINE_LEVELS[0]!.elo
 const LEVEL_CEILING = ENGINE_LEVELS[ENGINE_LEVELS.length - 1]!.elo
@@ -56,7 +49,10 @@ const ChessBoard = lazy(() => import('@/components/Board/ChessBoard'))
 export default function LandingPage() {
   return (
     <div className="flex flex-col gap-14">
-      <section className="relative overflow-hidden rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
+      {/* theme-inverse flips the semantic colours to the ebony pair for
+          everything inside, so the buttons below can be the design system's own
+          rather than two class strings shaped to look like them. */}
+      <section className="theme-inverse relative overflow-hidden rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
         <Aurora />
         <div className="relative max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-or">
@@ -70,12 +66,12 @@ export default function LandingPage() {
             {ENGINE_LEVELS.length} niveaux et entraînez votre tactique — sans créer de compte.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to={ROUTES.coach} className={CTA_PRIMARY}>
-              Essayer le coach
-            </Link>
-            <Link to={ROUTES.register} className={CTA_GHOST}>
-              Créer un compte
-            </Link>
+            <Button asChild size="lg" className="h-12 px-6 text-sm">
+              <Link to={ROUTES.coach}>Essayer le coach</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="h-12 px-6 text-sm">
+              <Link to={ROUTES.register}>Créer un compte</Link>
+            </Button>
           </div>
         </div>
       </section>

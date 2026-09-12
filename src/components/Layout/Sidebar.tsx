@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '@/components/Layout/navigation'
+import Button from '@/components/UI/Button'
+import Separator from '@/components/UI/Separator'
 import { AVATAR_GLYPHS } from '@/lib/supabase'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -45,25 +47,29 @@ export default function Sidebar() {
 
       {/* Nothing is shown until the stored session has been read, so the footer
           does not flash "Se connecter" at someone who already is. */}
-      {isReady &&
-        (session ? (
-          <NavLink
-            to={ROUTES.profile}
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ivoire/70 transition-colors hover:bg-white/5 hover:text-ivoire"
-          >
-            <span aria-hidden="true" className="w-5 text-center text-lg text-or">
-              {profile ? AVATAR_GLYPHS[profile.avatar_piece] : '♟'}
-            </span>
-            <span className="truncate">{profile?.username ?? 'Mon profil'}</span>
-          </NavLink>
-        ) : (
-          <NavLink
-            to={ROUTES.login}
-            className="flex items-center justify-center gap-2 rounded-xl bg-or px-3 py-2.5 text-sm font-semibold text-ebene transition-colors hover:bg-or-light"
-          >
-            Se connecter
-          </NavLink>
-        ))}
+      {isReady && (
+        <>
+          <Separator className="my-3 bg-white/10" />
+          {session ? (
+            <NavLink
+              to={ROUTES.profile}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ivoire/70 transition-colors hover:bg-white/5 hover:text-ivoire"
+            >
+              <span aria-hidden="true" className="w-5 text-center text-lg text-or">
+                {profile ? AVATAR_GLYPHS[profile.avatar_piece] : '♟'}
+              </span>
+              <span className="truncate">{profile?.username ?? 'Mon profil'}</span>
+            </NavLink>
+          ) : (
+            // asChild, rather than the six button classes this link used to
+            // carry by hand. They had already drifted: no shadow, and a padding
+            // the button does not use.
+            <Button asChild size="sm" fullWidth>
+              <NavLink to={ROUTES.login}>Se connecter</NavLink>
+            </Button>
+          )}
+        </>
+      )}
     </aside>
   )
 }

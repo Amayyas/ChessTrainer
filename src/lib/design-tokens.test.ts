@@ -1,5 +1,54 @@
 import { describe, expect, it } from 'vitest'
-import { board, brand, danger, fonts, palette } from '@/lib/design-tokens'
+import {
+  board,
+  brand,
+  danger,
+  fonts,
+  inverseTheme,
+  palette,
+  semanticTheme,
+  surface,
+} from '@/lib/design-tokens'
+
+/**
+ * `H S% L%` back to `#RRGGBB`, so the table below can be checked against the
+ * palette rather than against a second copy of itself.
+ *
+ * Writing the expected triples out by hand would restate the data instead of
+ * deriving it: the test would then agree with any literal someone pasted in,
+ * which is the failure mode the home page's "cinq niveaux" already demonstrated.
+ */
+function hslTripleToHex(triple: string): string {
+  const [h, s, l] = triple.split(' ').map((part) => Number.parseFloat(part)) as [
+    number,
+    number,
+    number,
+  ]
+  const saturation = s / 100
+  const lightness = l / 100
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation
+  const second = chroma * (1 - Math.abs(((h / 60) % 2) - 1))
+  const match = lightness - chroma / 2
+
+  const sextant = Math.floor(h / 60) % 6
+  const rgb = [
+    [chroma, second, 0],
+    [second, chroma, 0],
+    [0, chroma, second],
+    [0, second, chroma],
+    [second, 0, chroma],
+    [chroma, 0, second],
+  ][sextant] as [number, number, number]
+
+  return `#${rgb
+    .map((channel) =>
+      Math.round((channel + match) * 255)
+        .toString(16)
+        .padStart(2, '0')
+        .toUpperCase(),
+    )
+    .join('')}`
+}
 
 /**
  * These values used to be written out inside the board components. Moving them
@@ -39,6 +88,89 @@ describe('design tokens', () => {
     // It means "wrong", not "brand", so a rebrand must not sweep it up.
     expect(danger).toBe('#DC2626')
     expect(Object.values(palette)).not.toContain(danger)
+  })
+
+  it('points every shadcn variable back at a colour of the palette', () => {
+    // The bridge is only worth having if it cannot drift. Each variable is
+    // resolved back to a hex and compared with the token it is meant to carry,
+    // so a literal typed straight into semanticTheme fails here.
+    const expected: Record<string, string> = {
+      '--background': palette.ivoire.DEFAULT,
+      '--foreground': palette.ebene.DEFAULT,
+      '--card': surface,
+      '--card-foreground': palette.ebene.DEFAULT,
+      '--popover': surface,
+      '--popover-foreground': palette.ebene.DEFAULT,
+      '--primary': palette.or.DEFAULT,
+      '--primary-foreground': palette.ebene.DEFAULT,
+      '--secondary': palette.ebene.DEFAULT,
+      '--secondary-foreground': palette.ivoire.DEFAULT,
+      '--muted': palette.ivoire.dark,
+      '--muted-foreground': palette.ardoise,
+      '--accent': palette.ivoire.dark,
+      '--accent-foreground': palette.ebene.DEFAULT,
+      '--destructive': danger,
+      '--destructive-foreground': surface,
+      '--ring': palette.or.DEFAULT,
+    }
+
+    for (const [variable, hex] of Object.entries(expected)) {
+      expect(hslTripleToHex(semanticTheme[variable as keyof typeof semanticTheme])).toBe(hex)
+    }
+  })
+
+  it('carries every variable a shadcn component reads', () => {
+    // A missing one does not throw: the class resolves to hsl() of nothing and
+    // the element paints transparent, which reads as a styling mistake rather
+    // than as a missing token.
+    const required = [
+      '--background',
+      '--foreground',
+      '--card',
+      '--card-foreground',
+      '--popover',
+      '--popover-foreground',
+      '--primary',
+      '--primary-foreground',
+      '--secondary',
+      '--secondary-foreground',
+      '--muted',
+      '--muted-foreground',
+      '--accent',
+      '--accent-foreground',
+      '--destructive',
+      '--destructive-foreground',
+      '--border',
+      '--input',
+      '--ring',
+    ]
+    expect(Object.keys(semanticTheme).sort()).toEqual([...required].sort())
+  })
+
+  it('gives the ebony surfaces the same variables, not a subset', () => {
+    // A component inside .theme-inverse reads whichever names it was written
+    // against. One missing here paints transparent on the dark band only, which
+    // is the kind of defect that reaches production because the light page it
+    // was checked on was fine.
+    expect(Object.keys(inverseTheme).sort()).toEqual(Object.keys(semanticTheme).sort())
+  })
+
+  it('flips the ground and the ink, and leaves gold alone', () => {
+    expect(hslTripleToHex(inverseTheme['--background'])).toBe(palette.ebene.DEFAULT)
+    expect(hslTripleToHex(inverseTheme['--foreground'])).toBe(palette.ivoire.DEFAULT)
+    // Gold is the accent on both grounds, with ebony readable on top of it, so
+    // it is the one pair that does not invert.
+    expect(inverseTheme['--primary']).toBe(semanticTheme['--primary'])
+    expect(inverseTheme['--primary-foreground']).toBe(semanticTheme['--primary-foreground'])
+  })
+
+  it('keeps the hairline between the two colours it blends', () => {
+    // --border is the only value with no token of its own: it is ebony laid
+    // over ivory. It must land between them rather than on either.
+    const hairline = hslTripleToHex(semanticTheme['--border'])
+    expect(hairline).not.toBe(palette.ebene.DEFAULT)
+    expect(hairline).not.toBe(palette.ivoire.DEFAULT)
+    expect(semanticTheme['--input']).toBe(semanticTheme['--border'])
   })
 
   it('names the typefaces and the brand in one place', () => {
