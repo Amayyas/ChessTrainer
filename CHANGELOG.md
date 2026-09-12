@@ -1,5 +1,35 @@
 # Changelog
 
+## [2.3.0](https://github.com/Amayyas/ChessTrainer/compare/v2.2.0...v2.3.0) (2026-09-12)
+
+
+### Features
+
+* **home:** give the landing band an inverted palette and real buttons ([94433b2](https://github.com/Amayyas/ChessTrainer/commit/94433b258534942d3594d2ef50f004c8a31f1e90))
+* **layout:** give every page the site footer, not just the landing ([eba1e9b](https://github.com/Amayyas/ChessTrainer/commit/eba1e9b03f894c9083a7742e71445f2122a7221e))
+* **layout:** one site footer, on every page ([b16e802](https://github.com/Amayyas/ChessTrainer/commit/b16e80269a40fb0350b3a749738cb52c027a96c1))
+* **nav:** open the whole navigation from the mobile bottom bar ([cf0d92d](https://github.com/Amayyas/ChessTrainer/commit/cf0d92d522790fd99577a36c142ea19fe27a1c31))
+* **puzzle:** make the mode switch a real set of tabs ([1a34b77](https://github.com/Amayyas/ChessTrainer/commit/1a34b77da989f80082470a9139925c2e5003001c))
+* **ui:** migrate the design system to shadcn/ui ([b943374](https://github.com/Amayyas/ChessTrainer/commit/b9433746ba3a18dc21f93bca3df116bc9f45bff6))
+
+
+### Bug Fixes
+
+* **layout:** make the footer a real landmark, and cover it with a test ([cd89824](https://github.com/Amayyas/ChessTrainer/commit/cd89824009f8bb7f26af5dcd8166e4457babebae))
+* **layout:** pin the footer to the bottom of short pages ([7bbd2d2](https://github.com/Amayyas/ChessTrainer/commit/7bbd2d27324246a9c2e517e35e365888603753e3))
+* **ui:** repair what the review found, starting with every button's hover ([9821497](https://github.com/Amayyas/ChessTrainer/commit/9821497b2663fe18ddee961d3fbaf8b9149c0f79))
+
+
+### Refactoring
+
+* **battle:** make the pre-game settings drivable from the keyboard ([be5496c](https://github.com/Amayyas/ChessTrainer/commit/be5496ce09365cec3f86dd808322261e10133e03))
+* **layout:** move the legal links out of the sidebar into the page footer ([79f4369](https://github.com/Amayyas/ChessTrainer/commit/79f4369a6601973f0c6c886e4a06a409db531c5a))
+* **leaderboard:** make the filters drivable from the keyboard ([5145e4e](https://github.com/Amayyas/ChessTrainer/commit/5145e4e8db76d8c8fbd970bef0dd4f0bf346f419))
+* **nav:** give the sidebar the design system's button and a real rule ([b1319e4](https://github.com/Amayyas/ChessTrainer/commit/b1319e42eaff076ccede057f7e7419f8dff55570))
+* **ui:** finish the single-choice groups on the remaining pages ([aca3b13](https://github.com/Amayyas/ChessTrainer/commit/aca3b1379c877dd611356b5813de849362dfa7f6))
+* **ui:** move the card, the badge and the dialog onto shadcn ([1c72e66](https://github.com/Amayyas/ChessTrainer/commit/1c72e662d512b9f6b780c15101ccd51e1bb862b5))
+* **ui:** rebuild the button on the shadcn structure ([261855a](https://github.com/Amayyas/ChessTrainer/commit/261855aaa6c3d46754fe9bff9c246074ae781897))
+
 ## [2.2.0](https://github.com/Amayyas/ChessTrainer/compare/v2.1.0...v2.2.0) (2026-09-11)
 
 
