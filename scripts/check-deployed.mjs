@@ -28,12 +28,32 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
+/**
+ * The markup the prerender baked into #root, or '' when the shell is untouched.
+ *
+ * What tells index.html and app.html apart is whether #root has children —
+ * nothing else does. Both carry the same <head>, so matching on the title or
+ * the meta description finds the landing copy in every page the site serves,
+ * including the empty shell: an assertion written that way cannot come out
+ * wrong, and read `!includes(...)` it cannot come out right.
+ */
+function rootMarkup(body) {
+  // The shell's #root is literally `<div id="root"></div>`; the prerendered one
+  // holds the whole landing. Anchor on the opening tag and take everything up to
+  // </body> rather than trying to match the closing </div>, which is one of
+  // hundreds once the markup is there and cannot be paired with a regex.
+  const opened = body.indexOf('<div id="root">')
+  if (opened === -1) return ''
+  const inner = body.slice(opened + '<div id="root">'.length, body.lastIndexOf('</body>'))
+  return inner.replace(/<\/div>\s*$/, '').trim()
+}
+
 check('/ serves the prerendered landing', async () => {
   const { res, body, header } = await get('/')
   assert(res.status === 200, `expected 200, got ${res.status}`)
   assert(header('content-type').includes('text/html'), `content-type was ${header('content-type')}`)
   assert(
-    body.includes('Apprenez les échecs avec un coach intelligent'),
+    rootMarkup(body).length > 0,
     'the prerendered landing markup is missing — did the prerender step run?',
   )
 })
@@ -43,7 +63,7 @@ check('a deep route falls back to the app shell', async () => {
   assert(res.status === 200, `expected 200 (SPA rewrite), got ${res.status}`)
   assert(body.includes('<div id="root">'), 'the app shell is missing')
   assert(
-    !body.includes('Apprenez les échecs avec un coach intelligent'),
+    rootMarkup(body).length === 0,
     'a deep route got the landing markup, not app.html — the rewrite is wrong',
   )
 })
