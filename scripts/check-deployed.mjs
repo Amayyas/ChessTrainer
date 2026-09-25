@@ -28,12 +28,40 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
+/**
+ * The markup the prerender baked into #root, or '' when the shell is untouched.
+ *
+ * What tells index.html and app.html apart is whether #root has children —
+ * nothing else does. Both carry the same <head>, so matching on the title or
+ * the meta description finds the landing copy in every page the site serves,
+ * including the empty shell: an assertion written that way cannot come out
+ * wrong, and read `!includes(...)` it cannot come out right.
+ */
+function rootMarkup(body) {
+  // Walk the <div> nesting from #root to its own closing tag. Slicing to
+  // </body> and trimming one </div> instead would read anything appended after
+  // the element — a script tag, a trailing comment — as prerendered markup, so
+  // an empty shell would pass the landing check and fail the deep-route one.
+  const OPEN = '<div id="root">'
+  const start = body.indexOf(OPEN)
+  if (start === -1) throw new Error('no #root in the document at all')
+
+  const from = start + OPEN.length
+  const tag = /<div\b|<\/div>/gi
+  tag.lastIndex = from
+  for (let depth = 1, m; (m = tag.exec(body));) {
+    depth += m[0] === '</div>' ? -1 : 1
+    if (depth === 0) return body.slice(from, m.index).trim()
+  }
+  throw new Error('#root is never closed — the document is truncated')
+}
+
 check('/ serves the prerendered landing', async () => {
   const { res, body, header } = await get('/')
   assert(res.status === 200, `expected 200, got ${res.status}`)
   assert(header('content-type').includes('text/html'), `content-type was ${header('content-type')}`)
   assert(
-    body.includes('Apprenez les échecs avec un coach intelligent'),
+    rootMarkup(body).length > 0,
     'the prerendered landing markup is missing — did the prerender step run?',
   )
 })
@@ -43,7 +71,7 @@ check('a deep route falls back to the app shell', async () => {
   assert(res.status === 200, `expected 200 (SPA rewrite), got ${res.status}`)
   assert(body.includes('<div id="root">'), 'the app shell is missing')
   assert(
-    !body.includes('Apprenez les échecs avec un coach intelligent'),
+    rootMarkup(body).length === 0,
     'a deep route got the landing markup, not app.html — the rewrite is wrong',
   )
 })
@@ -97,6 +125,20 @@ check('the HTML is revalidated, the fingerprinted assets are immutable', async (
   assert(
     assetHeader('cache-control').includes('immutable'),
     `${asset} cache-control: ${assetHeader('cache-control')}`,
+  )
+})
+
+check('the engine keeps its own cache rule', async () => {
+  // /stockfish/* lost its day-long cache to the same catch-all that flattened
+  // /assets/*, and nothing here noticed: the suite was all-green while the
+  // engine was being revalidated on every load. The wasm is ~7 MB, so this is
+  // the most expensive header on the site to get wrong.
+  const { res, header } = await get('/stockfish/stockfish.js')
+  assert(res.status === 200, `/stockfish/stockfish.js returned ${res.status}`)
+  const maxAge = /max-age=(\d+)/.exec(header('cache-control'))?.[1]
+  assert(
+    maxAge !== undefined && Number(maxAge) >= 3600,
+    `engine cache-control: ${header('cache-control') || '(none)'}`,
   )
 })
 
