@@ -56,22 +56,6 @@
   to = "/app.html"
   status = 200
 
-# Vite fingerprints these filenames, so the name changes whenever the content
-# does and a stale copy can never be served.
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# The engine is not fingerprinted — the filename is fixed — so it is cached for
-# a day and revalidated, rather than pinned in browsers for a year. The wasm is
-# ~7 MB (Stockfish 18's NNUE net), so the day of free reuse matters; a deploy
-# that revs the engine costs returning visitors one 24 h-stale load at worst.
-[[headers]]
-  for = "/stockfish/*"
-  [headers.values]
-    Cache-Control = "public, max-age=86400, must-revalidate"
-
 # No cross-origin isolation here on purpose. COOP/COEP would be needed for the
 # threaded Stockfish build, which wants SharedArrayBuffer; this app ships the
 # single-threaded one, and those headers would constrain every asset the page
@@ -103,11 +87,18 @@
 #   connect-src Supabase REST + Auth (https) and Realtime (wss), and Sentry's
 #               EU ingest host. HSTS is added by Netlify when Force HTTPS is on.
 #
-# Cache-Control here is the fallback for everything the two rules above do not
-# claim — the HTML documents most of all. They must be revalidated on every
-# load so a client that kept an old index.html cannot go on requesting route
-# chunks whose fingerprints changed in a deploy. The fingerprinted assets keep
-# their year-long immutable cache from the more specific rule.
+# Cache-Control here is the fallback for the HTML documents most of all. They
+# must be revalidated on every load so a client that kept an old index.html
+# cannot go on requesting route chunks whose fingerprints changed in a deploy.
+#
+# This block comes FIRST and the narrow ones follow, which looks backwards and
+# is not. Netlify applies every rule whose path matches and lets the LAST one
+# win each header it sets again — it does not pick the most specific rule. With
+# the narrow rules above this one, production served
+# /assets/index-CKg9Gi4A.js with `max-age=0, must-revalidate`: the year-long
+# immutable cache was silently overwritten on every fingerprinted asset, and
+# the engine's day-long one with it. Keep the catch-all above the rules that
+# refine it, or they go back to having no effect.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -117,3 +108,20 @@
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
     Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io"
+
+# Vite fingerprints these filenames, so the name changes whenever the content
+# does and a stale copy can never be served. Overrides the Cache-Control the
+# catch-all above sets; the security headers from that block still apply.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The engine is not fingerprinted — the filename is fixed — so it is cached for
+# a day and revalidated, rather than pinned in browsers for a year. The wasm is
+# ~7 MB (Stockfish 18's NNUE net), so the day of free reuse matters; a deploy
+# that revs the engine costs returning visitors one 24 h-stale load at worst.
+[[headers]]
+  for = "/stockfish/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
