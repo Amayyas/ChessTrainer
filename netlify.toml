@@ -6,6 +6,21 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # One release, one production deploy. Every merge to main used to publish,
+  # at 15 credits each, so a fix, a docs change and the release PR that
+  # followed them cost three deploys for one visible change. Production now
+  # builds only when the merge changed .release-please-manifest.json, which
+  # release-please alone touches, on its release PR. Other merges to main are
+  # cancelled here and ride along with the next release.
+  #
+  # Netlify reads exit 0 as "cancel" and 1 as "build". Branches other than main
+  # (deploy previews, which are free) always build. Anything git cannot answer
+  # — a clone too shallow to have HEAD^ exits 128 — is mapped to 1, so a doubt
+  # publishes rather than silently skips.
+  #
+  # To publish outside a release, use a build hook: Netlify documents that the
+  # ignore command never cancels a build a hook triggered.
+  ignore = '[ "$BRANCH" != "main" ] && exit 1; git diff --quiet HEAD^ HEAD -- .release-please-manifest.json && exit 0; exit 1'
 
 # One address for one app. The netlify.app name kept serving the whole site
 # after the domain went live, which is worse than untidy: localStorage is scoped

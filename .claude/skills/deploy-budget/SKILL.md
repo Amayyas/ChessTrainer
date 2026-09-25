@@ -1,6 +1,6 @@
 ---
 name: deploy-budget
-description: Check the Netlify credit position before merging or deploying — what the cycle has spent, days until it resets (the 16th, not the 1st), and whether builds are stopped. Use when asked about the deploy budget, Netlify credits, whether there is room to deploy, or when planning a deploy or a batch of merges.
+description: Check the Netlify credit position before merging or deploying — what the cycle has spent, days until it resets (the 16th, not the 1st), and whether a release PR — the next deploy — is waiting. Use when asked about the deploy budget, Netlify credits, whether there is room to deploy, or when planning a deploy or a batch of merges.
 allowed-tools: Bash(curl:*) Bash(date:*) Bash(echo:*) Bash(jq:*)
 ---
 
@@ -55,10 +55,14 @@ Keep the account `id`/`slug` and the site `id`.
   `api "sites/<id>/deploys?per_page=100"`, count entries with
   `context == "production"` and `state == "ready"` dated on or after the last
   16th.
-- **Are builds stopped?** `api "sites/<id>" | jq '.build_settings.stop_builds'`.
-  CLAUDE.md notes builds may be stopped in the project settings so `main` can
-  move without spending; if this is `true`, merging costs nothing and one manual
-  deploy later publishes the backlog.
+- **What the next deploy is waiting on.** `netlify.toml` cancels every
+  production build except the merge of the release PR, so merges to `main` cost
+  nothing and the release PR is the pending deploy:
+  `gh pr list --search "head:release-please" --json number,title`. Cancelled
+  builds show in the deploy list with a state other than `ready`, which is why
+  the count above filters on it. Also read
+  `api "sites/<id>" | jq '.build_settings.stop_builds'` — if it is `true`,
+  nothing deploys at all, release PR included.
 
 Do **not** invent an endpoint for a single "credits remaining" figure — the API
 does not expose one cleanly. Report the components measured and send the user to
@@ -67,6 +71,7 @@ the usage page for the headline number.
 ## 4. Answer
 
 Report: days until reset with the date; bandwidth used vs included (if measured);
-production deploys counted this cycle and their credit cost; whether builds are
+production deploys counted this cycle and their credit cost; whether a release
+PR is waiting, since merging it is the next 15-credit spend; whether builds are
 stopped. For anything the token was missing for or a call failed on, say it is a
 UI read — never present a guess as a measurement.
