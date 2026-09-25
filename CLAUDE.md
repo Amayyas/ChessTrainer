@@ -203,10 +203,12 @@ submitted, and indexing has been requested for the home page. Nothing more to do
 but wait — a new domain takes days to appear, and the brand query longer.
 
 **Email:** Supabase sends auth mail from its own shared domain, not from
-chesstrainer.fr, so DMARC on this domain does not govern it. DMARC is at
-`p=quarantine`, moving to `p=reject` once a week of reports comes back clean.
-There is no DKIM record; adding one would make `reject` safer, since SPF alone
-breaks on forwarded mail.
+chesstrainer.fr, so DMARC on this domain does not govern it. DMARC has been at
+`p=reject` since 5 September 2026, after a week of aggregate reports came back
+clean with no legitimate sender failing. There is still no DKIM record; with
+`reject` live this now actively risks legitimate forwarded mail, since SPF alone
+breaks on forwarding — adding DKIM is the open item, waiting on OVH offering it
+for this plan.
 
 **Known and deliberately unfixed:** per-move accuracy saturates on forced mates.
 The grade now prices a slow mate by its distance, but the win-chances curve reads
