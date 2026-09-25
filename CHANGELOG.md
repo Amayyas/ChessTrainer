@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.1](https://github.com/Amayyas/ChessTrainer/compare/v2.3.0...v2.3.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* make the deploy verification able to fail, and fix what it caught ([ef9841e](https://github.com/Amayyas/ChessTrainer/commit/ef9841e637d6355a2bdf19cdfbf50ba91931610f))
+* **netlify:** stop the catch-all from overwriting the asset cache ([b696e17](https://github.com/Amayyas/ChessTrainer/commit/b696e1744f0d57958587f4ad89de1a6a4d275234))
+* **scripts:** close #root by its own tag, and watch the engine's cache ([6f69db5](https://github.com/Amayyas/ChessTrainer/commit/6f69db52bdbb5a10ef4b473203ad9cd446b4e50d))
+* **scripts:** tell the shell from the landing by #root, not the title ([0004bfe](https://github.com/Amayyas/ChessTrainer/commit/0004bfeec5c92e8058c157388e19190c4127cde1))
+
 ## [2.3.0](https://github.com/Amayyas/ChessTrainer/compare/v2.2.0...v2.3.0) (2026-09-15)
 
 
