@@ -4,10 +4,11 @@
 # that 404s, or drop the security headers. Nothing surfaced that — a visitor
 # would find it first.
 #
-# Run by hand after a deploy. The schedule is left commented until the current
-# main is actually deployed: builds are paused (see CLAUDE.md, "Deploy budget"),
-# so the live site is several releases behind and a scheduled run would just be
-# red every six hours. Uncomment it once a deploy passes this by hand.
+# Run by hand after a deploy — which means after merging a release PR, since
+# production builds on nothing else (see CLAUDE.md, "Deploy budget"). The
+# schedule stays commented until a run by hand comes back green against
+# production: until then a scheduled run is red every six hours for a known
+# reason, and a check that is always red stops being read.
 name: Site check
 
 on:

@@ -90,11 +90,28 @@ Deploys are not the only thing that spends them. A production deploy costs
 traffic drains the balance while nobody deploys at all. Deploy previews, branch
 deploys, failed builds, rollbacks and CI are free.
 
-So: batch changes into fewer, larger PRs, and read the balance against the
-traffic as much as against the deploys. A dev-dependency bump with no
-user-facing benefit can wait for the reset rather than spend a deploy. Stopping
-builds in the Netlify project settings decouples merging from deploying: `main`
-can move without spending anything, and a single deploy publishes it all later.
+So read the balance against the traffic as much as against the deploys.
+
+**One release, one deploy.** An `ignore` command in `netlify.toml` cancels
+every production build except the merge of release-please's release PR — the
+only merge that changes `.release-please-manifest.json`. Merging a `fix`, a
+docs change or a Dependabot bump into `main` costs nothing and publishes
+nothing; they all go live together when the release PR is merged. So merging
+is free, and **merging the release PR is the deploy**: treat it as spending 15
+credits. To publish outside a release, trigger a Netlify build hook, which the
+ignore command never cancels. Deploy previews are unaffected and still build on
+every PR.
+
+A change that is merged is therefore not live until the next release. Check
+`scripts/check-deployed.mjs` against production after merging the release PR,
+not after merging the change.
+
+If the release build fails, nothing later catches up on its own: the ignore
+command compares each merge with the one before it, not with what production
+serves, so the next ordinary merge is cancelled too and production stays on the
+previous version while GitHub has already tagged the new one. Retry the failed
+deploy in the Netlify UI — it rebuilds the release commit, which still changes
+the manifest, and failed builds cost nothing.
 
 ## The stack, briefly
 
