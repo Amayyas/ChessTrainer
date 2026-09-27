@@ -4,11 +4,14 @@
 # that 404s, or drop the security headers. Nothing surfaced that — a visitor
 # would find it first.
 #
-# Run by hand after a deploy — which means after merging a release PR, since
-# production builds on nothing else (see CLAUDE.md, "Deploy budget"). The
-# schedule stays commented until a run by hand comes back green against
-# production: until then a scheduled run is red every six hours for a known
-# reason, and a check that is always red stops being read.
+# Runs every six hours, and by hand after a deploy — which means after merging
+# a release PR, since production builds on nothing else (see CLAUDE.md,
+# "Deploy budget"). The schedule catches what no deploy causes: a setting
+# changed in the Netlify UI, a certificate, the domain.
+#
+# Each run makes 9 requests and downloads about 200 KB, most of it the bundle
+# the cache check fetches — roughly 0.7 Netlify credits a month at this rate,
+# measured when the schedule was turned on.
 name: Site check
 
 on:
@@ -17,8 +20,8 @@ on:
       base-url:
         description: Base URL to check
         default: https://chesstrainer.fr
-  # schedule:
-  #   - cron: '43 */6 * * *'
+  schedule:
+    - cron: '43 */6 * * *'
 
 permissions:
   contents: read
