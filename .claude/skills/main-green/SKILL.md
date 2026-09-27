@@ -69,17 +69,22 @@ gh run list --branch main --workflow CodeQL --limit 1 \
   --json conclusion,status,createdAt --jq '.[0]'
 gh run list --workflow Keep-alive --limit 1 \
   --json conclusion,status,createdAt --jq '.[0]'
+gh run list --workflow "Site check" --limit 1 \
+  --json conclusion,status,createdAt --jq '.[0]'
 ```
 
 A red **CodeQL** is a security finding on code already on main. A red
 **Keep-alive** is the Supabase backend — paused, or a rotated key — not the
 frontend; check the Supabase dashboard, and note it is a separate problem from
-whether the code is sound.
+whether the code is sound. A red **Site check** is the live site, which is the
+last release, not main: main can be green while production serves something
+older, since only merging a release PR deploys. Read the failing check's name in
+the run log before blaming the last merge.
 
 ## 5. Confirm, then answer
 
 If anything was in flight, wait and read step 2 again; conclude only when two
 readings agree. Report: the commit main is at; the CI run's verdict with the
-per-job evidence; the state of CodeQL and Keep-alive; and whether anything has
+per-job evidence; the state of CodeQL, Keep-alive and Site check; and whether anything has
 been merged since the run that green covers. Then the one-line verdict — green
 and safe to build from, red (which job), or still running.
