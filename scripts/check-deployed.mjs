@@ -67,7 +67,9 @@ check('/ serves the prerendered landing', async () => {
 })
 
 check('a deep route falls back to the app shell', async () => {
-  const { res, body } = await get('/battle')
+  // /login, not a page from the sitemap: those are served from a file of their
+  // own (coach.html for /coach) and never reach the rewrite this is about.
+  const { res, body } = await get('/login')
   assert(res.status === 200, `expected 200 (SPA rewrite), got ${res.status}`)
   assert(body.includes('<div id="root">'), 'the app shell is missing')
   assert(
@@ -82,6 +84,33 @@ check('/sitemap.xml is XML, not the SPA fallback', async () => {
   assert(header('content-type').includes('xml'), `content-type was ${header('content-type')}`)
   assert(body.trimStart().startsWith('<?xml'), 'body is not XML — the rewrite swallowed it')
   assert(body.includes(BASE), `sitemap <loc> entries do not point at ${BASE}`)
+})
+
+check('every sitemap page names itself before any JS runs', async () => {
+  // What a crawler fetches first is the raw HTML. The shell used to give every
+  // deep route the home page's title and no canonical, so six addresses read
+  // as copies of '/' until rendering; the rendered page was right and hid it.
+  const { body: sitemap } = await get('/sitemap.xml')
+  const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+  assert(locs.length > 1, `the sitemap lists ${locs.length} page(s)`)
+
+  const titles = new Set()
+  for (const loc of locs) {
+    const { res, body, header } = await get(new URL(loc).pathname)
+    assert(res.status === 200, `${loc} returned ${res.status}`)
+    assert(!/noindex/i.test(header('x-robots-tag')), `${loc} is noindex by header`)
+    assert(!/<meta name="robots"[^>]*noindex/i.test(body), `${loc} is noindex in its HTML`)
+    const canonicals = [...body.matchAll(/<link rel="canonical" href="([^"]*)"/g)].map((m) => m[1])
+    assert(
+      canonicals.length === 1 && canonicals[0] === loc,
+      `${loc} declares canonical ${canonicals.join(', ') || '(none)'}`,
+    )
+    if (new URL(loc).pathname !== '/') {
+      assert(rootMarkup(body).length === 0, `${loc} got the landing markup, not an empty shell`)
+    }
+    titles.add(/<title>([^<]*)<\/title>/.exec(body)?.[1])
+  }
+  assert(titles.size === locs.length, `${locs.length} pages share ${titles.size} title(s)`)
 })
 
 check('/robots.txt points at the sitemap', async () => {
