@@ -84,7 +84,8 @@ describe('withRouteHead', () => {
     const html = withRouteHead(bare, ROUTES.battle, '')
     expect(head(html)).toEqual({
       title: PAGE_META[ROUTES.battle].title,
-      ogUrl: '/',
+      // Whatever the template says, unchanged.
+      ogUrl: head(bare).ogUrl,
       canonicals: [],
     })
   })
