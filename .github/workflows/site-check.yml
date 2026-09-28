@@ -9,9 +9,11 @@
 # "Deploy budget"). The schedule catches what no deploy causes: a setting
 # changed in the Netlify UI, a certificate, the domain.
 #
-# Each run makes 9 requests and downloads about 200 KB, most of it the bundle
-# the cache check fetches — roughly 0.7 Netlify credits a month at this rate,
-# measured when the schedule was turned on.
+# Each run makes 17 requests and downloads about 210 KB, most of it the bundle
+# the cache check fetches — roughly 0.9 Netlify credits a month at this rate.
+# That is 0.7 measured when the schedule was turned on, plus the eight requests
+# of the sitemap-page check (the sitemap and a 2 KB shell per page), priced at
+# 2 credits per 10,000 requests.
 name: Site check
 
 on:
