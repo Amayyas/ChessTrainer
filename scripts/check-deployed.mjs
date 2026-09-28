@@ -99,7 +99,14 @@ check('every sitemap page names itself before any JS runs', async () => {
     const { res, body, header } = await get(new URL(loc).pathname)
     assert(res.status === 200, `${loc} returned ${res.status}`)
     assert(!/noindex/i.test(header('x-robots-tag')), `${loc} is noindex by header`)
-    assert(!/<meta name="robots"[^>]*noindex/i.test(body), `${loc} is noindex in its HTML`)
+    // Any attribute order and quoting: a pattern pinned to one spelling of the
+    // tag would pass a noindex written any other way.
+    const robots = [...body.matchAll(/<meta\b[^>]*>/gi)].filter(
+      (m) =>
+        /\bname\s*=\s*["']?robots\b/i.test(m[0]) &&
+        /\bcontent\s*=\s*["']?[^"'>]*noindex/i.test(m[0]),
+    )
+    assert(robots.length === 0, `${loc} is noindex in its HTML: ${robots[0]?.[0]}`)
     const canonicals = [...body.matchAll(/<link rel="canonical" href="([^"]*)"/g)].map((m) => m[1])
     assert(
       canonicals.length === 1 && canonicals[0] === loc,
@@ -108,7 +115,11 @@ check('every sitemap page names itself before any JS runs', async () => {
     if (new URL(loc).pathname !== '/') {
       assert(rootMarkup(body).length === 0, `${loc} got the landing markup, not an empty shell`)
     }
-    titles.add(/<title>([^<]*)<\/title>/.exec(body)?.[1])
+    // Checked one by one: a single page with no title would otherwise count as
+    // one more distinct entry in the set and pass the comparison below.
+    const title = /<title>([^<]*)<\/title>/.exec(body)?.[1]?.trim()
+    assert(title, `${loc} has no <title>`)
+    titles.add(title)
   }
   assert(titles.size === locs.length, `${locs.length} pages share ${titles.size} title(s)`)
 })
