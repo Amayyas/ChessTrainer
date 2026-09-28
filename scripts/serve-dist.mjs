@@ -7,7 +7,8 @@
  *  - A request for a route like /coach must fall back to app.html (the empty
  *    shell), not index.html (which carries the prerendered landing markup and
  *    would hydrate into a mismatch) — the `to = "/app.html" status = 200`
- *    rewrite in netlify.toml. A real file always wins over it.
+ *    rewrite in netlify.toml. A real file always wins over it, and so does
+ *    coach.html for /coach, which scripts/prerender.mjs writes per route.
  *  - Text assets must be gzipped, as Netlify's CDN serves them. Without it
  *    Lighthouse downloads 534 KB of JS instead of ~160 KB and the performance
  *    score drops ~25 points — the run would measure the server, not the build.
@@ -81,6 +82,9 @@ const server = createServer((req, res) => {
   const acceptsGzip = (req.headers['accept-encoding'] ?? '').includes('gzip')
 
   if (files.has(key)) return send(res, key, acceptsGzip)
+  // Netlify answers /coach with coach.html when the file exists, ahead of the
+  // rewrite: that is how each indexable route gets a head of its own.
+  if (files.has(`${key}.html`)) return send(res, `${key}.html`, acceptsGzip)
   // The SPA rewrite: every unknown path is the app shell, HTTP 200.
   if (files.has('/app.html')) return send(res, '/app.html', acceptsGzip)
   res.writeHead(404, { 'content-type': 'text/plain' }).end('not found')

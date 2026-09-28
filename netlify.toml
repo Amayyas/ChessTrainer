@@ -50,7 +50,10 @@
 #
 # Real files still win: Netlify serves an existing asset before applying a
 # rewrite, so /stockfish/stockfish.js, /og-image.png and index.html itself for
-# a direct hit on '/' are unaffected.
+# a direct hit on '/' are unaffected. So are the indexable routes: the build
+# writes coach.html for /coach and so on — the same empty shell under that
+# page's own title and canonical — and Netlify serves it for the extensionless
+# address. Only the routes left out of the sitemap reach app.html.
 [[redirects]]
   from = "/*"
   to = "/app.html"
