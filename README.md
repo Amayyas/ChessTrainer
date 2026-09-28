@@ -358,8 +358,9 @@ accessibility and best practices are blocking; SEO only warns.
 
 ## Deployment
 
-Deployed at **[chesstrainer.fr](https://chesstrainer.fr)**, from `main`, on every
-merge.
+Deployed at **[chesstrainer.fr](https://chesstrainer.fr)**, from `main`, once per
+release: production builds only when release-please's release PR is merged, and
+every other merge to `main` goes live with the next release.
 
 The app is static: `npm run build` produces `dist/`, which is served from a CDN.
 There is no server to run — the database lives in Supabase.
