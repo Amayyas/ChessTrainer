@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.2](https://github.com/Amayyas/ChessTrainer/compare/v2.3.1...v2.3.2) (2026-10-01)
+
+
+### Bug Fixes
+
+* **seo:** give each indexable route a head of its own before any JS runs ([5c0a686](https://github.com/Amayyas/ChessTrainer/commit/5c0a686303c632908279b13346ef5e4ed89c56d7))
+* **seo:** give each indexable route a head of its own before any JS runs ([1e6b903](https://github.com/Amayyas/ChessTrainer/commit/1e6b903c7b893f9c83be34ed90268db895adf278))
+
 ## [2.3.1](https://github.com/Amayyas/ChessTrainer/compare/v2.3.0...v2.3.1) (2026-09-25)
 
 
