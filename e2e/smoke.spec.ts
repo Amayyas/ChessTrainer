@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './csp'
 
 /**
  * The board, the engine and a played move — none of it runs under jsdom, so

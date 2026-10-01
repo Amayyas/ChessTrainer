@@ -13,6 +13,11 @@
  *    Lighthouse downloads 534 KB of JS instead of ~160 KB and the performance
  *    score drops ~25 points — the run would measure the server, not the build.
  *
+ * The response headers come from netlify.toml's [[headers]] rules, read at
+ * startup (scripts/lib/netlify-headers.mjs) rather than restated here — so the
+ * smoke tests run under the same Content-Security-Policy production serves,
+ * and Lighthouse sees the same cache policy.
+ *
  * The tree is read and pre-compressed into memory at startup.
  *
  * Usage: node scripts/serve-dist.mjs [port]   (default 4173)
@@ -22,9 +27,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { extname, join, normalize, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
+import { headersFor, parseHeaderRules } from './lib/netlify-headers.mjs'
 
 const DIST = fileURLToPath(new URL('../dist', import.meta.url))
 const PORT = Number(process.argv[2] ?? 4173)
+const RULES = parseHeaderRules(
+  readFileSync(fileURLToPath(new URL('../netlify.toml', import.meta.url)), 'utf8'),
+)
 
 const CONTENT_TYPE = {
   '.html': 'text/html; charset=utf-8',
@@ -58,20 +67,18 @@ const files = new Map()
   }
 })(DIST)
 
-function send(res, key, acceptsGzip) {
+/** `path` is the request's own path: Netlify matches header rules against it. */
+function send(res, path, key, acceptsGzip) {
   const file = files.get(key)
   const ext = extname(key)
   const useGzip = acceptsGzip && file.gzip
   const body = useGzip ? file.gzip : file.raw
   const headers = {
+    ...headersFor(RULES, path),
     'content-type': CONTENT_TYPE[ext] ?? 'application/octet-stream',
     'content-length': body.length,
   }
   if (useGzip) headers['content-encoding'] = 'gzip'
-  // Mirror netlify.toml closely enough for Lighthouse's cache-policy audit and
-  // a header check to see production behaviour.
-  if (key.startsWith('/assets/')) headers['cache-control'] = 'public, max-age=31536000, immutable'
-  else if (ext === '.html') headers['cache-control'] = 'public, max-age=0, must-revalidate'
   res.writeHead(200, headers).end(body)
 }
 
@@ -81,12 +88,12 @@ const server = createServer((req, res) => {
   const key = rel === '/' || rel === '' ? '/index.html' : rel
   const acceptsGzip = (req.headers['accept-encoding'] ?? '').includes('gzip')
 
-  if (files.has(key)) return send(res, key, acceptsGzip)
+  if (files.has(key)) return send(res, rel, key, acceptsGzip)
   // Netlify answers /coach with coach.html when the file exists, ahead of the
   // rewrite: that is how each indexable route gets a head of its own.
-  if (files.has(`${key}.html`)) return send(res, `${key}.html`, acceptsGzip)
+  if (files.has(`${key}.html`)) return send(res, rel, `${key}.html`, acceptsGzip)
   // The SPA rewrite: every unknown path is the app shell, HTTP 200.
-  if (files.has('/app.html')) return send(res, '/app.html', acceptsGzip)
+  if (files.has('/app.html')) return send(res, rel, '/app.html', acceptsGzip)
   res.writeHead(404, { 'content-type': 'text/plain' }).end('not found')
 })
 
