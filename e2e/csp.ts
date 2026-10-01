@@ -17,8 +17,9 @@ import { DEFAULT_SCRIPT_URL } from '@/engine/stockfishEngine'
  *    response, and its violations fire on the worker's global scope only.
  *    Measured: a connect-src violation raised in the worker reached neither a
  *    document listener nor the console. So the worker's script is intercepted
- *    and the same listener is prepended to it. The response headers are passed
- *    through untouched, so the policy under test is still the served one.
+ *    and the same listener is prepended to it. The response headers go through
+ *    as served, bar the two that describe the original encoding, so the policy
+ *    under test is still the served one.
  *
  * Both write a marked line to the console, which Playwright reports on the page
  * for workers as well.
