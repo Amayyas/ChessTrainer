@@ -203,12 +203,22 @@ submitted, and indexing has been requested for the home page. Nothing more to do
 but wait — a new domain takes days to appear, and the brand query longer.
 
 **Email:** Supabase sends auth mail from its own shared domain, not from
-chesstrainer.fr, so DMARC on this domain does not govern it. DMARC has been at
-`p=reject` since 5 September 2026, after a week of aggregate reports came back
-clean with no legitimate sender failing. There is still no DKIM record; with
-`reject` live this now actively risks legitimate forwarded mail, since SPF alone
-breaks on forwarding — adding DKIM is the open item, waiting on OVH offering it
-for this plan.
+chesstrainer.fr, so DMARC on this domain does not govern it. The domain's own
+mail is one OVH Zimbra Starter mailbox, `contact@chesstrainer.fr`, which also
+receives the DMARC aggregate reports. (The OVH panel also lists an empty
+"redirect" email offer for the domain; it is not where the mail lives.) DMARC
+has been at `p=reject` since 5 September 2026, after a week of aggregate
+reports came back clean with no legitimate sender failing.
+
+DKIM is active: Zimbra signs outgoing mail with `d=chesstrainer.fr`, under the
+selectors `ovhmo-selector-1` and `ovhmo-selector-2`, both CNAMEs to keys OVH
+publishes. Measured on 1 October 2026 on a real message to Gmail: SPF, DKIM and
+DMARC all `PASS`, with DKIM aligned on chesstrainer.fr. This was long recorded
+here as missing — a probe of common selector names found nothing because the
+OVH name has a hyphen before the digit; only a real message's
+`DKIM-Signature` header gives the selector reliably. Mail sent through OVH's
+SMTP is covered; mail sent "as" this address from another provider, such as
+Gmail's send-as, is not, and `reject` would refuse it.
 
 **Known and deliberately unfixed:** per-move accuracy saturates on forced mates.
 The grade now prices a slow mate by its distance, but the win-chances curve reads
