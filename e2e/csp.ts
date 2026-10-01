@@ -69,7 +69,19 @@ export const test = base.extend<{ cspGuard: void }>({
           const response = await route.fetch()
           if (!cspOf(response.headers())) workersWithoutCsp.push(route.request().url())
           instrumented.add(new URL(route.request().url()).pathname)
-          await route.fulfill({ response, body: `${LISTENER}\n${await response.text()}` })
+          // route.fetch() hands back the body decoded but the headers as sent,
+          // gzip and the compressed length included. Measured: Chromium passed
+          // both on to the worker with a 20 KB plain body and ran it anyway,
+          // which is tolerance, not a contract. Every other header, the CSP
+          // first, goes through as served.
+          const headers = response.headers()
+          delete headers['content-encoding']
+          delete headers['content-length']
+          await route.fulfill({
+            response,
+            headers,
+            body: `${LISTENER}\n${await response.text()}`,
+          })
         },
       )
 
