@@ -46,12 +46,18 @@ export function parseHeaderRules(toml) {
     if (line === '' || line.startsWith('#')) return
 
     if (line.startsWith('[')) {
-      if (line === '[[headers]]') {
+      // A table line may carry a trailing comment; a table name holds no `#`.
+      const table = line.replace(/\s*#.*$/, '')
+      if (table === '[[headers]]') {
         close(lineNumber)
         rule = { for: null, values: {} }
         inValues = false
-      } else if (line === '[headers.values]' && rule) {
+      } else if (table === '[headers.values]' && rule) {
         inValues = true
+      } else if (/\bheaders\b/.test(table)) {
+        // Spaced or quoted forms of the two tables above are valid TOML; read
+        // as "another table", they would end the block and drop its headers.
+        throw new Error(`netlify.toml:${lineNumber}: unsupported headers table: ${line}`)
       } else {
         // Any other table ends the headers block.
         close(lineNumber)

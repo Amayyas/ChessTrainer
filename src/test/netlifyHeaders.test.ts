@@ -17,7 +17,7 @@ const rules = parseHeaderRules(toml)
 describe('netlify.toml header rules', () => {
   it('reads every [[headers]] block in the file', () => {
     // Counted from the text, so a block the reader skipped cannot pass.
-    expect(rules).toHaveLength(toml.match(/^\[\[headers\]\]$/gm)?.length ?? -1)
+    expect(rules).toHaveLength(toml.match(/^\s*\[\[\s*headers\s*\]\]/gm)?.length ?? -1)
     expect(rules.map((rule) => rule.for)).toEqual(['/*', '/assets/*', '/stockfish/*'])
   })
 
@@ -88,7 +88,26 @@ describe('parseHeaderRules', () => {
     expect(parsed).toEqual([{ for: '/*', values: { 'X-One': '1' } }])
   })
 
+  it('reads table lines that carry a trailing comment', () => {
+    const parsed = parseHeaderRules(
+      [
+        '[[headers]] # engine',
+        '  for = "/*"',
+        '  [headers.values] # security',
+        '    X-A = "1"',
+      ].join('\n'),
+    )
+    expect(parsed).toEqual([{ for: '/*', values: { 'X-A': '1' } }])
+  })
+
   it('throws on a header it cannot read, instead of serving without it', () => {
+    // Valid TOML for the same tables; read as "some other table", each would
+    // end the block and drop its headers without a word.
+    expect(() => parseHeaderRules('[[ headers ]]\n  for = "/*"')).toThrow(/unsupported headers/)
+    expect(() =>
+      parseHeaderRules('[[headers]]\n  for = "/*"\n  [ headers.values ]\n    X-A = "1"'),
+    ).toThrow(/unsupported headers/)
+
     const multiline = ['[[headers]]', '  for = "/*"', '  [headers.values]', "    X-A = '''", "'''"]
     expect(() => parseHeaderRules(multiline.join('\n'))).toThrow(/unsupported line/)
     expect(() => parseHeaderRules('[[headers]]\n  [headers.values]\n    X-A = "1"')).toThrow(
