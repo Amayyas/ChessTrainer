@@ -31,8 +31,15 @@ import { DEFAULT_SCRIPT_URL } from '@/engine/stockfishEngine'
 
 const MARKER = '[csp-violation]'
 
-/** Runs in a window and in a worker alike: both have a global addEventListener. */
-const LISTENER = `addEventListener('securitypolicyviolation', (e) => console.error(${JSON.stringify(MARKER)} + JSON.stringify({ directive: e.effectiveDirective, blocked: e.blockedURI, source: e.sourceFile, line: e.lineNumber, disposition: e.disposition })));`
+/**
+ * Runs in a window and in a worker alike: both have a global addEventListener.
+ * A fixed string, nothing interpolated into it: it is code, injected into every
+ * page and into the worker. The marker is spelled out and checked against
+ * MARKER below instead.
+ */
+const LISTENER =
+  "addEventListener('securitypolicyviolation', (e) => console.error('[csp-violation]' + JSON.stringify({ directive: e.effectiveDirective, blocked: e.blockedURI, source: e.sourceFile, line: e.lineNumber, disposition: e.disposition })));"
+if (!LISTENER.includes(`'${MARKER}'`)) throw new Error('LISTENER does not log MARKER')
 
 /** The worker scripts the app starts. A new one has to be added here. */
 const WORKER_SCRIPTS = [DEFAULT_SCRIPT_URL]
