@@ -21,8 +21,16 @@ for (const address of ADDRESSES) {
 
     const response = await page.goto(address, { waitUntil: 'networkidle' })
     expect(response?.status()).toBe(200)
-    // React mounted: app.html ships an empty #root, so a child proves the
-    // bundle ran rather than the policy being checked against a blank page.
+    // React mounted, so the policy was checked against the running app rather
+    // than a page whose bundle never ran. Content in #root does not prove it:
+    // index.html ships the landing prerendered there. Both createRoot and
+    // hydrateRoot mark their container with a __reactContainer$ key, which
+    // only a bundle that ran can have put there.
+    await page.waitForFunction(() =>
+      Object.keys(document.getElementById('root') ?? {}).some((key) =>
+        key.startsWith('__reactContainer$'),
+      ),
+    )
     await expect(page.locator('#root > *').first()).toBeVisible()
     expect(errors).toEqual([])
   })
