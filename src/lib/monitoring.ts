@@ -67,6 +67,12 @@ export async function startMonitoring() {
       // Errors only. No tracing, no session replay — both would collect far
       // more than is needed to know that something broke.
       tracesSampleRate: 0,
+      // Nor sessions. BrowserSession is on by default and sends a `session`
+      // envelope on every page load and every navigation, error or not: a
+      // visit count, which is audience measurement the privacy policy says
+      // this app does not do. Production was measured sending one per page.
+      integrations: (defaults) =>
+        defaults.filter((integration) => integration.name !== 'BrowserSession'),
       // An error the player can do nothing about, from a browser extension or a
       // blocked request, is noise rather than signal.
       ignoreErrors: [
