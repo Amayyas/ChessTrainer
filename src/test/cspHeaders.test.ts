@@ -53,8 +53,8 @@ describe('global response headers', () => {
   })
 
   it('ships the CSP in Report-Only until a deploy clears it', () => {
-    // Flipping to enforcement is a deliberate step: it needs the Vite
-    // module-preload polyfill handled first (see netlify.toml), so this test
+    // Flipping to enforcement is a deliberate step: it waits on a manual pass
+    // over what the smoke tests cannot reach (see netlify.toml), so this test
     // is the checkpoint that has to be updated by hand when that happens.
     expect(values).toMatch(/Content-Security-Policy-Report-Only = /)
     expect(values).not.toMatch(/Content-Security-Policy = /)

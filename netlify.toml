@@ -71,18 +71,20 @@
 # nothing legitimate trips it.
 #
 # There is no `report-to` endpoint: Netlify offers no report sink and this file
-# cannot interpolate the Sentry DSN (which lives in an env var). Verification is
-# manual — open the deployed site, exercise every mode, and read the browser
-# console for `Report Only` violations. Enough traffic to matter goes through
-# the author's own browser at this stage. Wire Sentry's security endpoint as a
-# real sink before enforcing if that stops being true. Enforce (rename the key
-# to `Content-Security-Policy`) once a pass comes back clean.
+# cannot interpolate the Sentry DSN (which lives in an env var). The Playwright
+# smoke tests are the sink instead: scripts/serve-dist.mjs serves them these
+# headers, and e2e/csp.ts fails any test that trips the policy, in a page or in
+# the engine's worker. They cannot reach what CI has no configuration for —
+# signing in, Supabase, Sentry — so those are checked by hand on the deployed
+# site, reading the browser console for `Report Only` violations. Enforce
+# (rename the key to `Content-Security-Policy`) once that pass comes back clean.
 #
 # What each source has to cover:
 #   script-src  'wasm-unsafe-eval' — Stockfish compiles a .wasm module in the
 #               worker; without it the engine fails to start under enforcement.
-#               Vite's inline module-preload polyfill also needs a hash or
-#               `modulePreload.polyfill = false` before this can go enforcing.
+#               No inline script: Vite bundles its module-preload polyfill into
+#               the entry chunk, which 'self' covers, and the built HTML carries
+#               none. The smoke tests fail on the first one that appears.
 #   worker-src  the engine is `new Worker('/stockfish/stockfish.js')`, same
 #               origin; `blob:` covers builds that wrap the worker.
 #   style-src   'unsafe-inline' — framer-motion and the board write inline
