@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.3.3](https://github.com/Amayyas/ChessTrainer/compare/v2.3.2...v2.3.3) (2026-10-01)
+
+
+### Bug Fixes
+
+* **e2e:** drop stale encoding headers from the rewritten worker script ([b31ad92](https://github.com/Amayyas/ChessTrainer/commit/b31ad9259eb5f6784716bbdfc0edcaa449be4233))
+* **e2e:** stop dropping headers after a commented table line ([38e86fe](https://github.com/Amayyas/ChessTrainer/commit/38e86fe65c2b22b69b415fa0a7c9d8b4e442419e))
+
+
+### Refactoring
+
+* **e2e:** build the CSP listener without interpolating into code ([f497900](https://github.com/Amayyas/ChessTrainer/commit/f4979001efd47bb88a5094fe86f38f0da1a595b0))
+
 ## [2.3.2](https://github.com/Amayyas/ChessTrainer/compare/v2.3.1...v2.3.2) (2026-10-01)
 
 
