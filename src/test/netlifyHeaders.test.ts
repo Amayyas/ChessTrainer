@@ -24,10 +24,10 @@ describe('netlify.toml header rules', () => {
   it('serves the CSP on documents, assets and the engine alike', () => {
     // The engine runs in a worker, and a worker is governed by the policy on
     // its own script's response, not the page's.
-    const csp = rules[0]?.values['Content-Security-Policy-Report-Only']
+    const csp = rules[0]?.values['Content-Security-Policy']
     expect(csp).toMatch(/default-src 'self'/)
     for (const path of ['/', '/coach', '/assets/index-abc.js', '/stockfish/stockfish.js']) {
-      expect(headersFor(rules, path)['content-security-policy-report-only']).toBe(csp)
+      expect(headersFor(rules, path)['content-security-policy']).toBe(csp)
     }
   })
 
