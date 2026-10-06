@@ -6,9 +6,9 @@
  * security headers — and nobody notices until a visitor does. This is the
  * frontend counterpart: run it after a deploy, and on a schedule.
  *
- * The CSP is Report-Only, so this is also where the "read the console for a
- * week" verification gets a foothold: at least confirm the header is present
- * and shaped right.
+ * The CSP must be served enforced. Report-Only blocks nothing, so a deploy that
+ * fell back to it — a rollback left in place, a header renamed in passing —
+ * would look healthy while leaving an injection free to run.
  *
  * Usage: node scripts/check-deployed.mjs [base-url]   (default https://chesstrainer.fr)
  */
@@ -146,8 +146,14 @@ check('/ carries the security headers', async () => {
   )
   assert(header('referrer-policy') !== '', 'referrer-policy missing')
   assert(header('permissions-policy') !== '', 'permissions-policy missing')
-  const csp = header('content-security-policy-report-only') || header('content-security-policy')
-  assert(csp.includes("default-src 'self'"), 'CSP missing or not locked to self')
+  const csp = header('content-security-policy')
+  assert(
+    csp !== '',
+    header('content-security-policy-report-only')
+      ? 'CSP is Report-Only: it reports violations but blocks nothing'
+      : 'CSP missing',
+  )
+  assert(csp.includes("default-src 'self'"), 'CSP not locked to self')
   // Netlify adds HSTS only when Force HTTPS is on — this confirms it is.
   assert(header('strict-transport-security').includes('max-age'), 'no HSTS — is Force HTTPS on?')
 })

@@ -81,7 +81,8 @@
 # If a mode breaks in production: roll back to the previous deploy in the
 # Netlify UI (free, no build), then fix forward — or rename the key back to
 # `Content-Security-Policy-Report-Only` and release, which keeps the policy
-# reporting without blocking — a stopgap, since it stops nothing.
+# reporting without blocking — a stopgap, since it stops nothing, and one
+# scripts/check-deployed.mjs fails on until the policy is enforced again.
 #
 # What each source has to cover:
 #   script-src  'wasm-unsafe-eval' — Stockfish compiles a .wasm module in the
