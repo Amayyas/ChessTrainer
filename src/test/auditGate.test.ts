@@ -60,6 +60,25 @@ describe('the audit gate', () => {
     ])
   })
 
+  it('excuses one package without excusing another under the same advisory', () => {
+    const shared = { url: 'https://github.com/advisories/GHSA-aaaa-bbbb-cccc', severity: 'high' }
+    const twoPackages = {
+      vulnerabilities: {
+        excused: { via: [{ ...shared, name: 'excused', title: 't' }] },
+        other: { via: [{ ...shared, name: 'other', title: 't' }] },
+      },
+    }
+    const exception = {
+      id: 'GHSA-aaaa-bbbb-cccc',
+      package: 'excused',
+      reason: 'r',
+      until: '2099-01-01',
+    }
+    const { failures, excused } = evaluate(twoPackages, [exception], TODAY)
+    expect(excused).toEqual([expect.stringMatching(/^high excused /)])
+    expect(failures).toEqual([expect.stringMatching(/^high other /)])
+  })
+
   it('never reads a missing report as a clean one', () => {
     expect(evaluate(null, EXCEPTIONS, TODAY).failures).toEqual(['npm audit produced no report'])
     expect(evaluate({}, EXCEPTIONS, TODAY).failures).toEqual(['npm audit produced no report'])

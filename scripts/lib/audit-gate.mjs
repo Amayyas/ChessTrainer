@@ -37,7 +37,9 @@ export const EXCEPTIONS = [
 const BLOCKING = new Set(['high', 'critical'])
 
 /**
- * The advisories in `npm audit --json` output, one per advisory. Each
+ * The advisories in `npm audit --json` output, one per advisory and package —
+ * one advisory can name several packages, and an exception for one of them
+ * must not excuse the others. Each
  * vulnerable package lists the advisories against it in `via` as objects, and
  * the packages that merely depend on a vulnerable one as strings; only the
  * objects are advisories.
@@ -52,7 +54,12 @@ export function advisories(report) {
     for (const via of /** @type {any} */ (vulnerability).via ?? []) {
       if (typeof via !== 'object' || via === null) continue
       const id = /GHSA-[\w-]+/.exec(String(via.url ?? ''))?.[0] ?? String(via.source)
-      found.set(id, { id, package: via.name, severity: via.severity, title: via.title })
+      found.set(`${id} ${via.name}`, {
+        id,
+        package: via.name,
+        severity: via.severity,
+        title: via.title,
+      })
     }
   }
   return [...found.values()]
