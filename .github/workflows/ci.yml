@@ -190,11 +190,13 @@ jobs:
       - run: npm ci
 
       # Runs on the resolved lockfile, so it catches a vulnerable transitive
-      # dependency Dependabot has not opened a PR for yet. --audit-level=high
-      # keeps the gate on what is worth blocking a merge over; moderate and
-      # below still reach Dependabot's weekly grouped PR.
+      # dependency Dependabot has not opened a PR for yet. High and critical
+      # block the merge; moderate and below still reach Dependabot's weekly
+      # grouped PR. An advisory with no patched release can be set aside only
+      # by a reasoned, dated exception in scripts/lib/audit-gate.mjs, which the
+      # run prints every time.
       - name: Dependency audit
-        run: npm audit --audit-level=high
+        run: node scripts/audit-gate.mjs
 
       # Built as production is built, or the budget guards the wrong thing. With
       # no DSN the guard in monitoring.ts is statically false, the dynamic
