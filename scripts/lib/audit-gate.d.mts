@@ -11,6 +11,7 @@ export interface Advisory {
   title: string
 }
 export const EXCEPTIONS: Exception[]
+export function isCalendarDate(value: string): boolean
 export function advisories(report: unknown): Advisory[]
 export function evaluate(
   report: unknown,

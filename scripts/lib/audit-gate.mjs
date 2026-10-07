@@ -66,6 +66,19 @@ export function advisories(report) {
 }
 
 /**
+ * Whether `value` is a real calendar date written YYYY-MM-DD. The expiry is
+ * compared as text, so '2027-13-15' would otherwise sort as a date in late 2027
+ * and keep its exception alive into 2028.
+ *
+ * @param {string} value
+ */
+export function isCalendarDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+/**
  * @param {any} report parsed `npm audit --json`
  * @param {Exception[]} exceptions
  * @param {string} today YYYY-MM-DD
@@ -76,21 +89,32 @@ export function evaluate(report, exceptions, today) {
     // A run that produced no report must not read as a clean one.
     return { failures: ['npm audit produced no report'], excused: [] }
   }
-  const all = advisories(report)
+  const blocking = advisories(report).filter((a) => BLOCKING.has(a.severity))
   const failures = []
   const excused = []
 
-  for (const advisory of all.filter((a) => BLOCKING.has(a.severity))) {
+  for (const exception of exceptions) {
+    if (!isCalendarDate(exception.until)) {
+      failures.push(
+        `exception for ${exception.package} ${exception.id} has no valid date: ${exception.until}`,
+      )
+    }
+  }
+
+  for (const advisory of blocking) {
     const exception = exceptions.find((e) => e.id === advisory.id && e.package === advisory.package)
     const line = `${advisory.severity} ${advisory.package} ${advisory.id}: ${advisory.title}`
     if (!exception) failures.push(line)
+    else if (!isCalendarDate(exception.until)) failures.push(line)
     else if (exception.until < today) {
       failures.push(`${line} (exception lapsed on ${exception.until}; review it)`)
     } else excused.push(`${line} (excepted until ${exception.until})`)
   }
 
+  // Matched against blocking advisories only: an exception for one that has
+  // dropped to moderate excuses nothing, and would otherwise never lapse.
   for (const exception of exceptions) {
-    if (!all.some((a) => a.id === exception.id && a.package === exception.package)) {
+    if (!blocking.some((a) => a.id === exception.id && a.package === exception.package)) {
       failures.push(`exception for ${exception.package} ${exception.id} matches nothing; remove it`)
     }
   }
