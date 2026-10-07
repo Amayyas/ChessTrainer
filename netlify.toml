@@ -64,20 +64,24 @@
 # single-threaded one, and those headers would constrain every asset the page
 # loads for no gain.
 #
-# The Content-Security-Policy ships in Report-Only first. The Supabase session
-# lives in localStorage (persistSession), so an XSS would be an account
-# takeover, and a CSP is the defence-in-depth that makes an injection
-# unexploitable — but it can only be enforced once a real deploy confirms
-# nothing legitimate trips it.
+# The Content-Security-Policy is enforced. The Supabase session lives in
+# localStorage (persistSession), so an XSS would be an account takeover, and a
+# CSP is the defence-in-depth that makes an injection unexploitable. It ran in
+# Report-Only from 5 September 2026 until the release that carries this change.
 #
 # There is no `report-to` endpoint: Netlify offers no report sink and this file
 # cannot interpolate the Sentry DSN (which lives in an env var). The Playwright
-# smoke tests are the sink instead: scripts/serve-dist.mjs serves them these
-# headers, and e2e/csp.ts fails any test that trips the policy, in a page or in
-# the engine's worker. They cannot reach what CI has no configuration for —
-# signing in, Supabase, Sentry — so those are checked by hand on the deployed
-# site, reading the browser console for `Report Only` violations. Enforce
-# (rename the key to `Content-Security-Policy`) once that pass comes back clean.
+# tests are the sink instead: scripts/serve-dist.mjs serves them these headers,
+# and e2e/csp.ts fails any test that trips the policy, in a page or in the
+# engine's worker, on every route. Before enforcing they also ran clean against
+# production, Sentry included. What they cannot reach — signing in, and the
+# Supabase calls a signed-in player makes — was not checked by hand; the app
+# loads no third-party image or script there, and Supabase is allowed below.
+#
+# If a mode breaks in production: roll back to the previous deploy in the
+# Netlify UI (free, no build), then fix forward — or rename the key back to
+# `Content-Security-Policy-Report-Only` and release, which keeps the policy
+# reporting without blocking — a stopgap, since it stops nothing.
 #
 # What each source has to cover:
 #   script-src  'wasm-unsafe-eval' — Stockfish compiles a .wasm module in the
@@ -112,7 +116,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-    Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.de.sentry.io"
 
 # Vite fingerprints these filenames, so the name changes whenever the content
 # does and a stale copy can never be served. Overrides the Cache-Control the

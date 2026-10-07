@@ -42,7 +42,7 @@ describe('global response headers', () => {
   const toml = readFileSync(NETLIFY, 'utf8')
   const values = globalHeaderValues(toml)
 
-  const csp = /Content-Security-Policy(?:-Report-Only)? = "([^"]+)"/.exec(values)?.[1] ?? ''
+  const csp = /Content-Security-Policy = "([^"]+)"/.exec(values)?.[1] ?? ''
 
   // Guards the guard: an extractor that stopped matching would report every
   // assertion below as satisfied on an empty string.
@@ -52,12 +52,12 @@ describe('global response headers', () => {
     expect(csp.length).toBeGreaterThan(0)
   })
 
-  it('ships the CSP in Report-Only until a deploy clears it', () => {
-    // Flipping to enforcement is a deliberate step: it waits on a manual pass
-    // over what the smoke tests cannot reach (see netlify.toml), so this test
-    // is the checkpoint that has to be updated by hand when that happens.
-    expect(values).toMatch(/Content-Security-Policy-Report-Only = /)
-    expect(values).not.toMatch(/Content-Security-Policy = /)
+  it('enforces the CSP rather than only reporting it', () => {
+    // Report-Only blocks nothing: an injection runs and a console line is all
+    // that comes of it. Falling back to it is a deliberate rollback step (see
+    // netlify.toml), not something an edit should do in passing.
+    expect(values).toMatch(/Content-Security-Policy = /)
+    expect(values).not.toMatch(/Content-Security-Policy-Report-Only/)
   })
 
   it('locks the ambient sources down to nothing', () => {

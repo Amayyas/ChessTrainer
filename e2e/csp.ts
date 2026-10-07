@@ -6,8 +6,11 @@ import { DEFAULT_SCRIPT_URL } from '@/engine/stockfishEngine'
  * declares — scripts/serve-dist.mjs sends it — and fails on any violation,
  * naming the directive and the blocked URL.
  *
- * `securitypolicyviolation` fires in Report-Only too, which is the point: a
- * violation shows up here before the policy is enforced and anything breaks.
+ * Under the enforced policy a violation also blocks what caused it, so most
+ * would break a test anyway — but not all: a blocked request a component
+ * swallows, or an image that fails to load, still passes every assertion. The
+ * event names the cause either way, and fires in Report-Only too, should the
+ * policy ever be rolled back to it.
  *
  * Two places to listen, because a worker is not a window:
  *
