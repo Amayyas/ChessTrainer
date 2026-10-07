@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.4.0](https://github.com/Amayyas/ChessTrainer/compare/v2.3.2...v2.4.0) (2026-10-07)
+
+
+### Features
+
+* **security:** enforce the Content-Security-Policy ([3dab731](https://github.com/Amayyas/ChessTrainer/commit/3dab73183418afb97af99edfa30915ece9435301))
+* **security:** enforce the Content-Security-Policy ([f695566](https://github.com/Amayyas/ChessTrainer/commit/f695566e2f6ee34735e87e50ba7d9135c2ef852f))
+
+
+### Bug Fixes
+
+* **ci:** key audit advisories by package as well as id ([66e4de2](https://github.com/Amayyas/ChessTrainer/commit/66e4de2861f5b5a532eb773c10ad95c798fe9145))
+* **ci:** reject impossible exception dates and stale non-blocking matches ([0a0d915](https://github.com/Amayyas/ChessTrainer/commit/0a0d915ade3db1f7680539d1eac4b8c4cf4152b2))
+* **e2e:** drop stale encoding headers from the rewritten worker script ([b31ad92](https://github.com/Amayyas/ChessTrainer/commit/b31ad9259eb5f6784716bbdfc0edcaa449be4233))
+* **e2e:** stop dropping headers after a commented table line ([38e86fe](https://github.com/Amayyas/ChessTrainer/commit/38e86fe65c2b22b69b415fa0a7c9d8b4e442419e))
+* **monitoring:** stop sending Sentry a session on every page load ([3640f2f](https://github.com/Amayyas/ChessTrainer/commit/3640f2f2d3d4ff4e8c97f0f87221122f5cdf71a1))
+* **monitoring:** stop sending Sentry a session on every page load ([a839cee](https://github.com/Amayyas/ChessTrainer/commit/a839cee37bc968cd42f40a15a1624c2fd83c7236))
+
+
+### Refactoring
+
+* **e2e:** build the CSP listener without interpolating into code ([f497900](https://github.com/Amayyas/ChessTrainer/commit/f4979001efd47bb88a5094fe86f38f0da1a595b0))
+
 ## [2.3.2](https://github.com/Amayyas/ChessTrainer/compare/v2.3.1...v2.3.2) (2026-10-01)
 
 
