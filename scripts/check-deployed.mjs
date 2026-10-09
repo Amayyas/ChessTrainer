@@ -6,13 +6,24 @@
  * security headers — and nobody notices until a visitor does. This is the
  * frontend counterpart: run it after a deploy, and on a schedule.
  *
- * The CSP must be served enforced. Report-Only blocks nothing, so a deploy that
- * fell back to it — a rollback left in place, a header renamed in passing —
- * would look healthy while leaving an injection free to run.
+ * The CSP must be served enforced, and must be the policy netlify.toml declares,
+ * character for character. Report-Only blocks nothing, so a deploy that fell
+ * back to it — a rollback left in place, a header renamed in passing — would
+ * look healthy while leaving an injection free to run; and a policy that only
+ * has to contain "default-src 'self'" can be widened ('unsafe-inline', a `*`)
+ * without this noticing. The engine's worker is checked as well as the page:
+ * it runs under the policy on its own script's response.
  *
  * Usage: node scripts/check-deployed.mjs [base-url]   (default https://chesstrainer.fr)
  */
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { headersFor, parseHeaderRules } from './lib/netlify-headers.mjs'
+
 const BASE = (process.argv[2] ?? 'https://chesstrainer.fr').replace(/\/$/, '')
+const RULES = parseHeaderRules(
+  readFileSync(fileURLToPath(new URL('../netlify.toml', import.meta.url)), 'utf8'),
+)
 
 /** @type {{ name: string, run: () => Promise<void> }[]} */
 const checks = []
@@ -146,16 +157,24 @@ check('/ carries the security headers', async () => {
   )
   assert(header('referrer-policy') !== '', 'referrer-policy missing')
   assert(header('permissions-policy') !== '', 'permissions-policy missing')
-  const csp = header('content-security-policy')
-  assert(
-    csp !== '',
-    header('content-security-policy-report-only')
-      ? 'CSP is Report-Only: it reports violations but blocks nothing'
-      : 'CSP missing',
-  )
-  assert(csp.includes("default-src 'self'"), 'CSP not locked to self')
   // Netlify adds HSTS only when Force HTTPS is on — this confirms it is.
   assert(header('strict-transport-security').includes('max-age'), 'no HSTS — is Force HTTPS on?')
+})
+
+check('the page and the engine worker are served the declared CSP, enforced', async () => {
+  for (const path of ['/', '/stockfish/stockfish.js']) {
+    const declared = headersFor(RULES, path)['content-security-policy']
+    assert(declared, `netlify.toml declares no enforced CSP for ${path}`)
+    const { header } = await get(path, { method: 'HEAD' })
+    const served = header('content-security-policy')
+    assert(
+      served !== '',
+      header('content-security-policy-report-only')
+        ? `${path}: CSP is Report-Only: it reports violations but blocks nothing`
+        : `${path}: CSP missing`,
+    )
+    assert(served === declared, `${path}: CSP differs from netlify.toml\n  served:   ${served}`)
+  }
 })
 
 check('the HTML is revalidated, the fingerprinted assets are immutable', async () => {
