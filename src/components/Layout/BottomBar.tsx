@@ -66,9 +66,9 @@ export default function BottomBar() {
           </NavLink>
         ))}
 
-        {/* The sixth column. A unicode glyph rather than a lucide icon on
-            purpose: an icon import here would pull the icon library into the
-            entry chunk, which is the weight this whole arrangement avoids. */}
+        {/* The sixth column. A unicode glyph, like every mark in the
+            interface: the app carries no icon library, and this bar sits in
+            the entry chunk, whose weight this whole arrangement guards. */}
         <button
           type="button"
           onClick={() => {

@@ -1,6 +1,5 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
-import tailwindcssAnimate from 'tailwindcss-animate'
 import {
   danger,
   fallbackFontFaces,
@@ -56,5 +55,5 @@ export default {
       },
     },
   },
-  plugins: [fontFallbacks, tailwindcssAnimate],
+  plugins: [fontFallbacks],
 } satisfies Config
