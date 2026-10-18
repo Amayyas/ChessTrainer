@@ -232,7 +232,7 @@ export default function HuntPage() {
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => startRound(champion)}>Rejouer</Button>
-            <Button variant="outline" onClick={game.reset}>
+            <Button variant="secondary" onClick={game.reset}>
               Changer de pièce
             </Button>
           </div>
@@ -298,7 +298,7 @@ export default function HuntPage() {
               capturer.
             </p>
 
-            <Button variant="ghost" size="sm" onClick={game.reset}>
+            <Button variant="quiet" size="sm" onClick={game.reset}>
               Abandonner la manche
             </Button>
           </Card>

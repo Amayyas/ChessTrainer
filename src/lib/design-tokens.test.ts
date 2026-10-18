@@ -209,6 +209,8 @@ describe('design tokens', () => {
     // The pairs the interface sets text in, each held to the 4.5:1 floor for
     // body text. Captions are small, so none of them earns the 3:1 allowance
     // for large text. A lighter ink or a brighter red fails here first.
+    // Contrast is symmetric, so each pair also covers its inverse: the rubric
+    // on paper is paper on the rubric too.
     const { paper, ink, rubric } = newsprint
     const pairs: Record<string, [text: string, ground: string]> = {
       'ink on paper': [ink.DEFAULT, paper.DEFAULT],
@@ -218,10 +220,12 @@ describe('design tokens', () => {
       'soft ink on bright paper': [ink.soft, paper.bright],
       'soft ink on deep paper': [ink.soft, paper.deep],
       'faint ink on paper': [ink.faint, paper.DEFAULT],
-      'rubric on paper': [rubric, paper.DEFAULT],
-      'rubric on bright paper': [rubric, paper.bright],
+      'rubric on paper, and paper on rubric: a primary button under the pointer': [
+        rubric,
+        paper.DEFAULT,
+      ],
+      'rubric on bright paper, and bright paper on rubric: the alert tag': [rubric, paper.bright],
       'paper on ink, the primary button': [paper.DEFAULT, ink.DEFAULT],
-      'bright paper on rubric, the button under the pointer': [paper.bright, rubric],
     }
 
     for (const [pair, [text, ground]] of Object.entries(pairs)) {

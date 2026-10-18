@@ -118,7 +118,7 @@ export default function ProfilePage() {
                   </ToggleGroup>
                 </div>
 
-                <Button variant="outline" size="sm" onClick={() => void signOut()}>
+                <Button variant="secondary" size="sm" onClick={() => void signOut()}>
                   Se déconnecter
                 </Button>
 
@@ -158,7 +158,7 @@ export default function ProfilePage() {
                       )}
                       <div className="flex flex-wrap gap-2">
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => {
                             setConfirmingDelete(false)

@@ -135,7 +135,7 @@ export default function BattlePage() {
                 >
                   Analyser dans le Coach
                 </Button>
-                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                <Button variant="secondary" size="sm" onClick={battle.backToSetup}>
                   Nouvelle partie
                 </Button>
               </div>
@@ -172,14 +172,14 @@ export default function BattlePage() {
                   L&apos;IA n&apos;a pas répondu malgré plusieurs tentatives. La partie ne peut pas
                   se poursuivre.
                 </p>
-                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                <Button variant="secondary" size="sm" onClick={battle.backToSetup}>
                   Nouvelle partie
                 </Button>
               </div>
             )}
 
             {phase === 'playing' && (
-              <Button variant="secondary" size="sm" onClick={battle.resign}>
+              <Button variant="primary" size="sm" onClick={battle.resign}>
                 Abandonner
               </Button>
             )}

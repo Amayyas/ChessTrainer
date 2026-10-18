@@ -13,7 +13,7 @@ export default function Sidebar() {
   const profile = useAuthStore((state) => state.profile)
 
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-white/10 bg-ebene px-4 py-6 md:flex">
+    <aside className="theme-inverse fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-white/10 bg-ebene px-4 py-6 md:flex">
       <NavLink to={ROUTES.home} className="mb-8 flex items-center gap-3 px-2">
         <span aria-hidden="true" className="text-3xl text-or">
           {brand.mark}

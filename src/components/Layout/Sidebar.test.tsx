@@ -36,8 +36,9 @@ describe('Sidebar', () => {
     await screen.findByRole('heading', { level: 1 })
 
     const signIn = await screen.findByRole('link', { name: 'Se connecter' })
-    // The gold pair and the corner come from buttonVariants. The copy this
-    // replaced had neither the shadow nor the same padding.
-    expect(signIn).toHaveClass('bg-primary', 'text-primary-foreground', 'rounded-xl')
+    // The button's primary variant, on a sidebar marked as a dark surface so
+    // that it swaps to paper on ebony rather than drawing ink on ebony.
+    expect(signIn).toHaveAttribute('data-variant', 'primary')
+    expect(signIn.closest('.theme-inverse')).not.toBeNull()
   })
 })

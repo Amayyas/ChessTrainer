@@ -65,10 +65,10 @@ export default function LandingPage() {
             {ENGINE_LEVELS.length} niveaux et entraînez votre tactique — sans créer de compte.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="h-12 px-6 text-sm">
+            <Button asChild size="lg">
               <Link to={ROUTES.coach}>Essayer le coach</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="h-12 px-6 text-sm">
+            <Button asChild variant="secondary" size="lg">
               <Link to={ROUTES.register}>Créer un compte</Link>
             </Button>
           </div>

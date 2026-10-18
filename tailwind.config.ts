@@ -50,6 +50,10 @@ const withAlpha = (name: string) => `hsl(var(${name}) / <alpha-value>)`
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // `hover:` only where there is a pointer that hovers. On a touch screen a
+  // tapped button kept its hover until the next tap — now the rubric, the
+  // colour of a wrong move, left on the undo button.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {

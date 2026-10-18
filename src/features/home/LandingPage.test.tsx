@@ -89,13 +89,13 @@ describe('LandingPage', () => {
     // They were two hand-written class strings carrying a comment that admitted
     // as much: "styled to match the primary Button without being one". They are
     // the Button now, lent to the links through asChild.
-    expect(primary).toHaveClass('bg-primary', 'text-primary-foreground')
+    expect(primary).toHaveAttribute('data-variant', 'primary')
     expect(primary.closest('button')).toBeNull()
-    expect(secondary).toHaveClass('border-foreground/20')
+    expect(secondary).toHaveAttribute('data-variant', 'secondary')
 
-    // And the mechanism that makes the outline one legible on the ebony band.
-    // Without theme-inverse, border-foreground/20 is ebony on ebony: the button
-    // is still there, and nobody can see it.
+    // And the mechanism that keeps both legible on the ebony band. Without
+    // theme-inverse the buttons draw ink on ebony: still there, and nobody can
+    // see them.
     expect(primary.closest('.theme-inverse')).not.toBeNull()
     expect(secondary.closest('.theme-inverse')).not.toBeNull()
   })

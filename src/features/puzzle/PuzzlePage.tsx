@@ -109,7 +109,7 @@ function PuzzleBoard({
                 </ul>
               )}
               <Button
-                variant="ghost"
+                variant="quiet"
                 size="sm"
                 className="mt-2"
                 disabled={runner.hintLevel >= 3}

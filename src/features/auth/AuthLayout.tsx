@@ -68,7 +68,7 @@ export default function AuthLayout({
             <span className="h-px flex-1 bg-ebene/10" />
           </div>
 
-          <Button variant="outline" fullWidth onClick={() => void signInWithGoogle()}>
+          <Button variant="secondary" fullWidth onClick={() => void signInWithGoogle()}>
             Continuer avec Google
           </Button>
         </>

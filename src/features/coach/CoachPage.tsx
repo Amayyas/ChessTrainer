@@ -148,7 +148,7 @@ export default function CoachPage() {
                 <h2 className="mb-2 font-display text-lg font-bold text-ebene">Rejouer</h2>
                 <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Début"
                     disabled={coach.replayPly === 0}
@@ -157,7 +157,7 @@ export default function CoachPage() {
                     «
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Coup précédent"
                     disabled={coach.replayPly === 0}
@@ -166,7 +166,7 @@ export default function CoachPage() {
                     ‹
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Coup suivant"
                     disabled={coach.replayPly >= coach.lastPly}
@@ -175,7 +175,7 @@ export default function CoachPage() {
                     ›
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Fin"
                     disabled={coach.replayPly >= coach.lastPly}
@@ -183,7 +183,7 @@ export default function CoachPage() {
                   >
                     »
                   </Button>
-                  <Button variant="ghost" size="sm" className="ml-auto" onClick={coach.exitReplay}>
+                  <Button variant="quiet" size="sm" className="ml-auto" onClick={coach.exitReplay}>
                     Quitter
                   </Button>
                 </div>
@@ -211,7 +211,7 @@ export default function CoachPage() {
                       </ul>
                     )}
                     <Button
-                      variant="ghost"
+                      variant="quiet"
                       size="sm"
                       className="mt-2"
                       disabled={!coach.canRevealHint}
@@ -228,21 +228,21 @@ export default function CoachPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    variant="secondary"
+                    variant="primary"
                     size="sm"
                     onClick={game.undo}
                     disabled={game.sanHistory.length === 0}
                   >
                     Annuler
                   </Button>
-                  <Button variant="outline" size="sm" onClick={coach.newGame}>
+                  <Button variant="secondary" size="sm" onClick={coach.newGame}>
                     Nouvelle partie
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={coach.flipBoard}>
+                  <Button variant="quiet" size="sm" onClick={coach.flipBoard}>
                     Retourner le plateau
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="quiet"
                     size="sm"
                     disabled={game.sanHistory.length === 0}
                     onClick={coach.enterReplay}
