@@ -101,11 +101,6 @@ export default {
       // against. Both go once the components ask for `font-serif` themselves.
       fontFamily: { serif: [...fonts.serif], display: [...fonts.serif], sans: [...fonts.serif] },
       fontSize: typeScale,
-      boxShadow: {
-        card: '0 1px 2px rgba(26, 26, 46, 0.04), 0 8px 24px -12px rgba(26, 26, 46, 0.18)',
-        'card-hover': '0 2px 4px rgba(26, 26, 46, 0.06), 0 16px 40px -16px rgba(26, 26, 46, 0.28)',
-        gold: '0 8px 24px -10px rgba(201, 168, 76, 0.6)',
-      },
       borderRadius: {
         xl: '0.875rem',
         '2xl': '1.25rem',

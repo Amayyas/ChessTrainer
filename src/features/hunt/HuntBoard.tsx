@@ -70,7 +70,7 @@ export default function HuntBoard({
   }, [moves, threats, enemies, championSquare])
 
   return (
-    <div ref={containerRef} className="aspect-square w-full rounded-md shadow-card">
+    <div ref={containerRef} className="aspect-square w-full rounded-md">
       {width ? (
         <Chessboard
           position={position}

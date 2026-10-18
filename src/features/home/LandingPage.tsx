@@ -118,9 +118,7 @@ export default function LandingPage() {
         </p>
         <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2">
           <div className="mx-auto w-full max-w-sm">
-            <Suspense
-              fallback={<div className="aspect-square w-full rounded-md bg-ebene/5 shadow-card" />}
-            >
+            <Suspense fallback={<div className="aspect-square w-full rounded-md bg-ebene/5" />}>
               <ChessBoard
                 fen={COACH_FEN}
                 turn="w"
@@ -139,7 +137,7 @@ export default function LandingPage() {
               return (
                 <li
                   key={quality}
-                  className="flex items-baseline gap-3 rounded-xl bg-white px-4 py-2.5 shadow-card"
+                  className="flex items-baseline gap-3 rounded-xl bg-white px-4 py-2.5"
                 >
                   <span className={`w-7 shrink-0 text-center font-bold ${meta.color}`}>
                     {meta.symbol}
