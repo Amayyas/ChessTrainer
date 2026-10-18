@@ -15,8 +15,8 @@ import { cn } from '@/utils/cn'
  * copied onto it.
  *
  * The focus ring is the one global rule in index.css, not shadcn's own
- * `focus-visible:ring-1`: the rest of the app rings at 2px in gold, and a
- * thinner ring here would only be visible as an inconsistency.
+ * `focus-visible:ring-1`: the rest of the app rings at 2px in the rubric, and
+ * a thinner ring here would only be visible as an inconsistency.
  */
 const buttonVariants = cva(
   cn(

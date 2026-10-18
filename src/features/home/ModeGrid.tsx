@@ -25,7 +25,7 @@ export default function ModeGrid() {
         <motion.div key={mode.to} variants={reduceMotion ? undefined : staggerItem}>
           <Link
             to={mode.to}
-            className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ivoire"
+            className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rubric focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           >
             <Card interactive className="flex h-full items-start gap-4">
               <span

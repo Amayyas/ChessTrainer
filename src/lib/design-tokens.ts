@@ -217,7 +217,10 @@ export const semanticTheme = {
   '--destructive-foreground': hslTriple(surface),
   '--border': hslTriple(hairline),
   '--input': hslTriple(hairline),
-  /** The focus ring was already gold, per the accessibility rule in index.css. */
+  /**
+   * Read by no class: every focus ring is the global rule in index.css, in the
+   * rubric. Left as it was, to go with the rest of this bridge.
+   */
   '--ring': hslTriple(palette.or.DEFAULT),
 } as const
 

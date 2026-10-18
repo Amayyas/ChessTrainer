@@ -15,7 +15,7 @@ export default function NotFoundPage() {
       <p className="mt-3 text-ardoise">Ce coup n'est pas légal. Retour à la case départ.</p>
       <Link
         to={ROUTES.home}
-        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-ebene px-5 text-sm font-semibold text-ivoire transition-colors hover:bg-ebene-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+        className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-ebene px-5 text-sm font-semibold text-ivoire transition-colors hover:bg-ebene-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rubric focus-visible:ring-offset-2 focus-visible:ring-offset-white"
       >
         Retour à l'accueil
       </Link>
