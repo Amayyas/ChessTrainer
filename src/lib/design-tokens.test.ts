@@ -5,9 +5,12 @@ import {
   board,
   brand,
   danger,
+  fallbackFaces,
+  fallbackFontFaces,
   fonts,
   inverseTheme,
   newsprint,
+  newsreaderMetrics,
   palette,
   semanticTheme,
   surface,
@@ -245,6 +248,36 @@ describe('design tokens', () => {
       ),
     )
     expect([...declared]).toEqual([fonts.serif[0]])
+  })
+
+  it('reshapes a regular and a bold face for every fallback family', () => {
+    // A family with no face for a weight hands that weight to the next family
+    // in the stack, or to a synthetic bold, which sets wider and brings the
+    // reflow back for every heading. So each family covers 200 to 800, no gap.
+    const families = new Map<string, Array<[number, number]>>()
+    for (const face of fallbackFaces) {
+      const [from, to] = face.weight.split(' ').map(Number) as [number, number]
+      families.set(face.family, [...(families.get(face.family) ?? []), [from, to]])
+    }
+    for (const [family, ranges] of families) {
+      const sorted = [...ranges].sort((a, b) => a[0] - b[0])
+      expect(sorted[0]![0], family).toBe(200)
+      expect(sorted.at(-1)![1], family).toBe(800)
+      sorted.slice(1).forEach(([from], index) => expect(from, family).toBe(sorted[index]![1] + 1))
+    }
+    // And the stack asks for exactly these families, after the web font.
+    expect(fonts.serif.slice(1, -1)).toEqual([...families.keys()].map((family) => `"${family}"`))
+  })
+
+  it("derives each fallback's overrides from its own scale", () => {
+    // The overrides are Newsreader's ascent and descent divided by the face's
+    // size-adjust, so scaling them back must give Newsreader's metrics again.
+    const fraction = (value: string) => Number.parseFloat(value) / 100
+    for (const { '@font-face': face } of fallbackFontFaces()) {
+      const scale = fraction(face.sizeAdjust)
+      expect(fraction(face.ascentOverride) * scale).toBeCloseTo(newsreaderMetrics.ascent, 4)
+      expect(fraction(face.descentOverride) * scale).toBeCloseTo(newsreaderMetrics.descent, 4)
+    }
   })
 
   it('keeps the name and the mark in one place', () => {

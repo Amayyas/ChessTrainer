@@ -276,14 +276,123 @@ export const inverseTheme = {
 export const radius = '0.5rem'
 
 /**
+ * Newsreader's vertical metrics, as fractions of the em, from the font's own
+ * hhea and OS/2 tables: 1470 and 530 of 2000 units, no line gap. A fallback
+ * given these sets lines of the same height, on the same baseline.
+ */
+export const newsreaderMetrics = { ascent: 0.735, descent: 0.265, lineGap: 0 } as const
+
+/**
+ * Local serifs reshaped to Newsreader's metrics, shown while the web font loads.
+ *
+ * Without them the page first lays out in Georgia, which sets wider than
+ * Newsreader and has a line box 14% taller, then reflows when Newsreader
+ * arrives: on the landing that one swap measured a cumulative layout shift of
+ * 0.16 and cost the Lighthouse performance score its pass. Each face scales a
+ * local serif to Newsreader's width (`sizeAdjust`) and gives it Newsreader's
+ * vertical metrics, so the swap moves the page by a line at most rather than
+ * by several. The preload in vite.config.ts makes the swap itself rare; these
+ * cover the visits it does not.
+ *
+ * The widths were measured in Chromium at the sizes the interface sets today,
+ * 14 to 18 px for text and 14 to 48 px for bold. Newsreader's optical-size axis
+ * makes its width relative to a fixed serif drift by about ten per cent across
+ * that range, so each value is the geometric mean over it, per weight range,
+ * and is off by up to five per cent at either end. They are measured again when
+ * the pages move to the type scale above, whose sizes differ. Georgia covers
+ * macOS, iOS and Windows; Times New Roman, Liberation Serif and Tinos share one
+ * set of metrics and cover Linux and ChromeOS; Noto Serif, and Droid Serif
+ * before it, covers Android. There are no italic faces yet: nothing is set in
+ * italic until the pages move over.
+ */
+export const fallbackFaces = [
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia'],
+    weight: '200 549',
+    sizeAdjust: 0.9498,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia Bold', 'Georgia-Bold'],
+    weight: '550 800',
+    sizeAdjust: 0.8728,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: ['Times New Roman', 'TimesNewRomanPSMT', 'Liberation Serif', 'LiberationSerif', 'Tinos'],
+    weight: '200 549',
+    sizeAdjust: 1.0321,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: [
+      'Times New Roman Bold',
+      'TimesNewRomanPS-BoldMT',
+      'Liberation Serif Bold',
+      'LiberationSerif-Bold',
+      'Tinos Bold',
+    ],
+    weight: '550 800',
+    sizeAdjust: 1.044,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif', 'NotoSerif-Regular', 'Droid Serif', 'DroidSerif'],
+    weight: '200 549',
+    sizeAdjust: 0.8717,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif Bold', 'NotoSerif-Bold', 'Droid Serif Bold', 'DroidSerif-Bold'],
+    weight: '550 800',
+    sizeAdjust: 0.8788,
+  },
+] as const
+
+/**
+ * The fallbacks as @font-face rules, for Tailwind's addBase. The overrides are
+ * derived from Newsreader's metrics and each face's scale here rather than
+ * written out, so they cannot disagree with the scale they depend on.
+ */
+export function fallbackFontFaces() {
+  const percent = (value: number) => `${Number((value * 100).toFixed(2))}%`
+  return fallbackFaces.map((face) => ({
+    '@font-face': {
+      fontFamily: `'${face.family}'`,
+      src: face.local.map((name) => `local('${name}')`).join(', '),
+      fontWeight: face.weight,
+      sizeAdjust: percent(face.sizeAdjust),
+      ascentOverride: percent(newsreaderMetrics.ascent / face.sizeAdjust),
+      descentOverride: percent(newsreaderMetrics.descent / face.sizeAdjust),
+      lineGapOverride: percent(newsreaderMetrics.lineGap / face.sizeAdjust),
+    },
+  }))
+}
+
+/**
  * One family: Newsreader, a news serif self-hosted through @fontsource-variable
  * (src/lib/fonts.ts). Headlines, body, buttons and numbers are all set in it.
  * The first name is the one the package's @font-face rules declare; the tests
  * read it back from the package, because a name that matches no @font-face does
- * not fail — the text quietly falls back to Georgia and looks almost right.
+ * not fail — the text quietly falls back and looks almost right. The fallbacks
+ * follow, read from the faces above so the two lists cannot drift apart.
+ *
+ * Only the build and the tests read this, so the stack comes from a call marked
+ * pure: without the mark the bundler cannot prove that building it has no
+ * effect, and the whole table of faces ships to every visitor and runs on every
+ * page load.
  */
+function serifStack(): string[] {
+  return [
+    '"Newsreader Variable"',
+    ...new Set(fallbackFaces.map((face) => `"${face.family}"`)),
+    'serif',
+  ]
+}
+
 export const fonts = {
-  serif: ['"Newsreader Variable"', 'Georgia', '"Times New Roman"', 'serif'],
+  serif: /* @__PURE__ */ serifStack(),
 } as const
 
 /**

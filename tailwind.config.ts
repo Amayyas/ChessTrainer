@@ -3,6 +3,7 @@ import plugin from 'tailwindcss/plugin'
 import tailwindcssAnimate from 'tailwindcss-animate'
 import {
   danger,
+  fallbackFontFaces,
   fonts,
   inverseTheme,
   newsprint,
@@ -33,6 +34,15 @@ import {
 const semanticVariables = plugin(({ addBase, addComponents }) => {
   addBase({ ':root': { ...semanticTheme, '--radius': radius } })
   addComponents({ '.theme-inverse': { ...inverseTheme } })
+})
+
+/**
+ * The local serifs reshaped to Newsreader's metrics, written as @font-face
+ * rules from the faces in design-tokens.ts, which also name them in the font
+ * stack — so a face and the name that asks for it cannot drift apart.
+ */
+const fontFallbacks = plugin(({ addBase }) => {
+  addBase(fallbackFontFaces())
 })
 
 /** `hsl(var(--x) / <alpha-value>)`, so `bg-primary/50` still works. */
@@ -112,5 +122,5 @@ export default {
       },
     },
   },
-  plugins: [semanticVariables, tailwindcssAnimate],
+  plugins: [semanticVariables, fontFallbacks, tailwindcssAnimate],
 } satisfies Config
