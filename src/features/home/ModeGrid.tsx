@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Card, Tag } from '@/components/UI'
+import { Box, Tag } from '@/components/UI'
 import { MODES } from '@/features/home/modes'
 import { staggerContainer, staggerItem } from '@/lib/motion'
 
@@ -23,11 +23,8 @@ export default function ModeGrid() {
     >
       {MODES.map((mode) => (
         <motion.div key={mode.to} variants={reduceMotion ? undefined : staggerItem}>
-          <Link
-            to={mode.to}
-            className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rubric focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-          >
-            <Card interactive className="flex h-full items-start gap-4">
+          <Link to={mode.to} className="block h-full">
+            <Box className="flex h-full items-start gap-4 transition-colors hover:border-rubric">
               <span
                 aria-hidden="true"
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ebene text-3xl text-or"
@@ -41,7 +38,7 @@ export default function ModeGrid() {
                 </div>
                 <p className="text-sm text-ardoise">{mode.description}</p>
               </div>
-            </Card>
+            </Box>
           </Link>
         </motion.div>
       ))}

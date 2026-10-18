@@ -1,4 +1,4 @@
-import { Card, Tag } from '@/components/UI'
+import { Box, Tag } from '@/components/UI'
 import { recentTrend, type AccuracyEntry } from '@/features/progression/accuracyHistory'
 
 const OUTCOME_LABEL: Record<AccuracyEntry['outcome'], string> = {
@@ -61,20 +61,20 @@ function Sparkline({ entries }: { entries: readonly AccuracyEntry[] }) {
 export default function AccuracyHistoryPanel({ entries }: { entries: readonly AccuracyEntry[] }) {
   if (entries.length === 0) {
     return (
-      <Card>
+      <Box>
         <h2 className="mb-2 font-display text-lg font-bold text-ebene">Précision par partie</h2>
         <p className="text-sm text-ardoise">
           Jouez une partie en Affrontement, puis analysez-la dans le Coach : sa précision
           s'affichera ici, et vous pourrez suivre vos progrès d'une partie à l'autre.
         </p>
-      </Card>
+      </Box>
     )
   }
 
   const trend = recentTrend(entries)
 
   return (
-    <Card>
+    <Box>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-ebene">Précision par partie</h2>
         {trend !== null && (
@@ -111,6 +111,6 @@ export default function AccuracyHistoryPanel({ entries }: { entries: readonly Ac
           Les 10 dernières parties sur {entries.length} enregistrées.
         </p>
       )}
-    </Card>
+    </Box>
   )
 }

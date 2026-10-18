@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -26,7 +26,7 @@ export default function AuthLayout({
 
   if (!isSupabaseConfigured) {
     return (
-      <Card className="mx-auto max-w-md text-center">
+      <Box className="mx-auto max-w-md text-center">
         <span aria-hidden="true" className="text-4xl text-or">
           ♜
         </span>
@@ -41,12 +41,12 @@ export default function AuthLayout({
         >
           Retour à l'accueil
         </Link>
-      </Card>
+      </Box>
     )
   }
 
   return (
-    <Card className="mx-auto flex max-w-md flex-col gap-5">
+    <Box className="mx-auto flex max-w-md flex-col gap-5">
       <div className="text-center">
         <h1 className="font-display text-2xl font-bold text-ebene">{title}</h1>
         <p className="mt-1 text-sm text-ardoise">{subtitle}</p>
@@ -75,6 +75,6 @@ export default function AuthLayout({
       )}
 
       <p className="text-center text-sm text-ardoise">{footer}</p>
-    </Card>
+    </Box>
   )
 }

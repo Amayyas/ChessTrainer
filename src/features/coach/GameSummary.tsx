@@ -1,4 +1,4 @@
-import { Card, Tag } from '@/components/UI'
+import { Box, Tag } from '@/components/UI'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 
@@ -41,7 +41,7 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
   ]
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Box className="flex flex-col gap-4">
       <div>
         <h2 className="font-display text-lg font-bold text-ebene">Résumé de la partie</h2>
         <p className="mt-1 text-sm text-ardoise">{statusLabel}</p>
@@ -71,6 +71,6 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
           </span>
         </p>
       )}
-    </Card>
+    </Box>
   )
 }

@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { reportError } from '@/lib/monitoring'
 
 interface Props {
@@ -35,7 +35,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <Card className="max-w-md text-center">
+        <Box className="max-w-md text-center">
           <h1 className="font-display text-2xl font-bold text-ebene">Une erreur est survenue</h1>
           <p className="mt-2 text-sm text-ardoise">
             Quelque chose s'est mal passé de notre côté. Votre progression est conservée.
@@ -45,7 +45,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <Button className="mt-6" onClick={() => window.location.reload()}>
             Recharger la page
           </Button>
-        </Card>
+        </Box>
       </div>
     )
   }

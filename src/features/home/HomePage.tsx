@@ -1,4 +1,4 @@
-import { Card } from '@/components/UI'
+import { Box } from '@/components/UI'
 import LevelBar from '@/features/progression/LevelBar'
 import ModeGrid from '@/features/home/ModeGrid'
 import { challengeProgress } from '@/features/progression/challenges'
@@ -40,7 +40,7 @@ export default function HomePage() {
       </section>
 
       <div className="mb-8 grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Box>
           <h2 className="mb-3 font-display text-lg font-bold text-ebene">Challenges du jour</h2>
           <ul className="space-y-3">
             {challenges.map(({ challenge, progress: done, isComplete }) => (
@@ -62,9 +62,9 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
-        </Card>
+        </Box>
 
-        <Card>
+        <Box>
           <h2 className="mb-3 font-display text-lg font-bold text-ebene">Activités récentes</h2>
           {activities.length === 0 ? (
             <p className="text-sm text-ardoise">
@@ -87,7 +87,7 @@ export default function HomePage() {
               ))}
             </ul>
           )}
-        </Card>
+        </Box>
       </div>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -100,10 +100,10 @@ export default function HomePage() {
           },
           { label: 'Record Chasse', value: stats.bestHuntScore },
         ].map((stat) => (
-          <Card key={stat.label} className="px-4 py-3 text-center">
+          <Box key={stat.label} className="px-4 py-3 text-center">
             <p className="font-display text-2xl font-bold text-ebene">{stat.value}</p>
             <p className="text-xs text-ardoise">{stat.label}</p>
-          </Card>
+          </Box>
         ))}
       </div>
 

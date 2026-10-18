@@ -2,8 +2,7 @@ export { default as Tag } from '@/components/UI/Tag'
 export type { TagProps, TagTone } from '@/components/UI/Tag'
 export { default as Button } from '@/components/UI/Button'
 export type { ButtonProps, ButtonSize, ButtonVariant } from '@/components/UI/Button'
-export { default as Card, CardDescription, CardFooter, CardTitle } from '@/components/UI/Card'
-export type { CardProps } from '@/components/UI/Card'
+export { default as Box } from '@/components/UI/Box'
 /**
  * Dialog and Modal are deliberately absent from this barrel. Import them from
  * '@/components/UI/Dialog' and '@/components/UI/Modal' directly.

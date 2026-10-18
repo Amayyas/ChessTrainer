@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, PageHeader, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import { STARTING_LIVES, addScore, encouragement, personalBest } from '@/features/hunt/scoring'
@@ -136,7 +136,7 @@ export default function HuntPage() {
           title="Chasse aux Pièces"
           subtitle="Capturez un maximum de pièces en 60 secondes, avec une seule pièce et 3 vies."
         />
-        <Card className="mx-auto flex max-w-2xl flex-col gap-4">
+        <Box className="mx-auto flex max-w-2xl flex-col gap-4">
           <h2 className="font-display text-lg font-bold text-ebene">Choisissez votre championne</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {CHAMPIONS.map((champion) => (
@@ -166,7 +166,7 @@ export default function HuntPage() {
               </button>
             ))}
           </div>
-        </Card>
+        </Box>
       </div>
     )
   }
@@ -180,7 +180,7 @@ export default function HuntPage() {
     return (
       <div>
         <PageHeader title="Chasse aux Pièces" subtitle="Manche terminée." />
-        <Card className="mx-auto flex max-w-xl flex-col gap-4">
+        <Box className="mx-auto flex max-w-xl flex-col gap-4">
           <div className="grid grid-cols-3 gap-2">
             <Stat label="Score" value={String(game.score)} accent />
             <Stat label="Captures" value={String(game.captures)} />
@@ -236,7 +236,7 @@ export default function HuntPage() {
               Changer de pièce
             </Button>
           </div>
-        </Card>
+        </Box>
       </div>
     )
   }
@@ -271,7 +271,7 @@ export default function HuntPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-3">
+          <Box className="flex flex-col gap-3">
             <div className="grid grid-cols-2 gap-2">
               <Stat label="Temps" value={`${seconds} s`} accent={seconds <= 10} />
               <Stat label="Score" value={String(game.score)} />
@@ -301,7 +301,7 @@ export default function HuntPage() {
             <Button variant="quiet" size="sm" onClick={game.reset}>
               Abandonner la manche
             </Button>
-          </Card>
+          </Box>
         </div>
       </div>
     </div>

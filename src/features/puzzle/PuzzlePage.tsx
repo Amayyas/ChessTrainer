@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
-import { Button, Card, PageHeader, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
@@ -56,7 +56,7 @@ function PuzzleBoard({
       </div>
 
       <div className="flex flex-col gap-4">
-        <Card className="flex flex-col gap-4">
+        <Box className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <Tag>{themeLabel(puzzle.theme)}</Tag>
             <Tag tone="muted">{DIFFICULTY_LABELS[difficulty]}</Tag>
@@ -123,7 +123,7 @@ function PuzzleBoard({
               </Button>
             </div>
           )}
-        </Card>
+        </Box>
       </div>
     </div>
   )
@@ -144,7 +144,7 @@ function DailyView() {
     return (
       <div>
         <PageHeader title="Puzzles" subtitle="Série du jour terminée." actions={streakBadge} />
-        <Card className="mx-auto flex max-w-xl flex-col gap-4">
+        <Box className="mx-auto flex max-w-xl flex-col gap-4">
           <h2 className="font-display text-xl font-bold text-ebene">Bilan de la série</h2>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-xl bg-ebene/5 px-3 py-2">
@@ -176,7 +176,7 @@ function DailyView() {
           </ol>
 
           <Button onClick={session.restart}>Rejouer la série</Button>
-        </Card>
+        </Box>
       </div>
     )
   }
@@ -239,12 +239,12 @@ function PracticeView() {
           solvedActions={<Button onClick={session.next}>Puzzle suivant</Button>}
         />
       ) : (
-        <Card className="mx-auto max-w-xl text-center">
+        <Box className="mx-auto max-w-xl text-center">
           <p className="text-ardoise">
             Vous avez résolu tous les puzzles {DIFFICULTY_LABELS[session.difficulty].toLowerCase()}{' '}
             de cette session. Changez de difficulté pour continuer.
           </p>
-        </Card>
+        </Box>
       )}
     </div>
   )

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChessBoard, MoveHistory } from '@/components/Board'
-import { Button, Card, PageHeader, Spinner, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Spinner, Tag } from '@/components/UI'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
@@ -94,7 +94,7 @@ export default function BattlePage() {
 
         <div className="flex flex-col gap-4">
           {result && (
-            <Card className="flex flex-col gap-3">
+            <Box className="flex flex-col gap-3">
               <div>
                 <h2 className="font-display text-lg font-bold text-ebene">Partie terminée</h2>
                 <p className="mt-1 text-sm text-ardoise">{result.label}</p>
@@ -131,10 +131,10 @@ export default function BattlePage() {
                   Nouvelle partie
                 </Button>
               </div>
-            </Card>
+            </Box>
           )}
 
-          <Card className="flex h-fit flex-col gap-4">
+          <Box className="flex h-fit flex-col gap-4">
             {clock.enabled && (
               <div className="flex flex-col gap-2">
                 <ClockDisplay
@@ -175,7 +175,7 @@ export default function BattlePage() {
                 Abandonner
               </Button>
             )}
-          </Card>
+          </Box>
         </div>
       </div>
     </div>

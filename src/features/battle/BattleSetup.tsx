@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react'
 import { ENGINE_LEVELS, type LevelId } from '@/engine/levels'
 import { TIME_CONTROLS, type TimeControlId } from '@/hooks/useChessClock'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import type { BattleConfig, ColorChoice } from '@/features/battle/useBattleGame'
 
@@ -70,7 +70,7 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
   const [timeControlId, setTimeControlId] = useState<TimeControlId>('unlimited')
 
   return (
-    <Card className="mx-auto flex max-w-xl flex-col gap-6">
+    <Box className="mx-auto flex max-w-xl flex-col gap-6">
       <Setting
         title="Niveau de l'IA"
         value={String(levelId)}
@@ -127,6 +127,6 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
       >
         {disabled ? "Chargement de l'IA…" : 'Commencer la partie'}
       </Button>
-    </Card>
+    </Box>
   )
 }

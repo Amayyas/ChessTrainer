@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, PageHeader, Spinner, Tag } from '@/components/UI'
+import { Box, PageHeader, Spinner, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import {
@@ -76,7 +76,7 @@ export default function LeaderboardPage() {
         actions={<Tag>Temps réel</Tag>}
       />
 
-      <Card className="flex flex-col gap-4">
+      <Box className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <Segmented options={PIECES} value={piece} onChange={setPiece} label="Filtrer par pièce" />
           <Segmented
@@ -142,7 +142,7 @@ export default function LeaderboardPage() {
             })}
           </ol>
         )}
-      </Card>
+      </Box>
     </div>
   )
 }

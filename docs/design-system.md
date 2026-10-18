@@ -72,8 +72,8 @@ has not moved yet does not follow them. Until then:
 - the previous palette (`ebene`, `ivoire`, `or`, `ardoise`) and the shadcn
   variables stay defined, and the components and pages that read them keep
   their colours, rounded cards and shadows;
-- the routes still fade in, the mode cards still stagger in and lift under the
-  pointer, and the board animates its pieces at its own speed;
+- the routes still fade in, the mode cards still stagger in, and the board
+  animates its pieces at its own speed;
 - the dialog and the mobile sheet still close with a lucide icon;
 - the move list still uses letters for the pieces and "!!" for the best move;
 - the fallbacks are measured for the sizes the pages set today, and have no

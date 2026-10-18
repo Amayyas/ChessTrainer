@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { reportError } from '@/lib/monitoring'
 import { ROUTES } from '@/routes'
 
@@ -47,7 +47,7 @@ export default class RouteErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <Card className="mx-auto max-w-md text-center">
+      <Box className="mx-auto max-w-md text-center">
         <h1 className="font-display text-2xl font-bold text-ebene">
           Cette page n'a pas pu s'ouvrir
         </h1>
@@ -64,7 +64,7 @@ export default class RouteErrorBoundary extends Component<Props, State> {
             Retour à l'accueil
           </Link>
         </div>
-      </Card>
+      </Box>
     )
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, PageHeader, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
 import LevelBar from '@/features/progression/LevelBar'
@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-3">
+          <Box className="flex flex-col gap-3">
             <h2 className="font-display text-lg font-bold text-ebene">Compte</h2>
             {!isSupabaseConfigured ? (
               <p className="text-sm text-ardoise">
@@ -206,16 +206,16 @@ export default function ProfilePage() {
                 </div>
               </>
             )}
-          </Card>
+          </Box>
 
           <AccuracyHistoryPanel entries={accuracyHistory} />
 
-          <Card>
+          <Box>
             <LevelBar progress={progress} />
             <p className="mt-2 text-sm text-ardoise">{xp} XP au total</p>
-          </Card>
+          </Box>
 
-          <Card>
+          <Box>
             <h2 className="mb-3 font-display text-lg font-bold text-ebene">Statistiques</h2>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {figures.map((figure) => (
@@ -225,10 +225,10 @@ export default function ProfilePage() {
                 </div>
               ))}
             </dl>
-          </Card>
+          </Box>
         </div>
 
-        <Card className="h-fit">
+        <Box className="h-fit">
           <h2 className="mb-1 font-display text-lg font-bold text-ebene">Badges</h2>
           <p className="mb-3 text-xs text-ardoise">
             {unlocked.length} sur {BADGES.length} débloqués
@@ -266,7 +266,7 @@ export default function ProfilePage() {
               )
             })}
           </ul>
-        </Card>
+        </Box>
       </div>
     </div>
   )

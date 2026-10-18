@@ -1,6 +1,6 @@
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import QualityLegend from '@/features/coach/QualityLegend'
-import { Button, Card, PageHeader, Spinner, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Spinner, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
@@ -65,7 +65,7 @@ export default function CoachPage() {
             <GameSummary summary={analysis.summary} statusLabel={statusLabel} />
           )}
 
-          <Card className="flex h-fit flex-col gap-5">
+          <Box className="flex h-fit flex-col gap-5">
             {!inReplay && (
               <div>
                 <ToggleGroup
@@ -252,7 +252,7 @@ export default function CoachPage() {
                 </div>
               </>
             )}
-          </Card>
+          </Box>
         </div>
       </div>
     </div>

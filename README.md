@@ -139,7 +139,7 @@ rules — palette, type, surfaces, motion — are in
 src/
 ├── components/
 │   ├── Board/       # Board, pieces, arrows, highlighting
-│   ├── UI/          # Buttons, cards, bars, badges
+│   ├── UI/          # Buttons, tags, boxes, dialogs
 │   └── Layout/      # Navigation, header, containers
 ├── features/        # One folder per functional module
 │   ├── coach/       # AI Coach mode
