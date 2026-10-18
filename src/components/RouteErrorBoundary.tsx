@@ -57,12 +57,9 @@ export default class RouteErrorBoundary extends Component<Props, State> {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={this.retry}>Réessayer</Button>
-          <Link
-            to={ROUTES.home}
-            className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-ebene underline underline-offset-2"
-          >
-            Retour à l'accueil
-          </Link>
+          <Button asChild variant="quiet">
+            <Link to={ROUTES.home}>Retour à l'accueil</Link>
+          </Button>
         </div>
       </Box>
     )

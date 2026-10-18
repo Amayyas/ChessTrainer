@@ -35,12 +35,9 @@ export default function AuthLayout({
           Aucun serveur n'est configuré sur cette installation. Tous les modes restent jouables en
           invité ; seul le classement mondial demande un compte.
         </p>
-        <Link
-          to="/"
-          className="mt-5 inline-flex h-11 items-center rounded-xl bg-ebene px-5 text-sm font-semibold text-ivoire"
-        >
-          Retour à l'accueil
-        </Link>
+        <Button asChild className="mt-5">
+          <Link to="/">Retour à l'accueil</Link>
+        </Button>
       </Box>
     )
   }

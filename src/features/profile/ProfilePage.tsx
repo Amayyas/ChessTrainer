@@ -191,18 +191,12 @@ export default function ProfilePage() {
                   progrès sur tous vos appareils.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Link
-                    to={ROUTES.register}
-                    className="inline-flex h-10 items-center rounded-xl bg-or px-4 text-sm font-semibold text-ebene"
-                  >
-                    Créer un compte
-                  </Link>
-                  <Link
-                    to={ROUTES.login}
-                    className="inline-flex h-10 items-center rounded-xl border border-ebene/20 px-4 text-sm font-semibold text-ebene"
-                  >
-                    Se connecter
-                  </Link>
+                  <Button asChild>
+                    <Link to={ROUTES.register}>Créer un compte</Link>
+                  </Button>
+                  <Button asChild variant="secondary">
+                    <Link to={ROUTES.login}>Se connecter</Link>
+                  </Button>
                 </div>
               </>
             )}
