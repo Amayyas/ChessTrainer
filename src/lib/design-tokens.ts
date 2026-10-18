@@ -67,8 +67,11 @@ export const typeScale = {
  * How long things move, in milliseconds. A piece glides to its square and the
  * coach's arrow fades in; nothing else animates, nothing enters on arrival and
  * nothing lifts under the pointer. Under prefers-reduced-motion both are zero.
- * The framer-motion timings in src/lib/motion.ts leave with the entrance
- * animations they drive.
+ *
+ * Nothing reads them yet. The board takes them when it moves to chessground;
+ * until then react-chessboard glides at its own 200 ms (120 ms in the Piece
+ * Hunt), and the framer-motion timings in src/lib/motion.ts leave with the
+ * entrance animations they drive.
  */
 export const durations = {
   piece: 140,
