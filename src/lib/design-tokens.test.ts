@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   board,
@@ -224,9 +226,28 @@ describe('design tokens', () => {
     }
   })
 
-  it('names the typefaces and the brand in one place', () => {
-    expect(fonts.display[0]).toBe('"Playfair Display"')
-    expect(fonts.sans[0]).toBe('Inter')
+  it('names the family the self-hosted stylesheets declare', () => {
+    // A family name that matches no @font-face does not throw: the text falls
+    // back to Georgia and looks almost right, which is how a typo ships. So the
+    // name is read back from the stylesheets src/lib/fonts.ts actually imports.
+    const imported = [
+      ...readFileSync(resolve('src/lib/fonts.ts'), 'utf8').matchAll(/^import '([^']+\.css)'/gm),
+    ].map((match) => match[1]!)
+    expect(imported.length).toBeGreaterThan(0)
+
+    const declared = new Set(
+      imported.flatMap((stylesheet) =>
+        [
+          ...readFileSync(resolve('node_modules', stylesheet), 'utf8').matchAll(
+            /font-family:\s*'([^']+)'/g,
+          ),
+        ].map((match) => `"${match[1]}"`),
+      ),
+    )
+    expect([...declared]).toEqual([fonts.serif[0]])
+  })
+
+  it('keeps the name and the mark in one place', () => {
     expect(brand.name).toBe('ChessTrainer')
     expect(brand.mark).toBe('♞')
   })

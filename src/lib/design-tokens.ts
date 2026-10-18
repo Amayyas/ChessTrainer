@@ -275,9 +275,15 @@ export const inverseTheme = {
  */
 export const radius = '0.5rem'
 
+/**
+ * One family: Newsreader, a news serif self-hosted through @fontsource-variable
+ * (src/lib/fonts.ts). Headlines, body, buttons and numbers are all set in it.
+ * The first name is the one the package's @font-face rules declare; the tests
+ * read it back from the package, because a name that matches no @font-face does
+ * not fail — the text quietly falls back to Georgia and looks almost right.
+ */
 export const fonts = {
-  display: ['"Playfair Display"', 'Georgia', 'serif'],
-  sans: ['Inter', 'system-ui', 'sans-serif'],
+  serif: ['"Newsreader Variable"', 'Georgia', '"Times New Roman"', 'serif'],
 } as const
 
 /**

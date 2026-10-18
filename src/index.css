@@ -10,14 +10,11 @@
     scrollbar-gutter: stable;
   }
 
+  /* The page and its ink. One family sets everything, so headings no longer
+     need a rule of their own to switch typeface. */
   body {
-    @apply bg-ivoire font-sans text-ebene antialiased;
-  }
-
-  h1,
-  h2,
-  h3 {
-    @apply font-display;
+    @apply bg-paper font-serif text-ink antialiased;
+    font-kerning: normal;
   }
 
   /* Accessibility: visible keyboard focus ring (WCAG AA, spec section 4.2). */

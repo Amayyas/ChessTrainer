@@ -15,7 +15,7 @@ export default function AppLayout() {
   return (
     // A column the height of the viewport, so the footer below can be pushed to
     // the bottom of a short page instead of floating up under the content.
-    <div className="flex min-h-dvh flex-col bg-ivoire">
+    <div className="flex min-h-dvh flex-col bg-paper">
       <SkipLink />
       <Sidebar />
       <BottomBar />
