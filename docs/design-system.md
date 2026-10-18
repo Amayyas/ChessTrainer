@@ -74,7 +74,6 @@ has not moved yet does not follow them. Until then:
   their colours, rounded cards and shadows;
 - the routes still fade in, the mode cards still stagger in, and the board
   animates its pieces at its own speed;
-- the dialog and the mobile sheet still close with a lucide icon;
 - the move list still uses letters for the pieces and "!!" for the best move;
 - the fallbacks are measured for the sizes the pages set today, and have no
   italic faces, since nothing is set in italic yet: both are measured again
