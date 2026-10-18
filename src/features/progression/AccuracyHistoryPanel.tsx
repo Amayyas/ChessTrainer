@@ -1,4 +1,4 @@
-import { Badge, Card } from '@/components/UI'
+import { Card, Tag } from '@/components/UI'
 import { recentTrend, type AccuracyEntry } from '@/features/progression/accuracyHistory'
 
 const OUTCOME_LABEL: Record<AccuracyEntry['outcome'], string> = {
@@ -78,10 +78,10 @@ export default function AccuracyHistoryPanel({ entries }: { entries: readonly Ac
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-ebene">Précision par partie</h2>
         {trend !== null && (
-          <Badge variant={trend.delta > 0 ? 'gold' : 'neutral'}>
+          <Tag tone={trend.delta > 0 ? 'ink' : trend.delta < 0 ? 'accent' : 'muted'}>
             {trend.delta > 0 ? '+' : ''}
             {trend.delta} pts sur vos 5 dernières
-          </Badge>
+          </Tag>
         )}
       </div>
 

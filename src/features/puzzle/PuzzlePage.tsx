@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
-import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { Button, Card, PageHeader, Tag } from '@/components/UI'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
@@ -58,9 +58,9 @@ function PuzzleBoard({
       <div className="flex flex-col gap-4">
         <Card className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="gold">{themeLabel(puzzle.theme)}</Badge>
-            <Badge variant="neutral">{DIFFICULTY_LABELS[difficulty]}</Badge>
-            <Badge variant="neutral">{puzzle.rating} Elo</Badge>
+            <Tag>{themeLabel(puzzle.theme)}</Tag>
+            <Tag tone="muted">{DIFFICULTY_LABELS[difficulty]}</Tag>
+            <Tag tone="muted">{puzzle.rating} Elo</Tag>
           </div>
 
           <p className="text-sm text-ardoise">
@@ -88,7 +88,7 @@ function PuzzleBoard({
 
           {runner.isSolved ? (
             <div className="flex flex-col gap-3">
-              <Badge variant="success">Résolu !</Badge>
+              <Tag tone="ink">Résolu !</Tag>
               {solvedActions}
             </div>
           ) : (
@@ -134,9 +134,9 @@ function DailyView() {
   const { puzzle, progress } = session
 
   const streakBadge = (
-    <Badge variant={progress.streak > 0 ? 'gold' : 'neutral'}>
+    <Tag tone={progress.streak > 0 ? 'ink' : 'muted'}>
       Série : {progress.streak} jour{progress.streak > 1 ? 's' : ''}
-    </Badge>
+    </Tag>
   )
 
   if (session.isSessionOver || !puzzle) {

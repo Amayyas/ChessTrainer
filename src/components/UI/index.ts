@@ -1,5 +1,5 @@
-export { default as Badge, badgeVariants } from '@/components/UI/Badge'
-export type { BadgeProps, BadgeVariant } from '@/components/UI/Badge'
+export { default as Tag } from '@/components/UI/Tag'
+export type { TagProps, TagTone } from '@/components/UI/Tag'
 export { default as Button } from '@/components/UI/Button'
 export type { ButtonProps, ButtonSize, ButtonVariant } from '@/components/UI/Button'
 export { default as Card, CardDescription, CardFooter, CardTitle } from '@/components/UI/Card'

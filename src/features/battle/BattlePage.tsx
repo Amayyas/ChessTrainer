@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChessBoard, MoveHistory } from '@/components/Board'
-import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import { Button, Card, PageHeader, Spinner, Tag } from '@/components/UI'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
@@ -70,9 +70,9 @@ export default function BattlePage() {
               <Spinner size="sm" /> L'IA réfléchit…
             </span>
           ) : battle.isEngineStalled && phase === 'playing' ? (
-            <Badge variant="danger">L'IA ne répond plus</Badge>
+            <Tag tone="alert">L'IA ne répond plus</Tag>
           ) : (
-            <Badge variant="neutral">{describeStatus(game.status, game.turn)}</Badge>
+            <Tag tone="muted">{describeStatus(game.status, game.turn)}</Tag>
           )
         }
       />
@@ -99,21 +99,13 @@ export default function BattlePage() {
                 <h2 className="font-display text-lg font-bold text-ebene">Partie terminée</h2>
                 <p className="mt-1 text-sm text-ardoise">{result.label}</p>
               </div>
-              <Badge
-                variant={
-                  result.outcome === 'win'
-                    ? 'success'
-                    : result.outcome === 'loss'
-                      ? 'danger'
-                      : 'gold'
-                }
-              >
+              <Tag tone="ink">
                 {result.outcome === 'win'
                   ? 'Victoire'
                   : result.outcome === 'loss'
                     ? 'Défaite'
                     : 'Nulle'}
-              </Badge>
+              </Tag>
               <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"

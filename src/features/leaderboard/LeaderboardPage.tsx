@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Badge, Card, PageHeader, Spinner } from '@/components/UI'
+import { Card, PageHeader, Spinner, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import {
@@ -73,7 +73,7 @@ export default function LeaderboardPage() {
       <PageHeader
         title="Classement mondial"
         subtitle="Les meilleurs scores de la Chasse aux Pièces, mis à jour en direct."
-        actions={<Badge variant="gold">Temps réel</Badge>}
+        actions={<Tag>Temps réel</Tag>}
       />
 
       <Card className="flex flex-col gap-4">

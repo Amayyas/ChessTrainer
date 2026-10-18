@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Badge, Card } from '@/components/UI'
+import { Card, Tag } from '@/components/UI'
 import { MODES } from '@/features/home/modes'
 import { staggerContainer, staggerItem } from '@/lib/motion'
 
@@ -37,7 +37,7 @@ export default function ModeGrid() {
               <div className="flex-1">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <h3 className="font-display text-xl font-bold text-ebene">{mode.title}</h3>
-                  <Badge variant={mode.badgeVariant}>{mode.badge}</Badge>
+                  <Tag>{mode.badge}</Tag>
                 </div>
                 <p className="text-sm text-ardoise">{mode.description}</p>
               </div>

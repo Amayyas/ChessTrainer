@@ -1,6 +1,6 @@
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
 import QualityLegend from '@/features/coach/QualityLegend'
-import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import { Button, Card, PageHeader, Spinner, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
@@ -30,7 +30,7 @@ export default function CoachPage() {
               <Spinner size="sm" /> Analyse…
             </span>
           ) : analysis.isReady ? (
-            <Badge variant="neutral">IA prête</Badge>
+            <Tag tone="muted">IA prête</Tag>
           ) : (
             <span className="flex items-center gap-2 text-sm text-ardoise">
               <Spinner size="sm" /> Chargement de l'IA…
@@ -117,7 +117,7 @@ export default function CoachPage() {
                 <h2 className="mb-2 font-display text-lg font-bold text-ebene">
                   État de la partie
                 </h2>
-                <Badge variant={coach.statusVariant}>{statusLabel}</Badge>
+                <Tag tone={coach.statusTone}>{statusLabel}</Tag>
               </div>
             )}
 

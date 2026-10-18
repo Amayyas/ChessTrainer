@@ -1,4 +1,4 @@
-import { Badge, Card } from '@/components/UI'
+import { Card, Tag } from '@/components/UI'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 
@@ -56,12 +56,9 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
         {counted.map(({ quality, count }) => {
           const meta = MOVE_QUALITY[quality]
           return (
-            <Badge
-              key={quality}
-              variant={quality !== 'inaccuracy' && count > 0 ? 'danger' : 'neutral'}
-            >
+            <Tag key={quality} tone={quality !== 'inaccuracy' && count > 0 ? 'accent' : 'muted'}>
               {count} {countedNoun(meta, count)}
-            </Badge>
+            </Tag>
           )
         })}
       </div>

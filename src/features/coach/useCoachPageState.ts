@@ -180,11 +180,11 @@ export function useCoachPageState() {
   }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)
-  const statusVariant: 'gold' | 'danger' | 'neutral' = game.status.isOver
-    ? 'gold'
+  const statusTone: 'ink' | 'alert' | 'muted' = game.status.isOver
+    ? 'ink'
     : game.status.isCheck
-      ? 'danger'
-      : 'neutral'
+      ? 'alert'
+      : 'muted'
 
   const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
   const arrows = showBestArrow
@@ -278,6 +278,6 @@ export function useCoachPageState() {
     insight,
     arrows,
     statusLabel,
-    statusVariant,
+    statusTone,
   }
 }

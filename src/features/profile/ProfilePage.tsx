@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { Button, Card, PageHeader, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
 import LevelBar from '@/features/progression/LevelBar'
@@ -63,7 +63,7 @@ export default function ProfilePage() {
       <PageHeader
         title="Profil"
         subtitle="Votre progression, vos statistiques et vos badges."
-        actions={<Badge variant="gold">Niveau {progress.level}</Badge>}
+        actions={<Tag tone="ink">Niveau {progress.level}</Tag>}
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">

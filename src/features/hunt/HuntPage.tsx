@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { Button, Card, PageHeader, Tag } from '@/components/UI'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import { STARTING_LIVES, addScore, encouragement, personalBest } from '@/features/hunt/scoring'
@@ -251,9 +251,9 @@ export default function HuntPage() {
         subtitle={`${CHAMPION_LABELS[champion]} — capturez sans vous faire prendre.`}
         actions={
           inDanger ? (
-            <Badge variant="danger">En danger — bougez !</Badge>
+            <Tag tone="alert">En danger — bougez !</Tag>
           ) : (
-            <Badge variant="neutral">{CHAMPION_DESCRIPTIONS[champion].split(',')[0]}</Badge>
+            <Tag tone="muted">{CHAMPION_DESCRIPTIONS[champion].split(',')[0]}</Tag>
           )
         }
       />
