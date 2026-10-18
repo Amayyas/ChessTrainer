@@ -5,10 +5,29 @@ import {
   danger,
   fonts,
   inverseTheme,
+  newsprint,
   palette,
   semanticTheme,
   surface,
 } from '@/lib/design-tokens'
+
+/** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
+function luminance(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((start) => {
+    const channel = Number.parseInt(hex.slice(start, start + 2), 16) / 255
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  }) as [number, number, number]
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** WCAG 2.x contrast ratio between two colours, from 1 to 21. */
+function contrast(first: string, second: string): number {
+  const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a) as [
+    number,
+    number,
+  ]
+  return (lighter + 0.05) / (darker + 0.05)
+}
 
 /**
  * `H S% L%` back to `#RRGGBB`, so the table below can be checked against the
@@ -171,6 +190,38 @@ describe('design tokens', () => {
     expect(hairline).not.toBe(palette.ebene.DEFAULT)
     expect(hairline).not.toBe(palette.ivoire.DEFAULT)
     expect(semanticTheme['--input']).toBe(semanticTheme['--border'])
+  })
+
+  it('measures contrast the way WCAG does', () => {
+    // The control for the test below: a formula that inflated every ratio would
+    // pass it. Black on white is 21:1 by definition, and the one pair the faint
+    // ink's comment rules out must measure under AA, as its comment says.
+    expect(contrast('#000000', '#FFFFFF')).toBe(21)
+    expect(contrast(newsprint.ink.faint, newsprint.paper.deep)).toBeLessThan(4.5)
+  })
+
+  it('sets every newsprint text pair at WCAG AA', () => {
+    // The pairs the interface sets text in, each held to the 4.5:1 floor for
+    // body text. Captions are small, so none of them earns the 3:1 allowance
+    // for large text. A lighter ink or a brighter red fails here first.
+    const { paper, ink, rubric } = newsprint
+    const pairs: Record<string, [text: string, ground: string]> = {
+      'ink on paper': [ink.DEFAULT, paper.DEFAULT],
+      'ink on bright paper': [ink.DEFAULT, paper.bright],
+      'ink on deep paper': [ink.DEFAULT, paper.deep],
+      'soft ink on paper': [ink.soft, paper.DEFAULT],
+      'soft ink on bright paper': [ink.soft, paper.bright],
+      'soft ink on deep paper': [ink.soft, paper.deep],
+      'faint ink on paper': [ink.faint, paper.DEFAULT],
+      'rubric on paper': [rubric, paper.DEFAULT],
+      'rubric on bright paper': [rubric, paper.bright],
+      'paper on ink, the primary button': [paper.DEFAULT, ink.DEFAULT],
+      'bright paper on rubric, the button under the pointer': [paper.bright, rubric],
+    }
+
+    for (const [pair, [text, ground]] of Object.entries(pairs)) {
+      expect(contrast(text, ground), pair).toBeGreaterThanOrEqual(4.5)
+    }
   })
 
   it('names the typefaces and the brand in one place', () => {

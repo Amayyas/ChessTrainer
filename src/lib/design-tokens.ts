@@ -11,7 +11,74 @@
  * squares and the coach arrow on the old one.
  */
 
-/** The four colours of the visual identity. */
+/**
+ * The newsprint palette: the chess column of a daily paper.
+ *
+ * Paper, ink, and one red — the rubric, the colour a corrector writes in. It
+ * marks what needs attention and nothing else: a wrong move, the coach's
+ * suggestion, the section you are in, keyboard focus. Every text pair the
+ * interface sets is checked against WCAG AA in design-tokens.test.ts, so a
+ * lighter ink or a brighter red fails there before it reaches a player.
+ */
+export const newsprint = {
+  paper: {
+    /** The page. */
+    DEFAULT: '#F4F0E6',
+    /** Light squares, fields, boxed asides: a sheet laid on the page. */
+    bright: '#FBF9F3',
+    /** A flat tint, for the rare place a rule alone does not separate. */
+    deep: '#E9E3D4',
+  },
+  ink: {
+    /** Text, rules and the primary button. */
+    DEFAULT: '#1C1A16',
+    /** Captions and secondary text. */
+    soft: '#5C564B',
+    /** Metadata on the page only: on deep paper it falls below AA. */
+    faint: '#6E675B',
+  },
+  rubric: '#A8311F',
+} as const
+
+/**
+ * The type scale, each size with its leading.
+ *
+ * Newsreader carries an optical-size axis that the browser follows from the
+ * font size, so a headline gets the high-contrast display cut and body text the
+ * sturdier text cut without a class asking for either. The names are also
+ * registered with tailwind-merge (src/utils/cn.ts), which would otherwise read
+ * `text-body` as a colour and drop it.
+ */
+export const typeScale = {
+  /** The label above a headline, set in capitals: the newspaper's kicker. */
+  kicker: ['0.8125rem', { lineHeight: '1.3', letterSpacing: '0.08em' }],
+  caption: ['0.9375rem', { lineHeight: '1.45' }],
+  body: ['1.125rem', { lineHeight: '1.55' }],
+  /** The standfirst under a headline. */
+  lead: ['1.375rem', { lineHeight: '1.45' }],
+  heading: ['1.3125rem', { lineHeight: '1.25' }],
+  title: ['2rem', { lineHeight: '1.15', letterSpacing: '-0.005em' }],
+  display: ['4rem', { lineHeight: '1.02', letterSpacing: '-0.012em' }],
+} satisfies Record<string, [string, { lineHeight: string; letterSpacing?: string }]>
+
+/**
+ * How long things move, in milliseconds. A piece glides to its square and the
+ * coach's arrow fades in; nothing else animates, nothing enters on arrival and
+ * nothing lifts under the pointer. Under prefers-reduced-motion both are zero.
+ * The framer-motion timings in src/lib/motion.ts leave with the entrance
+ * animations they drive.
+ */
+export const durations = {
+  piece: 140,
+  arrow: 120,
+} as const
+
+/**
+ * The previous identity's four colours.
+ *
+ * The components still read them while they move to the newsprint tokens one
+ * pull request at a time; they go with the last component that uses them.
+ */
 export const palette = {
   ebene: { DEFAULT: '#1A1A2E', light: '#25253F' },
   or: { DEFAULT: '#C9A84C', light: '#D9BD6B' },

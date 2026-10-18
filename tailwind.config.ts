@@ -5,9 +5,11 @@ import {
   danger,
   fonts,
   inverseTheme,
+  newsprint,
   palette,
   radius,
   semanticTheme,
+  typeScale,
 } from './src/lib/design-tokens'
 
 /**
@@ -41,6 +43,8 @@ export default {
   theme: {
     extend: {
       colors: {
+        // `bg-paper`, `text-ink-soft`, `text-rubric`: the newsprint palette.
+        ...newsprint,
         ...palette,
         danger,
         background: withAlpha('--background'),
@@ -78,6 +82,7 @@ export default {
         ring: withAlpha('--ring'),
       },
       fontFamily: { display: [...fonts.display], sans: [...fonts.sans] },
+      fontSize: typeScale,
       boxShadow: {
         card: '0 1px 2px rgba(26, 26, 46, 0.04), 0 8px 24px -12px rgba(26, 26, 46, 0.18)',
         'card-hover': '0 2px 4px rgba(26, 26, 46, 0.06), 0 16px 40px -16px rgba(26, 26, 46, 0.28)',

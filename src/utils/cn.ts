@@ -1,7 +1,18 @@
 import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
+import { typeScale } from '@/lib/design-tokens'
 
 export type { ClassValue }
+
+/**
+ * tailwind-merge, told about the type scale. It recognises Tailwind's own sizes
+ * (`text-sm`, `text-lg`) and reads any other `text-*` as a colour, so without
+ * this `cn('text-body text-ink')` kept only the ink and dropped the size, with
+ * no warning.
+ */
+const twMerge = extendTailwindMerge({
+  extend: { theme: { text: Object.keys(typeScale) } },
+})
 
 /**
  * Class-name joiner: clsx to flatten the conditionals, tailwind-merge to settle
