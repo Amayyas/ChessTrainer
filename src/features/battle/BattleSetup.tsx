@@ -41,7 +41,7 @@ function Setting<T extends string>({
 
   return (
     <div>
-      <h2 id={headingId} className="mb-3 font-display text-lg font-bold text-foreground">
+      <h2 id={headingId} className="mb-3 font-display text-lg font-bold text-ink">
         {title}
       </h2>
       <ToggleGroup
@@ -82,9 +82,8 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
             <span className="block">
               Niveau {level.id} — {level.label}
             </span>
-            <span className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">~{level.elo} Elo</span> ·{' '}
-              {level.description}
+            <span className="text-xs opacity-80">
+              <span className="font-semibold">~{level.elo} Elo</span> · {level.description}
             </span>
           </ToggleGroupItem>
         ))}

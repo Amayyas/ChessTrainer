@@ -58,6 +58,8 @@ export const typeScale = {
   lead: ['1.375rem', { lineHeight: '1.45' }],
   heading: ['1.3125rem', { lineHeight: '1.25' }],
   title: ['2rem', { lineHeight: '1.15', letterSpacing: '-0.005em' }],
+  /** The title a page opens with, from 640 px up; below that it is `title`. */
+  headline: ['3rem', { lineHeight: '1.05', letterSpacing: '-0.012em' }],
   display: ['4rem', { lineHeight: '1.02', letterSpacing: '-0.012em' }],
 } satisfies Record<string, [string, { lineHeight: string; letterSpacing?: string }]>
 

@@ -7,7 +7,7 @@ import Spinner from '@/components/UI/Spinner'
 export default function RouteFallback() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <Spinner size="lg" className="text-or" label="Chargement de la page" />
+      <Spinner size="lg" className="text-ink" label="Chargement de la page" />
     </div>
   )
 }

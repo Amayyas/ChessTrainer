@@ -218,7 +218,7 @@ function PracticeView() {
       className="flex flex-wrap gap-2"
     >
       {DIFFICULTIES.map((band) => (
-        <ToggleGroupItem key={band} value={band} className="rounded-full py-1 text-center">
+        <ToggleGroupItem key={band} value={band} className="py-1 text-center">
           {DIFFICULTY_LABELS[band]}
         </ToggleGroupItem>
       ))}

@@ -32,7 +32,7 @@ into that test before it goes into a component.
   metrics (`fallbackFaces`), so the page does not move when it arrives. A change
   of family means measuring new fallbacks, not just renaming them.
 - The scale: `text-kicker`, `text-caption`, `text-body`, `text-lead`,
-  `text-heading`, `text-title`, `text-display`.
+  `text-heading`, `text-title`, `text-headline`, `text-display`.
 - Kickers are capitals with tracking: the served font has no true small caps.
 - Figures that line up in a table use `tabular-nums lining-nums`.
 
