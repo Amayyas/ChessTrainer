@@ -1,3 +1,4 @@
+import { devices, type Page } from '@playwright/test'
 import { expect, test } from './csp'
 
 /**
@@ -86,46 +87,112 @@ test('the puzzle page switches to free practice and serves a board', async ({ pa
   expect(errors).toEqual([])
 })
 
-test('nothing moves while a slow page arrives and its engine comes up', async ({ page }) => {
-  // On a slow connection a route's chunk lands after its spinner is painted.
-  // The footer used to sit in view under the spinner, and the page then pushed
-  // it off the screen — a layout shift of 0.17 on /coach on a phone, which
-  // Lighthouse counts — and the coach's header changed height when the engine
-  // came up. The chunk is held back here, so the spinner is painted first on
-  // every run, and the shifts are summed until the engine is ready.
-  await page.setViewportSize({ width: 412, height: 823 })
-  await page.route(/\/assets\/CoachPage-[\w-]+\.js$/, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 800))
+type ShiftScope = {
+  layoutShift: number
+  shifts: PerformanceObserver
+  addShifts: (entries: PerformanceEntryList) => void
+}
+
+/**
+ * Loads `path` on a slow connection and returns the layout shift it causes.
+ *
+ * The route's chunk is held until the spinner has been seen, so the slow path
+ * runs on every run, and the held requests are counted, so a renamed chunk
+ * cannot skip it unnoticed. Shifts are summed until `ready`, and a second
+ * after it, so whatever the page does once it is up falls inside the window.
+ * Before returning, a shift caused on purpose has to register: the control
+ * that tells a zero from an observer that saw nothing.
+ */
+async function shiftWhileArriving(
+  page: Page,
+  path: string,
+  chunk: RegExp,
+  ready: () => Promise<void>,
+): Promise<number> {
+  let release = () => {}
+  const held = new Promise<void>((resolve) => (release = resolve))
+  let heldRequests = 0
+  await page.route(chunk, async (route) => {
+    heldRequests += 1
+    await held
     await route.continue()
   })
   await page.addInitScript(() => {
-    const scope = window as unknown as { layoutShift: number }
+    // Every entry counts, hadRecentInput included: nothing here gives input,
+    // and Chromium under automation was measured flagging shifts as following
+    // input when none had come.
+    const scope = window as unknown as ShiftScope
     scope.layoutShift = 0
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries())
+    scope.addShifts = (entries) => {
+      for (const entry of entries)
         scope.layoutShift += (entry as PerformanceEntry & { value: number }).value
-    }).observe({ type: 'layout-shift', buffered: true })
+    }
+    scope.shifts = new PerformanceObserver((list) => scope.addShifts(list.getEntries()))
+    scope.shifts.observe({ type: 'layout-shift', buffered: true })
   })
 
-  await page.goto('/coach')
+  await page.goto(path, { waitUntil: 'commit' })
   await expect(page.getByRole('status', { name: 'Chargement de la page' })).toBeVisible()
-  await expect(page.getByRole('contentinfo')).toBeHidden()
+  await expect(page.locator('footer')).toHaveCSS('visibility', 'hidden')
+  expect(heldRequests).toBeGreaterThan(0)
+  release()
 
-  await expect(page.getByText('IA prête')).toBeVisible({ timeout: 30_000 })
-  await expect(page.getByRole('contentinfo')).toBeVisible()
+  await ready()
+  await expect(page.locator('footer')).toHaveCSS('visibility', 'visible')
+  await page.waitForTimeout(1000)
+
+  // A shift is reported after the frame that made it, and the observer hands
+  // its entries over later still. So each reading lets a frame paint, then
+  // takes what the observer has queued but not yet delivered.
   const readShift = () =>
-    page.evaluate(() => (window as unknown as { layoutShift: number }).layoutShift)
+    page.evaluate(async () => {
+      const scope = window as unknown as ShiftScope
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+      scope.addShifts(scope.shifts.takeRecords())
+      return scope.layoutShift
+    })
   const shift = await readShift()
 
-  // The control, read first: content pushed down on purpose has to register,
-  // or the zero below would only mean the observer saw nothing at all.
   await page.evaluate(() => {
     const block = document.createElement('div')
     block.style.height = '200px'
     document.querySelector('main')?.prepend(block)
   })
   await expect.poll(readShift).toBeGreaterThan(shift + 0.01)
-  expect(shift).toBeLessThan(0.001)
+  return shift
+}
+
+test.describe('on a phone, while a slow page arrives', () => {
+  // The shift was measured by Lighthouse's phone run, so a phone it is: a
+  // Pixel 7's screen, less its browser type, which a group may not set.
+  const phone = devices['Pixel 7']
+  test.use({
+    viewport: phone.viewport,
+    userAgent: phone.userAgent,
+    deviceScaleFactor: phone.deviceScaleFactor,
+    isMobile: phone.isMobile,
+    hasTouch: phone.hasTouch,
+  })
+
+  test('nothing moves on a long page, nor when its engine comes up', async ({ page }) => {
+    // /coach is taller than the screen. Under the spinner the footer used to sit
+    // in view and be pushed off it by the page — 0.17 — and the coach's header
+    // changed height when the engine came up.
+    const shift = await shiftWhileArriving(page, '/coach', /\/assets\/CoachPage-[\w-]+\.js$/, () =>
+      expect(page.getByText('IA prête')).toBeVisible({ timeout: 30_000 }),
+    )
+    expect(shift).toBeLessThan(0.001)
+  })
+
+  test('nothing moves on a short page', async ({ page }) => {
+    // /login fits on the screen. A spinner made a screen tall, the first fix
+    // tried, kept the footer out of view on a long page and then let it rise
+    // into view here: 0.08.
+    const shift = await shiftWhileArriving(page, '/login', /\/assets\/LoginPage-[\w-]+\.js$/, () =>
+      expect(page.getByRole('heading', { level: 1 })).toBeVisible(),
+    )
+    expect(shift).toBeLessThan(0.001)
+  })
 })
 
 test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {
