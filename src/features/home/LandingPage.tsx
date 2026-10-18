@@ -49,9 +49,10 @@ const ChessBoard = lazy(() => import('@/components/Board/ChessBoard'))
 export default function LandingPage() {
   return (
     <div className="flex flex-col gap-14">
-      {/* theme-inverse flips the semantic colours to the ebony pair for
-          everything inside, so the buttons below can be the design system's own
-          rather than two class strings shaped to look like them. */}
+      {/* theme-inverse marks the band as a dark surface, and the design
+          system's buttons swap ink and paper inside one — which is what lets
+          the two below be the design system's own. Nothing else swaps: a tag,
+          a box or a rule set in this band would draw ink on ebony. */}
       <section className="theme-inverse rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
         <div className="max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-or">

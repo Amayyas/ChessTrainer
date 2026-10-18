@@ -69,9 +69,13 @@ alone would not, the band does.
 The interface is moving to these rules one pull request at a time, and what
 has not moved yet does not follow them. Until then:
 
-- the previous palette (`ebene`, `ivoire`, `or`, `ardoise`) and the shadcn
-  variables stay defined, and the components and pages that read them keep
-  their colours and rounded corners;
+- the previous palette (`ebene`, `ivoire`, `or`, `ardoise`) stays defined,
+  and the pages that read it keep their colours and rounded corners;
+- the ebony bands — the sidebar, the bottom bar, the mobile menu, the landing's
+  hero — keep their own colours. The two that hold buttons, the sidebar and
+  the hero, are marked `.theme-inverse`, and only the button follows it: a
+  tag, a box or a rule set on a band would draw ink on ebony. The bands go
+  with the pages, and the class with them;
 - the routes still fade in, the mode cards still stagger in, and the board
   animates its pieces at its own speed;
 - the move list still uses letters for the pieces and "!!" for the best move;
