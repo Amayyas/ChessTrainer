@@ -131,7 +131,9 @@ account.
 ## Architecture
 
 Class diagrams of the engine layer, the game modes, the global state and the
-data model are in [docs/architecture.md](docs/architecture.md).
+data model are in [docs/architecture.md](docs/architecture.md). The visual
+rules — palette, type, surfaces, motion — are in
+[docs/design-system.md](docs/design-system.md).
 
 ```
 src/

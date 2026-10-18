@@ -1,0 +1,84 @@
+# Design system: the chess column
+
+The interface takes the chess column of a daily paper as its model: paper, ink,
+one red, a news serif, rules instead of boxes, and the printed diagram. This
+page states the rules. The values live in
+[`src/lib/design-tokens.ts`](../src/lib/design-tokens.ts), which Tailwind reads;
+nothing here restates a colour, a size or a duration, so it cannot drift from
+them.
+
+## Colour
+
+- `paper`, `paper-bright`, `paper-deep` — the page; a sheet laid on it (light
+  squares, fields, boxed asides); a flat tint for the rare place a rule alone
+  does not separate.
+- `ink`, `ink-soft`, `ink-faint` — text and rules; captions; metadata on the
+  page only (it falls below AA on deep paper).
+- `rubric` — the corrector's red. It marks what needs attention and nothing
+  else: a wrong move, the coach's arrow, the current section, keyboard focus.
+  It is never decoration and never a second accent.
+
+Every text pair is held to WCAG AA by
+[`design-tokens.test.ts`](../src/lib/design-tokens.test.ts). A new pair goes
+into that test before it goes into a component.
+
+## Type
+
+- One family, Newsreader, self-hosted from
+  [`src/lib/fonts.ts`](../src/lib/fonts.ts). The roman's optical-size axis
+  follows the font size, so a headline gets the display cut without asking for
+  it.
+- The roman is preloaded, and the fallbacks are local serifs reshaped to its
+  metrics (`fallbackFaces`), so the page does not move when it arrives. A change
+  of family means measuring new fallbacks, not just renaming them.
+- The scale: `text-kicker`, `text-caption`, `text-body`, `text-lead`,
+  `text-heading`, `text-title`, `text-display`.
+- Kickers are capitals with tracking: the served font has no true small caps.
+- Figures that line up in a table use `tabular-nums lining-nums`.
+
+## Surfaces
+
+- No rounded corners, no shadows, no cards. Structure comes from rules: a
+  section opens with a double rule, columns are separated by a hairline, an
+  aside is a box with a one-pixel ink border on `paper-bright`.
+- No gradients and no decorative backgrounds.
+
+## Icons and notation
+
+- No icon library. Chess figurines are the pictograms; actions are named in
+  words.
+- Moves are written in figurine notation. Grades use the chess annotation signs
+  (`!`, `?!`, `?`, `??`), ★ for the best move, and ✓✓ and ✓ for very good and
+  good moves.
+
+## Motion
+
+A piece glides to its square and the coach's arrow fades in, for the durations
+in `durations`. Nothing else moves: nothing animates in on arrival and nothing
+lifts under the pointer. Under `prefers-reduced-motion: reduce`, pieces jump
+and nothing fades.
+
+## Focus
+
+Keyboard focus is a two-pixel `rubric` ring around a two-pixel `paper` band. On
+the page the ring carries the contrast; on a dark surface, where the rubric
+alone would not, the band does.
+
+## Migration
+
+The interface is moving to these rules one pull request at a time, and what
+has not moved yet does not follow them. Until then:
+
+- the previous palette (`ebene`, `ivoire`, `or`, `ardoise`) and the shadcn
+  variables stay defined, and the components and pages that read them keep
+  their colours, rounded cards and shadows;
+- the routes still fade in, the mode cards still stagger in and lift under the
+  pointer, and the board animates its pieces at its own speed;
+- the dialog and the mobile sheet still close with a lucide icon;
+- the move list still uses letters for the pieces and "!!" for the best move;
+- the fallbacks are measured for the sizes the pages set today, and have no
+  italic faces, since nothing is set in italic yet: both are measured again
+  when the pages move to the type scale.
+
+Each of these goes with the pull request that rebuilds the component it lives
+in.
