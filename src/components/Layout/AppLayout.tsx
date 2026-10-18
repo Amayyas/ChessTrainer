@@ -47,8 +47,14 @@ export default function AppLayout() {
           sidebar is hidden, and the landing's own. Kept outside <main> on
           purpose: a <footer> nested in main is a generic element, and only a
           top-level one maps to the contentinfo landmark. pb-20 clears the
-          mobile bottom bar. */}
-      <div className="px-4 pb-20 md:pb-8 md:pl-64 md:pr-8">
+          mobile bottom bar.
+
+          It stays invisible while a page is loading. Under the spinner it sat
+          in view, and the page then pushed it off the screen: a layout shift
+          that grew with the page, 0.17 on /coach. Hidden, it is not painted,
+          and an element that was not painted does not shift when it appears —
+          on a short page as on a long one. */}
+      <div className="px-4 pb-20 md:pb-8 md:pl-64 md:pr-8 [main:has([data-route-fallback])~&]:invisible">
         <div className="mx-auto max-w-6xl">
           <Footer />
         </div>

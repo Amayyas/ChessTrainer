@@ -86,6 +86,48 @@ test('the puzzle page switches to free practice and serves a board', async ({ pa
   expect(errors).toEqual([])
 })
 
+test('nothing moves while a slow page arrives and its engine comes up', async ({ page }) => {
+  // On a slow connection a route's chunk lands after its spinner is painted.
+  // The footer used to sit in view under the spinner, and the page then pushed
+  // it off the screen — a layout shift of 0.17 on /coach on a phone, which
+  // Lighthouse counts — and the coach's header changed height when the engine
+  // came up. The chunk is held back here, so the spinner is painted first on
+  // every run, and the shifts are summed until the engine is ready.
+  await page.setViewportSize({ width: 412, height: 823 })
+  await page.route(/\/assets\/CoachPage-[\w-]+\.js$/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await route.continue()
+  })
+  await page.addInitScript(() => {
+    const scope = window as unknown as { layoutShift: number }
+    scope.layoutShift = 0
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries())
+        scope.layoutShift += (entry as PerformanceEntry & { value: number }).value
+    }).observe({ type: 'layout-shift', buffered: true })
+  })
+
+  await page.goto('/coach')
+  await expect(page.getByRole('status', { name: 'Chargement de la page' })).toBeVisible()
+  await expect(page.getByRole('contentinfo')).toBeHidden()
+
+  await expect(page.getByText('IA prête')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByRole('contentinfo')).toBeVisible()
+  const readShift = () =>
+    page.evaluate(() => (window as unknown as { layoutShift: number }).layoutShift)
+  const shift = await readShift()
+
+  // The control, read first: content pushed down on purpose has to register,
+  // or the zero below would only mean the observer saw nothing at all.
+  await page.evaluate(() => {
+    const block = document.createElement('div')
+    block.style.height = '200px'
+    document.querySelector('main')?.prepend(block)
+  })
+  await expect.poll(readShift).toBeGreaterThan(shift + 0.01)
+  expect(shift).toBeLessThan(0.001)
+})
+
 test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {
   // jsdom has no layout, so the unit suite can assert the footer exists but not
   // where it lands. The Piece Hunt's chooser is short enough that the page does
