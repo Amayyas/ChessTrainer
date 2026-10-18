@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import type { Square } from 'react-chessboard/dist/chessboard/types'
-import { Aurora, Button } from '@/components/UI'
+import { Button } from '@/components/UI'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
 import { board, brand } from '@/lib/design-tokens'
@@ -52,9 +52,8 @@ export default function LandingPage() {
       {/* theme-inverse flips the semantic colours to the ebony pair for
           everything inside, so the buttons below can be the design system's own
           rather than two class strings shaped to look like them. */}
-      <section className="theme-inverse relative overflow-hidden rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
-        <Aurora />
-        <div className="relative max-w-3xl">
+      <section className="theme-inverse rounded-2xl bg-ebene px-6 py-14 text-ivoire sm:px-12 sm:py-20">
+        <div className="max-w-3xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-or">
             {brand.fullName}
           </p>
@@ -84,32 +83,29 @@ export default function LandingPage() {
         <ModeGrid />
       </section>
 
-      <section className="relative overflow-hidden rounded-2xl bg-ebene px-6 py-12 text-ivoire sm:px-12">
-        <Aurora />
-        <div className="relative">
-          <h2 className="font-display text-2xl font-bold">
-            Une IA qui joue à votre niveau, pas au sien
-          </h2>
-          <p className="mt-3 max-w-2xl text-ivoire/70">
-            Le mode Affrontement propose {ENGINE_LEVELS.length} adversaires, de {LEVEL_FLOOR} à{' '}
-            {LEVEL_CEILING} Elo. Chaque niveau s&apos;appuie sur le modèle de force de
-            Stockfish&nbsp;18 — pas sur des étiquettes posées au hasard.
-          </p>
-          <ol className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {ENGINE_LEVELS.map((level) => (
-              <li
-                key={level.id}
-                className="flex items-baseline justify-between gap-3 rounded-xl bg-white/5 px-4 py-3"
-              >
-                <span className="font-semibold">{level.label}</span>
-                <span className="shrink-0 text-sm tabular-nums text-or">~{level.elo} Elo</span>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-4 text-xs text-ivoire/50">
-            Des estimations pour se situer, pas un classement officiel.
-          </p>
-        </div>
+      <section className="rounded-2xl bg-ebene px-6 py-12 text-ivoire sm:px-12">
+        <h2 className="font-display text-2xl font-bold">
+          Une IA qui joue à votre niveau, pas au sien
+        </h2>
+        <p className="mt-3 max-w-2xl text-ivoire/70">
+          Le mode Affrontement propose {ENGINE_LEVELS.length} adversaires, de {LEVEL_FLOOR} à{' '}
+          {LEVEL_CEILING} Elo. Chaque niveau s&apos;appuie sur le modèle de force de
+          Stockfish&nbsp;18 — pas sur des étiquettes posées au hasard.
+        </p>
+        <ol className="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {ENGINE_LEVELS.map((level) => (
+            <li
+              key={level.id}
+              className="flex items-baseline justify-between gap-3 rounded-xl bg-white/5 px-4 py-3"
+            >
+              <span className="font-semibold">{level.label}</span>
+              <span className="shrink-0 text-sm tabular-nums text-or">~{level.elo} Elo</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-xs text-ivoire/50">
+          Des estimations pour se situer, pas un classement officiel.
+        </p>
       </section>
 
       <section>
