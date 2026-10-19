@@ -135,17 +135,21 @@ describe('design tokens', () => {
     expect([...declared]).toEqual([fonts.serif[0]])
   })
 
-  it('points the figurine family at a face that exists', () => {
-    // The figurine face is declared by hand in src/index.css, over a file in
-    // src/assets/fonts. A family renamed on one side, or a file moved, fails
-    // nowhere else: the figurines quietly fall back to whatever symbol font
-    // the system has.
+  it('points the faces declared by hand at the families the stacks ask for', () => {
+    // The figurines and the italic are declared in src/index.css rather than
+    // by a package's stylesheet. A family renamed on one side, or a file moved,
+    // fails nowhere else: the text quietly falls back, the figurines to
+    // whatever symbol font the system has, the italic to a slanted roman.
     const css = readFileSync(resolve('src/index.css'), 'utf8')
-    const face = /@font-face\s*{[^}]*font-family:\s*'([^']+)'[^}]*src:\s*url\('([^']+)'\)/.exec(css)
-    expect(face, 'an @font-face in src/index.css').not.toBeNull()
-    const [, family, url] = face!
-    expect(`"${family}"`).toBe(fonts.figurine[0])
-    expect(existsSync(resolve('src', url!)), url).toBe(true)
+    const faces = [...css.matchAll(/@font-face\s*{([^}]*)}/g)].map(([, body]) => ({
+      family: /font-family:\s*'([^']+)'/.exec(body!)?.[1],
+      style: /font-style:\s*(\w+)/.exec(body!)?.[1] ?? 'normal',
+      url: /src:\s*url\('([^']+)'\)/.exec(body!)?.[1],
+    }))
+    expect(faces.map(({ family, style }) => `"${family}" ${style}`).sort()).toEqual(
+      [`${fonts.figurine[0]} normal`, `${fonts.serif[0]} italic`].sort(),
+    )
+    for (const { url } of faces) expect(existsSync(resolve('src', url!)), url).toBe(true)
   })
 
   it('reshapes a regular, a bold and an italic face for every fallback family', () => {

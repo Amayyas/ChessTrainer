@@ -28,6 +28,9 @@ into that test before it goes into a component.
   [`src/lib/fonts.ts`](../src/lib/fonts.ts). The roman's optical-size axis
   follows the font size, so a headline gets the display cut without asking for
   it.
+- Italic comes in the regular only, as the static regular declared in
+  `src/index.css`: nothing is set in bold italic, which the browser would
+  fake.
 - The roman is preloaded, and the fallbacks are local serifs reshaped to its
   metrics (`fallbackFaces`), so the page does not move when it arrives. Their
   scales are measured at the sizes and weights the pages set: a new size can

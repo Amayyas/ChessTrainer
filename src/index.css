@@ -22,6 +22,28 @@
   unicode-range: U+2605, U+2654-265F, U+2713;
 }
 
+/* The italic. A paper sets captions, asides and the notes under a table in
+   italic, and only ever in the regular, so this is the static regular from
+   @fontsource/newsreader rather than the variable italic: 24 KB against
+   64.5 KB, with the same characters, advances and vertical metrics at 400,
+   read from both files. Lighthouse counts every font a page fetches before
+   its largest paint, and the variable italic brought the landing's score down
+   to the floor the CI sets. It is declared under the roman's family name
+   because italic text looks for its face inside the family it is set in: a
+   family of its own would never be reached. The range is the package's latin
+   subset. */
+@font-face {
+  font-family: 'Newsreader Variable';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../node_modules/@fontsource/newsreader/files/newsreader-latin-400-italic.woff2')
+    format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
