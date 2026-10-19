@@ -16,6 +16,7 @@ import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
+import { formatPercent } from '@/utils/format'
 
 /**
  * Profile: level, global statistics and the badge
@@ -48,10 +49,13 @@ export default function ProfilePage() {
 
   const figures = [
     { label: 'Parties jouées', value: String(stats.gamesPlayed) },
-    { label: 'Victoires', value: winRate === null ? '—' : `${stats.gamesWon} (${winRate}%)` },
+    {
+      label: 'Victoires',
+      value: winRate === null ? '—' : `${stats.gamesWon} (${formatPercent(winRate)})`,
+    },
     {
       label: 'Précision moyenne',
-      value: stats.battleAccuracy === null ? '—' : `${stats.battleAccuracy}%`,
+      value: stats.battleAccuracy === null ? '—' : formatPercent(stats.battleAccuracy),
     },
     { label: 'Puzzles résolus', value: String(stats.puzzlesSolved) },
     { label: 'Meilleure série', value: `${stats.bestPuzzleStreak} j` },

@@ -1,5 +1,6 @@
 import { Box, Tag } from '@/components/UI'
 import { recentTrend, type AccuracyEntry } from '@/features/progression/accuracyHistory'
+import { formatPercent } from '@/utils/format'
 
 const OUTCOME_LABEL: Record<AccuracyEntry['outcome'], string> = {
   win: 'Victoire',
@@ -100,7 +101,7 @@ export default function AccuracyHistoryPanel({ entries }: { entries: readonly Ac
               {entry.level} — {OUTCOME_LABEL[entry.outcome]}
             </span>
             <span className="shrink-0 font-semibold tabular-nums text-ebene">
-              {entry.accuracy}%
+              {formatPercent(entry.accuracy)}
             </span>
           </li>
         ))}

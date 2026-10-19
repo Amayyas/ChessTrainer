@@ -5,6 +5,7 @@ import { challengeProgress } from '@/features/progression/challenges'
 import { levelFromXp } from '@/features/progression/levels'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { brand } from '@/lib/design-tokens'
+import { formatPercent } from '@/utils/format'
 
 /**
  * Dashboard: progression, the day's challenges, recent
@@ -96,7 +97,7 @@ export default function HomePage() {
           { label: 'Puzzles résolus', value: stats.puzzlesSolved },
           {
             label: 'Précision moyenne',
-            value: stats.battleAccuracy === null ? '—' : `${stats.battleAccuracy}%`,
+            value: stats.battleAccuracy === null ? '—' : formatPercent(stats.battleAccuracy),
           },
           { label: 'Record Chasse', value: stats.bestHuntScore },
         ].map((stat) => (

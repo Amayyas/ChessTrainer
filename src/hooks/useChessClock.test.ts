@@ -22,16 +22,16 @@ describe('formatClock', () => {
   })
 
   it('shows tenths under ten seconds', () => {
-    expect(formatClock(9_400)).toBe('9.4')
+    expect(formatClock(9_400)).toBe('9,4')
   })
 
-  it('truncates instead of rounding, so it never shows 10.0', () => {
-    expect(formatClock(9_999)).toBe('9.9')
+  it('truncates instead of rounding, so it never shows 10,0', () => {
+    expect(formatClock(9_999)).toBe('9,9')
     expect(formatClock(10_000)).toBe('0:10')
   })
 
   it('never goes negative', () => {
-    expect(formatClock(-500)).toBe('0.0')
+    expect(formatClock(-500)).toBe('0,0')
   })
 })
 

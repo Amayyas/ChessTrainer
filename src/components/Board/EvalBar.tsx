@@ -1,5 +1,6 @@
 import { winningChances, type WhiteEval } from '@/utils/evaluation'
 import { cn } from '@/utils/cn'
+import { formatSigned } from '@/utils/format'
 
 export interface EvalBarProps {
   evaluation: WhiteEval | null
@@ -8,14 +9,16 @@ export interface EvalBarProps {
   className?: string
 }
 
-/** Formats an evaluation the way chess UIs do: `+1.2`, `-0.4`, `M3`, or `#`. */
+/**
+ * Formats an evaluation the way a French chess column does: `+1,2`, `−0,4`,
+ * `M3`, or `#`.
+ */
 function formatEval(evaluation: WhiteEval): string {
   // A mate that has landed is distance zero, and "M0" reads as a mate in no
   // moves — which is not a thing. The game is over; the bar names it.
   if (evaluation.mate === 0) return '#'
   if (evaluation.mate !== null) return `M${Math.abs(evaluation.mate)}`
-  const pawns = evaluation.cp / 100
-  return `${pawns >= 0 ? '+' : ''}${pawns.toFixed(1)}`
+  return formatSigned(evaluation.cp / 100)
 }
 
 /**

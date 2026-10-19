@@ -2,6 +2,7 @@ import { Box, Tag } from '@/components/UI'
 import Notation from '@/components/UI/Notation'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
+import { formatPercent } from '@/utils/format'
 
 interface GameSummaryProps {
   summary: GameSummaryData
@@ -13,7 +14,7 @@ function AccuracyStat({ label, value }: { label: string; value: number | null })
   return (
     <div className="rounded-xl bg-ebene/5 px-3 py-2 text-center">
       <p className="font-display text-2xl font-bold text-ebene">
-        {value === null ? '—' : `${value}%`}
+        {value === null ? '—' : formatPercent(value)}
       </p>
       <p className="text-xs text-ardoise">{label}</p>
     </div>

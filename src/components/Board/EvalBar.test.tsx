@@ -5,12 +5,17 @@ import EvalBar from '@/components/Board/EvalBar'
 describe('EvalBar', () => {
   it('formats a White advantage in pawns', () => {
     render(<EvalBar evaluation={{ cp: 120, mate: null }} />)
-    expect(screen.getByText('+1.2')).toBeInTheDocument()
+    expect(screen.getByText('+1,2')).toBeInTheDocument()
   })
 
-  it('formats a Black advantage with a sign', () => {
+  it('formats a Black advantage with a true minus', () => {
     render(<EvalBar evaluation={{ cp: -40, mate: null }} />)
-    expect(screen.getByText('-0.4')).toBeInTheDocument()
+    expect(screen.getByText('\u22120,4')).toBeInTheDocument()
+  })
+
+  it('writes an equal position without a sign', () => {
+    render(<EvalBar evaluation={{ cp: -3, mate: null }} />)
+    expect(screen.getByText('0,0')).toBeInTheDocument()
   })
 
   it('formats a forced mate', () => {
@@ -29,7 +34,7 @@ describe('EvalBar', () => {
 
   it('exposes the evaluation to assistive tech', () => {
     render(<EvalBar evaluation={{ cp: 50, mate: null }} />)
-    expect(screen.getByRole('img', { name: /Évaluation \+0\.5/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Évaluation +0,5' })).toBeInTheDocument()
   })
 
   it('renders a neutral bar when no evaluation is available', () => {

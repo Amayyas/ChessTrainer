@@ -64,7 +64,8 @@ describe('GameSummary counts', () => {
       />,
     )
 
-    expect(screen.getByText('91%')).toBeInTheDocument()
+    // French sets a no-break space before the sign; the matcher collapses it.
+    expect(screen.getByText(/^91\s%$/)).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
