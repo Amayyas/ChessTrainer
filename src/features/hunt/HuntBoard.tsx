@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { BoardPosition, Piece, Square } from 'react-chessboard/dist/chessboard/types'
 import { useMeasuredWidth } from '@/hooks/useMeasuredWidth'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board } from '@/lib/design-tokens'
 import type { ChampionType, EnemyType } from '@/features/hunt/board'
 
@@ -36,6 +37,7 @@ export default function HuntBoard({
 }: HuntBoardProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const width = useMeasuredWidth(containerRef, boardWidth)
+  const reduceMotion = usePrefersReducedMotion()
 
   const position = useMemo<BoardPosition>(() => {
     // Squares come from the arcade engine as plain strings; the board types them
@@ -83,7 +85,7 @@ export default function HuntBoard({
           customDarkSquareStyle={{ backgroundColor: board.darkSquare }}
           customSquareStyles={squareStyles}
           customBoardStyle={{ borderRadius: '0' }}
-          animationDuration={120}
+          animationDuration={reduceMotion ? 0 : 120}
           id="hunt-board"
         />
       ) : null}
