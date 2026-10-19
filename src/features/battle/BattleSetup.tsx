@@ -11,10 +11,14 @@ interface BattleSetupProps {
   disabled?: boolean
 }
 
-const COLOR_CHOICES: { value: ColorChoice; label: string; glyph: string }[] = [
+/**
+ * The kings stand for the two colours. Random has no figure: the die it used
+ * to carry is no chess sign, and the figurine face does not hold one.
+ */
+const COLOR_CHOICES: { value: ColorChoice; label: string; glyph?: string }[] = [
   { value: 'white', label: 'Blancs', glyph: '♔' },
   { value: 'black', label: 'Noirs', glyph: '♚' },
-  { value: 'random', label: 'Aléatoire', glyph: '⚄' },
+  { value: 'random', label: 'Aléatoire' },
 ]
 
 /**
@@ -41,7 +45,7 @@ function Setting<T extends string>({
 
   return (
     <div>
-      <h2 id={headingId} className="mb-3 font-display text-lg font-bold text-ink">
+      <h2 id={headingId} className="mb-3 text-kicker font-semibold uppercase">
         {title}
       </h2>
       <ToggleGroup
@@ -78,12 +82,19 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
         className="sm:grid-cols-2"
       >
         {ENGINE_LEVELS.map((level) => (
-          <ToggleGroupItem key={level.id} value={String(level.id)}>
+          // Set from the top, so the level names line up across a row whose
+          // descriptions run to different lengths.
+          <ToggleGroupItem
+            key={level.id}
+            value={String(level.id)}
+            className="flex flex-col items-start justify-start"
+          >
             <span className="block">
               Niveau {level.id} — {level.label}
             </span>
-            <span className="text-xs opacity-80">
-              <span className="font-semibold">~{level.elo} Elo</span> · {level.description}
+            <span className="text-caption opacity-80">
+              <span className="font-semibold tabular-nums lining-nums">~{level.elo} Elo</span> ·{' '}
+              {level.description}
             </span>
           </ToggleGroupItem>
         ))}
@@ -97,9 +108,11 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
       >
         {COLOR_CHOICES.map((choice) => (
           <ToggleGroupItem key={choice.value} value={choice.value}>
-            <span aria-hidden="true" className="mr-1 text-lg">
-              {choice.glyph}
-            </span>
+            {choice.glyph && (
+              <span aria-hidden="true" className="mr-1.5 font-figurine text-lg leading-none">
+                {choice.glyph}
+              </span>
+            )}
             {choice.label}
           </ToggleGroupItem>
         ))}

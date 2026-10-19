@@ -10,24 +10,28 @@ interface ClockDisplayProps {
 
 const LOW_TIME_MS = 20_000
 
-/** One player's clock. */
+/**
+ * One player's clock, as a ruled row: the side in capitals, the time in
+ * figures. The running clock is set in reverse, paper on ink, as a chosen
+ * option is. Under twenty seconds it turns to the rubric — as a block when it
+ * is running, since rubric figures on ink would not read (2.6:1), and as
+ * rubric figures on the paper otherwise.
+ */
 export default function ClockDisplay({ label, ms, isActive }: ClockDisplayProps) {
   const isLow = ms <= LOW_TIME_MS
 
   return (
     <div
       className={cn(
-        'flex items-center justify-between rounded-xl px-3 py-2 transition-colors',
-        isActive ? 'bg-ebene text-ivoire' : 'bg-ebene/5 text-ardoise',
+        'flex items-baseline justify-between border border-ink px-3 py-2',
+        isActive && (isLow ? 'border-rubric bg-rubric text-paper-bright' : 'bg-ink text-paper'),
+        !isActive && isLow && 'text-rubric',
       )}
     >
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-kicker font-semibold uppercase">{label}</span>
       <span
         aria-label={`${label} : ${formatClock(ms)}`}
-        className={cn(
-          'font-display text-xl font-bold tabular-nums',
-          isLow && (isActive ? 'text-red-400' : 'text-red-600'),
-        )}
+        className="text-title font-semibold tabular-nums lining-nums"
       >
         {formatClock(ms)}
       </span>

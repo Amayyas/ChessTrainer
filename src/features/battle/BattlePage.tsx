@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChessBoard, MoveHistory } from '@/components/Board'
-import { Box, Button, PageHeader, Spinner, Tag } from '@/components/UI'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import StatusLine from '@/components/UI/StatusLine'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
@@ -66,19 +67,17 @@ export default function BattlePage() {
         subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
         actions={
           battle.isThinking ? (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> L'IA réfléchit…
-            </span>
+            <StatusLine busy>L&apos;IA réfléchit…</StatusLine>
           ) : battle.isEngineStalled && phase === 'playing' ? (
-            <Tag tone="alert">L'IA ne répond plus</Tag>
+            <Tag tone="alert">L&apos;IA ne répond plus</Tag>
           ) : (
-            <Tag tone="muted">{describeStatus(game.status, game.turn)}</Tag>
+            <StatusLine>{describeStatus(game.status, game.turn)}</StatusLine>
           )
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="mx-auto w-full max-w-[560px] self-start">
+      <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+        <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
           <ChessBoard
             fen={game.fen}
             turn={game.turn}
@@ -92,12 +91,12 @@ export default function BattlePage() {
           />
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
           {result && (
             <Box className="flex flex-col gap-3">
               <div>
-                <h2 className="font-display text-lg font-bold text-ebene">Partie terminée</h2>
-                <p className="mt-1 text-sm text-ardoise">{result.label}</p>
+                <h2 className="text-kicker font-semibold uppercase">Partie terminée</h2>
+                <p className="mt-1 text-body italic">{result.label}</p>
               </div>
               <Tag tone="ink">
                 {result.outcome === 'win'
@@ -106,7 +105,7 @@ export default function BattlePage() {
                     ? 'Défaite'
                     : 'Nulle'}
               </Tag>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 <Button
                   size="sm"
                   disabled={game.sanHistory.length === 0}
@@ -134,7 +133,7 @@ export default function BattlePage() {
             </Box>
           )}
 
-          <Box className="flex h-fit flex-col gap-4">
+          <div className="flex flex-col gap-[22px]">
             {clock.enabled && (
               <div className="flex flex-col gap-2">
                 <ClockDisplay
@@ -150,17 +149,19 @@ export default function BattlePage() {
               </div>
             )}
 
-            <div>
-              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Coups joués</h2>
+            <section aria-labelledby="t-coups">
+              <h2 id="t-coups" className="mb-1 text-kicker font-semibold uppercase">
+                Coups joués
+              </h2>
               <MoveHistory moves={game.sanHistory} />
-            </div>
+            </section>
 
             {/* Only while a game is still on: once it has a verdict, the card
                 above says so, and two panels offering a new game is one too
                 many. */}
             {battle.isEngineStalled && phase === 'playing' && (
               <div className="flex flex-col gap-2">
-                <p className="text-sm text-ardoise">
+                <p className="text-caption italic text-ink-soft">
                   L&apos;IA n&apos;a pas répondu malgré plusieurs tentatives. La partie ne peut pas
                   se poursuivre.
                 </p>
@@ -171,11 +172,13 @@ export default function BattlePage() {
             )}
 
             {phase === 'playing' && (
-              <Button variant="primary" size="sm" onClick={battle.resign}>
-                Abandonner
-              </Button>
+              <div>
+                <Button variant="secondary" size="sm" onClick={battle.resign}>
+                  Abandonner
+                </Button>
+              </div>
             )}
-          </Box>
+          </div>
         </div>
       </div>
     </div>
