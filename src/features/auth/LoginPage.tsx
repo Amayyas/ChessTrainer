@@ -2,9 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/UI'
 import Input from '@/components/UI/Input'
+import { INLINE_LINK, INLINE_LINK_PLAIN } from '@/components/UI/link'
 import AuthLayout from '@/features/auth/AuthLayout'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
+import { cn } from '@/utils/cn'
 
 export default function LoginPage() {
   const signIn = useAuthStore((state) => state.signIn)
@@ -32,10 +34,7 @@ export default function LoginPage() {
       footer={
         <>
           Pas encore de compte ?{' '}
-          <Link
-            to={ROUTES.register}
-            className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
-          >
+          <Link to={ROUTES.register} className={INLINE_LINK}>
             Créer un compte
           </Link>
         </>
@@ -67,7 +66,7 @@ export default function LoginPage() {
         </Button>
         <Link
           to={ROUTES.forgotPassword}
-          className="text-center text-caption underline underline-offset-4 transition-colors hover:text-rubric"
+          className={cn(INLINE_LINK_PLAIN, 'text-center text-caption')}
         >
           Mot de passe oublié ?
         </Link>

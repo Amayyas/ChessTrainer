@@ -1,4 +1,5 @@
 import { devices, type Page } from '@playwright/test'
+import { newsprint } from '@/lib/design-tokens'
 import { expect, test } from './csp'
 
 /**
@@ -219,6 +220,28 @@ test('the evaluation gauge stands centred over its figures', async ({ page }) =>
   // The control: the figures are centred, so the column is measured right.
   expect(Math.abs(figures - column)).toBeLessThan(0.5)
   expect(Math.abs(bar - column)).toBeLessThan(0.5)
+})
+
+test('a link in an alert stays readable under the pointer', async ({ page }) => {
+  // An inline link turns to the rubric under the pointer, the ground of an
+  // alert: on the expired-link screen, the link to ask for a new one vanished
+  // when pointed at. Hover is a browser's to compute, so it is checked here.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/nouveau-mot-de-passe')
+  const alert = page.getByRole('alert')
+  const link = alert.getByRole('link', { name: 'demandez-en un nouveau' })
+  await link.hover()
+  // The colour eases over 150 ms, and a reading taken mid-way passes whatever
+  // it eases to: wait for the transition to run out, then read it once.
+  await link.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished)),
+  )
+
+  const ground = await alert.evaluate((element) => getComputedStyle(element).backgroundColor)
+  // The control: the alert is on the rubric, so the comparison means something.
+  const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(newsprint.rubric.slice(at, at + 2), 16))
+  expect(ground).toBe(`rgb(${r}, ${g}, ${b})`)
+  expect(await link.evaluate((element) => getComputedStyle(element).color)).not.toBe(ground)
 })
 
 test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {

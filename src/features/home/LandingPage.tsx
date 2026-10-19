@@ -5,6 +5,7 @@ import { Box, Button } from '@/components/UI'
 import DoubleRule from '@/components/UI/DoubleRule'
 import GradeKey from '@/components/UI/GradeKey'
 import GradeSign from '@/components/UI/GradeSign'
+import { INLINE_LINK_PLAIN } from '@/components/UI/link'
 import Notation from '@/components/UI/Notation'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
@@ -233,10 +234,7 @@ export default function LandingPage() {
               <GameText />
               <span className="whitespace-nowrap text-body font-normal italic text-ink-soft">
                 (
-                <a
-                  href="#diagramme-1"
-                  className="underline underline-offset-4 transition-colors hover:text-rubric"
-                >
+                <a href="#diagramme-1" className={INLINE_LINK_PLAIN}>
                   diagramme 1
                 </a>
                 )

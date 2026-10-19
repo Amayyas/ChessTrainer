@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Box, Button } from '@/components/UI'
+import Alert from '@/components/UI/Alert'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -49,11 +50,7 @@ export default function AuthLayout({
         <p className="mt-1 text-caption italic text-ink-soft">{subtitle}</p>
       </div>
 
-      {error && (
-        <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
-          {error}
-        </p>
-      )}
+      {error && <Alert>{error}</Alert>}
 
       {children}
 

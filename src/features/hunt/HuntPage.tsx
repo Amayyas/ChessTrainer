@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import Alert from '@/components/UI/Alert'
+import { INLINE_LINK } from '@/components/UI/link'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import { STARTING_LIVES, addScore, encouragement, personalBest } from '@/features/hunt/scoring'
@@ -220,19 +222,16 @@ export default function HuntPage() {
           </p>
 
           {submitFailed && (
-            <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
+            <Alert>
               Score enregistré localement, mais son envoi au classement mondial a échoué. Il sera
               renvoyé à la prochaine manche.
-            </p>
+            </Alert>
           )}
 
           {!session && game.score > 0 && (
             <p className="text-caption">
               Ce score pourrait figurer au classement mondial —{' '}
-              <Link
-                to={ROUTES.register}
-                className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
-              >
+              <Link to={ROUTES.register} className={INLINE_LINK}>
                 créez un compte
               </Link>{' '}
               pour l'y inscrire.

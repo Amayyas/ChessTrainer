@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/UI'
+import Alert from '@/components/UI/Alert'
 import Input from '@/components/UI/Input'
+import { INLINE_LINK } from '@/components/UI/link'
 import AuthLayout from '@/features/auth/AuthLayout'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -51,33 +53,23 @@ export default function ResetPasswordPage() {
       subtitle="Choisissez un mot de passe, vous serez connecté aussitôt."
       showGoogle={false}
       footer={
-        <Link
-          to={ROUTES.login}
-          className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
-        >
+        <Link to={ROUTES.login} className={INLINE_LINK}>
           Retour à la connexion
         </Link>
       }
     >
       {isReady && !isRecovering ? (
-        <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
+        <Alert>
           Ce lien n'est plus valide. Les liens de récupération expirent au bout d'une heure et ne
           servent qu'une fois&nbsp;:{' '}
-          <Link
-            to={ROUTES.forgotPassword}
-            className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
-          >
+          <Link to={ROUTES.forgotPassword} className={INLINE_LINK}>
             demandez-en un nouveau
           </Link>
           .
-        </p>
+        </Alert>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3">
-          {localError && (
-            <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
-              {localError}
-            </p>
-          )}
+          {localError && <Alert>{localError}</Alert>}
           <label className="block">
             <span className="mb-1.5 block text-caption font-semibold">Nouveau mot de passe</span>
             <Input

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageHeader, Spinner, Tag } from '@/components/UI'
+import Alert from '@/components/UI/Alert'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import {
@@ -91,11 +92,7 @@ export default function LeaderboardPage() {
           />
         </div>
 
-        {error && (
-          <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
-            {error}
-          </p>
-        )}
+        {error && <Alert>{error}</Alert>}
 
         {isLoading ? (
           <div className="flex justify-center py-10">

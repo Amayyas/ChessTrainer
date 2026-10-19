@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/UI'
 import Input from '@/components/UI/Input'
+import { INLINE_LINK } from '@/components/UI/link'
 import AuthLayout from '@/features/auth/AuthLayout'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -34,10 +35,7 @@ export default function ForgotPasswordPage() {
       subtitle="Nous vous envoyons un lien pour en choisir un nouveau."
       showGoogle={false}
       footer={
-        <Link
-          to={ROUTES.login}
-          className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
-        >
+        <Link to={ROUTES.login} className={INLINE_LINK}>
           Retour à la connexion
         </Link>
       }
