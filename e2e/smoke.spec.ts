@@ -195,6 +195,32 @@ test.describe('on a phone, while a slow page arrives', () => {
   })
 })
 
+test('the evaluation gauge stands centred over its figures', async ({ page }) => {
+  // A fixed-width bar told to stretch across its column falls back to the
+  // column's start: the bar hugged the left edge of the gauge, under centred
+  // figures, and its middle tick stuck out past the column. jsdom has no
+  // layout, so only here can it be measured.
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/coach')
+  const gauge = page.getByRole('img', { name: /^Évaluation/ })
+  await expect(gauge).toBeVisible()
+
+  const { column, bar, figures } = await gauge.evaluate((element) => {
+    const centre = (target: Element) => {
+      const box = target.getBoundingClientRect()
+      return (box.left + box.right) / 2
+    }
+    return {
+      column: centre(element),
+      bar: centre(element.querySelector('div')!),
+      figures: centre(element.querySelector('span')!),
+    }
+  })
+  // The control: the figures are centred, so the column is measured right.
+  expect(Math.abs(figures - column)).toBeLessThan(0.5)
+  expect(Math.abs(bar - column)).toBeLessThan(0.5)
+})
+
 test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {
   // jsdom has no layout, so the unit suite can assert the footer exists but not
   // where it lands. The Piece Hunt's chooser is short enough that the page does
