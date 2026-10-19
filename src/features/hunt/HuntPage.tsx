@@ -14,12 +14,39 @@ import { cn } from '@/utils/cn'
 const CHAMPIONS: ChampionType[] = ['q', 'r', 'b', 'n']
 const GLYPHS: Record<ChampionType, string> = { q: '♛', r: '♜', b: '♝', n: '♞' }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+const PANEL_HEAD = 'text-kicker font-semibold uppercase'
+
+/**
+ * A box score: each figure over its name, the columns ruled apart. A figure
+ * marked `urgent` — the last ten seconds — is set in the rubric, which marks
+ * what needs attention; nothing else is, good news included.
+ */
+function Figures({
+  figures,
+  className,
+}: {
+  figures: Array<{ label: string; value: string; urgent?: boolean }>
+  className?: string
+}) {
   return (
-    <div className={cn('rounded-xl px-3 py-2 text-center', accent ? 'bg-or/20' : 'bg-ebene/5')}>
-      <p className="font-display text-xl font-bold tabular-nums text-ebene">{value}</p>
-      <p className="text-xs text-ardoise">{label}</p>
-    </div>
+    <dl className={cn('grid grid-cols-2 border-y border-ink/30 sm:grid-cols-4', className)}>
+      {figures.map((figure) => (
+        <div
+          key={figure.label}
+          className="flex flex-col-reverse justify-end py-3 even:border-l even:border-ink/30 even:pl-3 sm:border-l sm:border-ink/30 sm:pl-3 sm:first:border-l-0 sm:first:pl-0"
+        >
+          <dt className="text-caption text-ink-soft">{figure.label}</dt>
+          <dd
+            className={cn(
+              'text-heading font-semibold tabular-nums lining-nums',
+              figure.urgent && 'text-rubric',
+            )}
+          >
+            {figure.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -137,29 +164,27 @@ export default function HuntPage() {
           subtitle="Capturez un maximum de pièces en 60 secondes, avec une seule pièce et 3 vies."
         />
         <Box className="mx-auto flex max-w-2xl flex-col gap-4">
-          <h2 className="font-display text-lg font-bold text-ebene">Choisissez votre championne</h2>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <h2 className={PANEL_HEAD}>Choisissez votre championne</h2>
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {CHAMPIONS.map((champion) => (
               <button
                 key={champion}
                 type="button"
                 onClick={() => startRound(champion)}
-                className="flex items-start gap-3 rounded-xl border border-ebene/15 p-3 text-left transition-colors hover:border-or hover:bg-or/10"
+                className="flex items-start gap-3.5 border border-ink/30 p-3 text-left transition-colors hover:border-ink"
               >
                 <span
                   aria-hidden="true"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-ebene text-2xl text-or"
+                  className="w-10 shrink-0 text-center font-figurine text-[2.25rem] leading-none"
                 >
                   {GLYPHS[champion]}
                 </span>
                 <span>
-                  <span className="block font-semibold text-ebene">
+                  <span className="block text-heading font-semibold">
                     {CHAMPION_LABELS[champion]}
                   </span>
-                  <span className="block text-xs text-ardoise">
-                    {CHAMPION_DESCRIPTIONS[champion]}
-                  </span>
-                  <span className="mt-1 block text-xs text-ardoise">
+                  <span className="block text-caption">{CHAMPION_DESCRIPTIONS[champion]}</span>
+                  <span className="mt-1 block text-caption italic text-ink-soft">
                     Record : {personalBest(scoreboard, champion)} pts
                   </span>
                 </span>
@@ -181,27 +206,33 @@ export default function HuntPage() {
       <div>
         <PageHeader title="Chasse aux Pièces" subtitle="Manche terminée." />
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
-          <div className="grid grid-cols-3 gap-2">
-            <Stat label="Score" value={String(game.score)} accent />
-            <Stat label="Captures" value={String(game.captures)} />
-            <Stat label="Record" value={String(displayedBest)} />
-          </div>
+          <Figures
+            className="sm:grid-cols-3"
+            figures={[
+              { label: 'Score', value: String(game.score) },
+              { label: 'Captures', value: String(game.captures) },
+              { label: 'Record', value: String(displayedBest) },
+            ]}
+          />
 
-          <p className="text-sm text-ardoise">
+          <p className="text-body italic">
             {encouragement(game.score, previousBest, game.captures)}
           </p>
 
           {submitFailed && (
-            <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
               Score enregistré localement, mais son envoi au classement mondial a échoué. Il sera
               renvoyé à la prochaine manche.
             </p>
           )}
 
           {!session && game.score > 0 && (
-            <p className="rounded-xl bg-or/15 px-3 py-2 text-sm text-ebene">
+            <p className="text-caption">
               Ce score pourrait figurer au classement mondial —{' '}
-              <Link to={ROUTES.register} className="font-semibold underline">
+              <Link
+                to={ROUTES.register}
+                className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
+              >
                 créez un compte
               </Link>{' '}
               pour l'y inscrire.
@@ -209,19 +240,22 @@ export default function HuntPage() {
           )}
 
           <div>
-            <h2 className="mb-2 font-display text-lg font-bold text-ebene">
+            <h2 className={cn(PANEL_HEAD, 'mb-2')}>
               Meilleurs scores — {CHAMPION_LABELS[champion]}
             </h2>
             {rows.length === 0 ? (
-              <p className="text-sm text-ardoise">Aucun score enregistré.</p>
+              <p className="text-caption italic text-ink-soft">Aucun score enregistré.</p>
             ) : (
-              <ol className="divide-y divide-ebene/10 text-sm">
+              <ol>
                 {rows.map((row, index) => (
-                  <li key={row.playedAt} className="flex justify-between py-1.5">
-                    <span className="text-ardoise">
+                  <li
+                    key={row.playedAt}
+                    className="flex justify-between gap-3 border-t border-ink/30 py-1.5 text-caption first:border-t-0"
+                  >
+                    <span className="text-ink-soft">
                       {index + 1}. {new Date(row.playedAt).toLocaleDateString('fr-FR')}
                     </span>
-                    <span className="text-ebene">
+                    <span className="tabular-nums lining-nums">
                       {row.score} pts · {row.captures} captures
                     </span>
                   </li>
@@ -230,7 +264,7 @@ export default function HuntPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             <Button onClick={() => startRound(champion)}>Rejouer</Button>
             <Button variant="secondary" onClick={game.reset}>
               Changer de pièce
@@ -258,8 +292,8 @@ export default function HuntPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="mx-auto w-full max-w-[560px] self-start">
+      <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+        <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
           <HuntBoard
             champion={champion}
             championSquare={game.championSquare}
@@ -270,38 +304,35 @@ export default function HuntPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <Box className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-2">
-              <Stat label="Temps" value={`${seconds} s`} accent={seconds <= 10} />
-              <Stat label="Score" value={String(game.score)} />
-              <Stat label="Captures" value={String(game.captures)} />
-              <Stat
-                label="Combo"
-                value={game.combo > 1 ? `×${game.combo}` : '—'}
-                accent={game.combo > 1}
-              />
-            </div>
+        <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
+          <Figures
+            figures={[
+              { label: 'Temps', value: `${seconds} s`, urgent: seconds <= 10 },
+              { label: 'Score', value: String(game.score) },
+              { label: 'Captures', value: String(game.captures) },
+              { label: 'Combo', value: game.combo > 1 ? `×${game.combo}` : '—' },
+            ]}
+          />
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ardoise">Vies</span>
-              <span aria-label={`${game.lives} vies restantes`} className="text-lg">
-                {'♥'.repeat(Math.max(0, game.lives))}
-                <span className="text-ebene/20">
-                  {'♥'.repeat(Math.max(0, STARTING_LIVES - game.lives))}
-                </span>
+          <div className="flex items-baseline justify-between">
+            <span className={PANEL_HEAD}>Vies</span>
+            <span aria-label={`${game.lives} vies restantes`} className="text-heading">
+              {'♥'.repeat(Math.max(0, game.lives))}
+              <span className="text-ink/20">
+                {'♥'.repeat(Math.max(0, STARTING_LIVES - game.lives))}
               </span>
-            </div>
+            </span>
+          </div>
 
-            <p className="text-xs text-ardoise">
-              Cliquez une case atteignable pour vous déplacer. Une pièce en rouge peut vous
-              capturer.
-            </p>
+          <p className="text-caption italic text-ink-soft">
+            Cliquez une case atteignable pour vous déplacer. Une pièce en rouge peut vous capturer.
+          </p>
 
+          <div>
             <Button variant="quiet" size="sm" onClick={game.reset}>
               Abandonner la manche
             </Button>
-          </Box>
+          </div>
         </div>
       </div>
     </div>
