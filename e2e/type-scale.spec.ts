@@ -3,7 +3,8 @@ import { ROUTES } from '@/routes'
 import { expect, test } from './csp'
 
 /**
- * Every word a page sets is on the type scale.
+ * Every word a page sets is on the type scale, and every figurine is drawn as
+ * its face cuts it.
  *
  * jsdom computes no styles, so only a browser can say what size text came out
  * at, and nothing else fails when it is off: the running text of the legal
@@ -46,6 +47,27 @@ for (const width of [1440, 390]) {
       // The control: a page that rendered no text would pass on nothing.
       expect(runs.length).toBeGreaterThan(5)
       expect(runs.filter(({ size }) => !SCALE.includes(size))).toEqual([])
+    })
+
+    test(`${address} draws its figurines as cut at ${width} px`, async ({ page }) => {
+      // The figurine face has one weight and one style, so a figurine in a bold
+      // move or an italic caption was faked bold or slanted by the browser.
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto(address, { waitUntil: 'networkidle' })
+
+      const faked = await page.evaluate(() =>
+        [...document.querySelectorAll('*')]
+          .filter((element) =>
+            getComputedStyle(element).fontFamily.replace(/"/g, '').startsWith('Figurines'),
+          )
+          .filter((element) => element.textContent?.trim())
+          .map((element) => ({
+            text: element.textContent!.trim().slice(0, 12),
+            synthesis: getComputedStyle(element).fontSynthesis,
+          }))
+          .filter(({ synthesis }) => synthesis !== 'none'),
+      )
+      expect(faked).toEqual([])
     })
   }
 }

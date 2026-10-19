@@ -60,6 +60,13 @@
     font-kerning: normal;
   }
 
+  /* The figurine face comes in one weight and one style. Set in a bold move
+     or an italic caption, a figurine would be faked bold or slanted by the
+     browser, a pictogram smeared or leaning; it is drawn as cut instead. */
+  .font-figurine {
+    font-synthesis: none;
+  }
+
   /* Accessibility: visible keyboard focus ring (WCAG AA, spec section 4.2).
      The rubric reads at 5.9:1 on the page, where gold reached 2.0:1; the
      paper offset keeps it visible on the dark surfaces too. */
