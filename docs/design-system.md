@@ -69,16 +69,9 @@ alone would not, the band does.
 The interface is moving to these rules one pull request at a time, and what
 has not moved yet does not follow them. Until then:
 
-- the previous palette (`ebene`, `ivoire`, `or`, `ardoise`) stays defined,
-  and the pages that read it keep their colours and rounded corners;
-- the ebony bands — the sidebar, the bottom bar, the mobile menu, the landing's
-  hero — keep their own colours. The two that hold buttons, the sidebar and
-  the hero, are marked `.theme-inverse`, and only the button follows it: a
-  tag, a box or a rule set on a band would draw ink on ebony. The bands go
-  with the pages, and the class with them;
-- the routes still fade in, the mode cards still stagger in, and the board
-  animates its pieces at its own speed;
-- the move list still uses letters for the pieces and "!!" for the best move;
+- the board keeps the previous identity's colours — ebony, gold and slate,
+  written out in `board` — and animates its pieces at its own speed, until it
+  moves to chessground;
 - the fallbacks are measured for the sizes the pages set today, and have no
   italic faces, since nothing is set in italic yet: both are measured again
   when the pages move to the type scale.

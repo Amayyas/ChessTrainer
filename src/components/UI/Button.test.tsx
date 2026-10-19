@@ -100,35 +100,6 @@ describe('Button', () => {
     }
   })
 
-  it('swaps every colour on a dark surface, at rest and under the pointer', () => {
-    // The ebony bands the pages still carry are marked .theme-inverse. A colour
-    // with no rule for them is drawn there as it is on the page: ink on ebony
-    // at rest, the rubric on ebony under the pointer — present, and illegible.
-    // So each colour a variant sets, in each state, needs its inverse twin.
-    const colour = /^(hover:)?(bg|text|border)-(ink|paper|rubric)\b/
-    for (const variant of VARIANTS) {
-      const classes = classesOf(variant)
-      const inverse = classes.filter((c) => c.startsWith('[.theme-inverse_&]:'))
-      for (const match of classes.map((c) => colour.exec(c)).filter((m) => m !== null)) {
-        const [, state = '', property] = match
-        expect(inverse, `${variant}: ${match[0]}`).toContainEqual(
-          expect.stringMatching(new RegExp(`^\\[\\.theme-inverse_&\\]:${state}${property}-`)),
-        )
-      }
-    }
-  })
-
-  it('changes more than a shade of paper under the pointer, on a dark surface', () => {
-    // On ebony a button is drawn in the papers, and two of them side by side
-    // cannot be told apart: paper to bright paper is 1.08:1. So each variant's
-    // dark hover has to bring in another colour, or another weight of line.
-    const papers = /:hover:(bg|text|border)-paper(-bright|-deep)?(\/\d+)?$/
-    for (const variant of VARIANTS) {
-      const hover = classesOf(variant).filter((c) => c.startsWith('[.theme-inverse_&]:hover:'))
-      expect(hover, variant).toContainEqual(expect.not.stringMatching(papers))
-    }
-  })
-
   it('wraps a long label instead of letting it overflow', () => {
     // Tracked capitals run wide: at 320 px, three labels measured wider than
     // the column a box leaves them. A label that cannot wrap leaves its button,

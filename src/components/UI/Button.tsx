@@ -13,13 +13,6 @@ import { cn } from '@/utils/cn'
  * the label of a secondary, the word of a quiet one. None of them changes its
  * ground alone, which inside a box would be the box's own paper.
  *
- * Inside `.theme-inverse` each variant swaps ink and paper, at rest and under
- * the pointer, so a button stays legible on the ebony bands the pages still
- * carry. Rubric text would not be (2.5:1), so there a primary fills with the
- * rubric under the pointer and a secondary fills with paper. The swap is
- * written into each variant, which makes it more specific than a className
- * colour: a caller cannot recolour a button on those bands. It goes with them.
- *
  * Labels wrap rather than overflow: set in tracked capitals, the longest of
  * them are wider than the column a box leaves on a 320 px screen. The sizes are
  * minimum heights, so a wrapped label grows the button instead of leaving it.
@@ -29,22 +22,9 @@ import { cn } from '@/utils/cn'
  * button is rather than which classes it happens to carry.
  */
 const VARIANTS = {
-  primary: cn(
-    'bg-ink text-paper hover:bg-rubric',
-    '[.theme-inverse_&]:bg-paper [.theme-inverse_&]:text-ink',
-    '[.theme-inverse_&]:hover:bg-rubric [.theme-inverse_&]:hover:text-paper-bright',
-  ),
-  secondary: cn(
-    'border border-ink text-ink hover:border-rubric hover:text-rubric',
-    '[.theme-inverse_&]:border-paper [.theme-inverse_&]:text-paper',
-    '[.theme-inverse_&]:hover:border-paper [.theme-inverse_&]:hover:bg-paper',
-    '[.theme-inverse_&]:hover:text-ink',
-  ),
-  quiet: cn(
-    'text-ink underline decoration-1 underline-offset-[5px] hover:text-rubric',
-    '[.theme-inverse_&]:text-paper [.theme-inverse_&]:hover:text-paper',
-    '[.theme-inverse_&]:hover:decoration-2',
-  ),
+  primary: 'bg-ink text-paper hover:bg-rubric',
+  secondary: 'border border-ink text-ink hover:border-rubric hover:text-rubric',
+  quiet: 'text-ink underline decoration-1 underline-offset-[5px] hover:text-rubric',
 } as const
 
 const SIZES = {

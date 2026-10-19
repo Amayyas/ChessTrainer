@@ -1,13 +1,6 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
-import {
-  danger,
-  fallbackFontFaces,
-  fonts,
-  newsprint,
-  palette,
-  typeScale,
-} from './src/lib/design-tokens'
+import { fallbackFontFaces, fonts, newsprint, typeScale } from './src/lib/design-tokens'
 
 /**
  * The theme is read from src/lib/design-tokens.ts rather than written here, so
@@ -35,24 +28,16 @@ export default {
       colors: {
         // `bg-paper`, `text-ink-soft`, `text-rubric`: the newsprint palette.
         ...newsprint,
-        ...palette,
-        danger,
       },
-      // One family under every name. `sans` is what Tailwind's preflight sets on
-      // the document, so pointing it at the serif sets the whole interface,
-      // inputs and buttons included; `display` is what the headings were written
-      // against. Both go once the components ask for `font-serif` themselves.
+      // One family for all text. `sans` is what Tailwind's preflight sets on the
+      // document and on form controls, so it points at the serif too: inputs and
+      // buttons are set in Newsreader without a class of their own.
       fontFamily: {
         serif: [...fonts.serif],
-        display: [...fonts.serif],
         sans: [...fonts.serif],
         figurine: [...fonts.figurine],
       },
       fontSize: typeScale,
-      borderRadius: {
-        xl: '0.875rem',
-        '2xl': '1.25rem',
-      },
       keyframes: {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },

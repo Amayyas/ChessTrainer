@@ -10,7 +10,6 @@ import {
   fonts,
   newsprint,
   newsreaderMetrics,
-  palette,
 } from '@/lib/design-tokens'
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
@@ -38,13 +37,6 @@ function contrast(first: string, second: string): number {
  * rather than the change reaching a player's screen.
  */
 describe('design tokens', () => {
-  it('keeps the four colours of the visual identity', () => {
-    expect(palette.ebene.DEFAULT).toBe('#1A1A2E')
-    expect(palette.or.DEFAULT).toBe('#C9A84C')
-    expect(palette.ivoire.DEFAULT).toBe('#F5F0E8')
-    expect(palette.ardoise).toBe('#4A4A5A')
-  })
-
   it('derives the board colours exactly as the components did', () => {
     expect(board.lightSquare).toBe('#EDE6D8')
     expect(board.darkSquare).toBe('#4A4A5A')
@@ -65,10 +57,23 @@ describe('design tokens', () => {
     )
   })
 
-  it('keeps danger out of the identity palette', () => {
-    // It means "wrong", not "brand", so a rebrand must not sweep it up.
+  it('keeps danger out of the newsprint palette', () => {
+    // It means "wrong" on the board, not a colour of the page, so a change of
+    // palette must not sweep it up.
     expect(danger).toBe('#DC2626')
-    expect(Object.values(palette)).not.toContain(danger)
+    const colours = Object.values(newsprint).flatMap((value) =>
+      typeof value === 'string' ? [value] : Object.values(value),
+    )
+    expect(colours).not.toContain(danger)
+  })
+
+  it('gives the browser the paper as its theme colour', () => {
+    // The colour a phone paints its toolbar in. It was the previous identity's
+    // ebony, a dark bar over a page of paper; it is read back from index.html
+    // so it cannot drift from the palette again.
+    const html = readFileSync(resolve('index.html'), 'utf8')
+    const themeColor = /<meta name="theme-color" content="([^"]+)"/.exec(html)?.[1]
+    expect(themeColor?.toUpperCase()).toBe(newsprint.paper.DEFAULT.toUpperCase())
   })
 
   it('measures contrast the way WCAG does', () => {
