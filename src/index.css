@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The chess figurines and the grade signs (★, ✓) the notation sets. Newsreader
+   has none of them, and a system font draws them differently on every
+   platform, so they come from Noto Sans Symbols 2 (OFL 1.1, see
+   assets/fonts/OFL.txt), cut down to the fourteen characters below: 3,096
+   bytes, against 382 KB for the package's symbols subset. The unicode-range
+   keeps a page that sets no figurine from fetching it. Cut with:
+
+     pyftsubset noto-sans-symbols-2-symbols-400-normal.woff2 \
+       --unicodes=U+2605,U+2654-265F,U+2713 --flavor=woff2 \
+       --layout-features='' --no-hinting --desubroutinize \
+       --name-IDs=0,1,2,3,4,5,6,13,14 --output-file=figurines.woff2
+
+   from @fontsource/noto-sans-symbols-2 5.3.0. */
+@font-face {
+  font-family: 'Figurines';
+  src: url('./assets/fonts/figurines.woff2') format('woff2');
+  font-display: swap;
+  unicode-range: U+2605, U+2654-265F, U+2713;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

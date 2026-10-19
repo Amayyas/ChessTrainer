@@ -251,6 +251,11 @@ function serifStack(): string[] {
 
 export const fonts = {
   serif: /* @__PURE__ */ serifStack(),
+  /**
+   * The chess figurines and the grade signs, from the subset declared in
+   * src/index.css; the system symbol fonts after it only if that file fails.
+   */
+  figurine: ['"Figurines"', '"Segoe UI Symbol"', '"Apple Symbols"', 'serif'],
 } as const
 
 /**

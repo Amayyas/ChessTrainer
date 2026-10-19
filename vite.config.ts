@@ -188,6 +188,11 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       // matches them by debug id instead. Off entirely without a token, since a
       // map that is generated and never deleted is a map that gets deployed.
       sourcemap: authToken ? ('hidden' as const) : false,
+      // Vite inlines any asset under 4 KB as a data: URI, and the figurine
+      // subset weighs 3 KB. The Content-Security-Policy allows fonts from 'self'
+      // only, so an inlined font is a blocked one. Fonts are always emitted as
+      // files; everything else keeps the default.
+      assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
     },
     server: {
       port: 5173,

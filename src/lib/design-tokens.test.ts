@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
@@ -126,6 +126,19 @@ describe('design tokens', () => {
       ),
     )
     expect([...declared]).toEqual([fonts.serif[0]])
+  })
+
+  it('points the figurine family at a face that exists', () => {
+    // The figurine face is declared by hand in src/index.css, over a file in
+    // src/assets/fonts. A family renamed on one side, or a file moved, fails
+    // nowhere else: the figurines quietly fall back to whatever symbol font
+    // the system has.
+    const css = readFileSync(resolve('src/index.css'), 'utf8')
+    const face = /@font-face\s*{[^}]*font-family:\s*'([^']+)'[^}]*src:\s*url\('([^']+)'\)/.exec(css)
+    expect(face, 'an @font-face in src/index.css').not.toBeNull()
+    const [, family, url] = face!
+    expect(`"${family}"`).toBe(fonts.figurine[0])
+    expect(existsSync(resolve('src', url!)), url).toBe(true)
   })
 
   it('reshapes a regular and a bold face for every fallback family', () => {

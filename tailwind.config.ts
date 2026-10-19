@@ -42,7 +42,12 @@ export default {
       // the document, so pointing it at the serif sets the whole interface,
       // inputs and buttons included; `display` is what the headings were written
       // against. Both go once the components ask for `font-serif` themselves.
-      fontFamily: { serif: [...fonts.serif], display: [...fonts.serif], sans: [...fonts.serif] },
+      fontFamily: {
+        serif: [...fonts.serif],
+        display: [...fonts.serif],
+        sans: [...fonts.serif],
+        figurine: [...fonts.figurine],
+      },
       fontSize: typeScale,
       borderRadius: {
         xl: '0.875rem',
