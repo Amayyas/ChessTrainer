@@ -12,62 +12,66 @@ export interface Badge {
 /**
  * Unlockable badges. The first four are the core set; the rest spread the
  * collection across the four game modes.
+ *
+ * Each is marked with a sign from the figurine face — a piece, ★ or ✓ — as
+ * every pictogram in the interface is: a mode's badge carries that mode's
+ * figurine. They were emoji, drawn in each platform's own colours and style.
  */
 export const BADGES: readonly Badge[] = [
   {
     id: 'first-mate',
     label: 'Premier mat',
     description: "Gagner une partie par échec et mat contre l'IA.",
-    glyph: '♔',
+    glyph: '♚',
     isEarned: (stats) => stats.checkmatesDelivered >= 1,
   },
   {
     id: 'streak-7',
     label: 'Série de 7 jours',
     description: 'Résoudre des puzzles sept jours de suite.',
-    glyph: '🔥',
+    glyph: '✓',
     isEarned: (stats) => stats.bestPuzzleStreak >= 7,
   },
   {
     id: 'puzzles-100',
     label: '100 puzzles',
     description: 'Résoudre cent puzzles tactiques.',
-    glyph: '🧩',
+    glyph: '♝',
     isEarned: (stats) => stats.puzzlesSolved >= 100,
   },
   {
     id: 'perfect-score',
     label: 'Score parfait',
     description: 'Résoudre un puzzle sans indice ni erreur.',
-    glyph: '⭐',
+    glyph: '★',
     isEarned: (stats) => stats.flawlessPuzzles >= 1,
   },
   {
     id: 'first-win',
     label: 'Première victoire',
     description: "Battre l'IA pour la première fois.",
-    glyph: '🏆',
+    glyph: '♔',
     isEarned: (stats) => stats.gamesWon >= 1,
   },
   {
     id: 'veteran',
     label: 'Vétéran',
     description: "Disputer vingt-cinq parties contre l'IA.",
-    glyph: '⚔',
+    glyph: '♜',
     isEarned: (stats) => stats.gamesPlayed >= 25,
   },
   {
     id: 'hunter',
     label: 'Chasseur',
     description: 'Capturer cinquante pièces à la Chasse.',
-    glyph: '🎯',
+    glyph: '♟',
     isEarned: (stats) => stats.huntCaptures >= 50,
   },
   {
     id: 'precision',
     label: 'Précision',
     description: 'Tenir 80 % de précision sur au moins trois parties analysées.',
-    glyph: '📐',
+    glyph: '♞',
     isEarned: (stats) => stats.battleAccuracySamples >= 3 && (stats.battleAccuracy ?? 0) >= 80,
   },
 ]
