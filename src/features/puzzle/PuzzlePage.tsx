@@ -19,7 +19,29 @@ function formatDuration(ms: number): string {
   return `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')}`
 }
 
-/** The board and its side card — shared by the daily series and free practice. */
+const PANEL_HEAD = 'text-kicker font-semibold uppercase'
+
+/** A box score: each figure over its name, the columns ruled apart. */
+function Figures({ figures }: { figures: Array<{ label: string; value: ReactNode }> }) {
+  return (
+    <dl
+      className="grid border-y border-ink/30"
+      style={{ gridTemplateColumns: `repeat(${figures.length}, minmax(0, 1fr))` }}
+    >
+      {figures.map((figure) => (
+        <div
+          key={figure.label}
+          className="flex flex-col-reverse justify-end border-l border-ink/30 py-3 pl-3 first:border-l-0 first:pl-0"
+        >
+          <dt className="text-caption text-ink-soft">{figure.label}</dt>
+          <dd className="text-heading font-semibold tabular-nums lining-nums">{figure.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** The board and its side panel — shared by the daily series and free practice. */
 function PuzzleBoard({
   runner,
   puzzle,
@@ -32,15 +54,17 @@ function PuzzleBoard({
   const difficulty = difficultyOf(puzzle.rating)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="mx-auto w-full max-w-[560px] self-start">
-        {/* Green on a correct move, red on a wrong one. */}
+    <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+      <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
+        {/* The frame answers the move: ink for a right one, the rubric for a
+            wrong one. Said in words too, for a screen reader, which the frame
+            alone never told. */}
         <div
           className={cn(
-            'rounded-md ring-4 transition-colors duration-200',
-            runner.feedback === 'correct' && 'ring-emerald-500',
-            runner.feedback === 'wrong' && 'ring-red-500',
-            !runner.feedback && 'ring-transparent',
+            'outline outline-[3px] outline-offset-[3px]',
+            runner.feedback === 'correct' && 'outline-ink',
+            runner.feedback === 'wrong' && 'outline-rubric',
+            !runner.feedback && 'outline-transparent',
           )}
         >
           <ChessBoard
@@ -54,70 +78,64 @@ function PuzzleBoard({
             lastMove={runner.lastMove}
           />
         </div>
+        <p role="status" className="sr-only">
+          {runner.feedback === 'correct'
+            ? 'Bon coup.'
+            : runner.feedback === 'wrong'
+              ? 'Ce n’est pas le coup attendu.'
+              : ''}
+        </p>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <Box className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Tag>{themeLabel(puzzle.theme)}</Tag>
-            <Tag tone="muted">{DIFFICULTY_LABELS[difficulty]}</Tag>
-            <Tag tone="muted">{puzzle.rating} Elo</Tag>
+      <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Tag>{themeLabel(puzzle.theme)}</Tag>
+          <Tag>{DIFFICULTY_LABELS[difficulty]}</Tag>
+          <Tag>{puzzle.rating} Elo</Tag>
+        </div>
+
+        <p className="text-body italic">
+          {runner.solverColor === 'w' ? 'Les blancs jouent' : 'Les noirs jouent'} et gagnent.
+        </p>
+
+        <Figures
+          figures={[
+            { label: 'Temps', value: formatDuration(runner.elapsedMs) },
+            { label: 'Erreurs', value: runner.errors },
+            { label: 'Points', value: scorePuzzle(runner.errors, runner.hintLevel) },
+          ]}
+        />
+
+        {runner.isSolved ? (
+          <div className="flex flex-col items-start gap-3">
+            <Tag tone="ink">Résolu !</Tag>
+            {solvedActions}
           </div>
-
-          <p className="text-sm text-ardoise">
-            {runner.solverColor === 'w' ? 'Les blancs jouent' : 'Les noirs jouent'} et gagnent.
-          </p>
-
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-              <p className="font-display text-lg font-bold text-ebene">
-                {formatDuration(runner.elapsedMs)}
+        ) : (
+          <Box className="px-[22px] pb-4 pt-5">
+            <h2 className={cn(PANEL_HEAD, 'mb-2.5')}>Indices</h2>
+            {runner.hintLevel === 0 ? (
+              <p className="text-caption italic text-ink-soft">
+                Bloqué ? Chaque indice coûte {HINT_COST} points.
               </p>
-              <p className="text-ardoise">Temps</p>
-            </div>
-            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-              <p className="font-display text-lg font-bold text-ebene">{runner.errors}</p>
-              <p className="text-ardoise">Erreurs</p>
-            </div>
-            <div className="rounded-lg bg-ebene/5 px-2 py-1.5">
-              <p className="font-display text-lg font-bold text-ebene">
-                {scorePuzzle(runner.errors, runner.hintLevel)}
-              </p>
-              <p className="text-ardoise">Points</p>
-            </div>
-          </div>
-
-          {runner.isSolved ? (
-            <div className="flex flex-col gap-3">
-              <Tag tone="ink">Résolu !</Tag>
-              {solvedActions}
-            </div>
-          ) : (
-            <div>
-              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
-              {runner.hintLevel === 0 ? (
-                <p className="text-sm text-ardoise">
-                  Bloqué ? Chaque indice coûte {HINT_COST} points.
-                </p>
-              ) : (
-                <HintList hints={runner.hintMessages.slice(0, runner.hintLevel)} />
-              )}
-              <Button
-                variant="quiet"
-                size="sm"
-                className="mt-2"
-                disabled={runner.hintLevel >= 3}
-                onClick={runner.revealHint}
-              >
-                {runner.hintLevel === 0
-                  ? 'Demander un indice'
-                  : runner.hintLevel >= 3
-                    ? 'Tous les indices révélés'
-                    : `Indice suivant (−${HINT_COST} pts)`}
-              </Button>
-            </div>
-          )}
-        </Box>
+            ) : (
+              <HintList hints={runner.hintMessages.slice(0, runner.hintLevel)} />
+            )}
+            <Button
+              variant="quiet"
+              size="sm"
+              className="mt-1.5"
+              disabled={runner.hintLevel >= 3}
+              onClick={runner.revealHint}
+            >
+              {runner.hintLevel === 0
+                ? 'Demander un indice'
+                : runner.hintLevel >= 3
+                  ? 'Tous les indices révélés'
+                  : `Indice suivant (−${HINT_COST} pts)`}
+            </Button>
+          </Box>
+        )}
       </div>
     </div>
   )
@@ -139,29 +157,23 @@ function DailyView() {
       <div>
         <PageHeader title="Puzzles" subtitle="Série du jour terminée." actions={streakBadge} />
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
-          <h2 className="font-display text-xl font-bold text-ebene">Bilan de la série</h2>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-ebene/5 px-3 py-2">
-              <p className="font-display text-2xl font-bold text-ebene">{session.totalPoints}</p>
-              <p className="text-xs text-ardoise">Points</p>
-            </div>
-            <div className="rounded-xl bg-ebene/5 px-3 py-2">
-              <p className="font-display text-2xl font-bold text-ebene">
-                {solved}/{DAILY_COUNT}
-              </p>
-              <p className="text-xs text-ardoise">Résolus</p>
-            </div>
-            <div className="rounded-xl bg-ebene/5 px-3 py-2">
-              <p className="font-display text-2xl font-bold text-ebene">{progress.bestStreak}</p>
-              <p className="text-xs text-ardoise">Meilleure série</p>
-            </div>
-          </div>
+          <h2 className={PANEL_HEAD}>Bilan de la série</h2>
+          <Figures
+            figures={[
+              { label: 'Points', value: session.totalPoints },
+              { label: 'Résolus', value: `${solved}/${DAILY_COUNT}` },
+              { label: 'Meilleure série', value: progress.bestStreak },
+            ]}
+          />
 
-          <ol className="divide-y divide-ebene/10 text-sm">
+          <ol>
             {session.scores.map((score, index) => (
-              <li key={score.puzzleId} className="flex items-center justify-between py-2">
-                <span className="text-ardoise">Puzzle {index + 1}</span>
-                <span className="text-ebene">
+              <li
+                key={score.puzzleId}
+                className="flex items-baseline justify-between gap-3 border-t border-ink/30 py-2 text-caption first:border-t-0"
+              >
+                <span className="text-ink-soft">Puzzle {index + 1}</span>
+                <span className="tabular-nums lining-nums">
                   {score.points} pts · {formatDuration(score.elapsedMs)} · {score.errors} erreur
                   {score.errors > 1 ? 's' : ''}
                 </span>
@@ -212,7 +224,7 @@ function PracticeView() {
       className="flex flex-wrap gap-2"
     >
       {DIFFICULTIES.map((band) => (
-        <ToggleGroupItem key={band} value={band} className="py-1 text-center">
+        <ToggleGroupItem key={band} value={band} className="min-h-11 py-1 text-center">
           {DIFFICULTY_LABELS[band]}
         </ToggleGroupItem>
       ))}
@@ -234,7 +246,7 @@ function PracticeView() {
         />
       ) : (
         <Box className="mx-auto max-w-xl text-center">
-          <p className="text-ardoise">
+          <p className="italic text-ink-soft">
             Vous avez résolu tous les puzzles {DIFFICULTY_LABELS[session.difficulty].toLowerCase()}{' '}
             de cette session. Changez de difficulté pour continuer.
           </p>
