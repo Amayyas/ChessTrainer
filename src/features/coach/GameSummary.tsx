@@ -1,4 +1,5 @@
 import { Box, Tag } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
 import Notation from '@/components/UI/Notation'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
@@ -10,16 +11,9 @@ interface GameSummaryProps {
   statusLabel: string
 }
 
-/** One side's accuracy, as a box score sets a figure: the number over its name. */
-function AccuracyStat({ label, value }: { label: string; value: number | null }) {
-  return (
-    <div className="flex flex-col-reverse justify-end py-3 even:border-l even:border-ink/30 even:pl-4">
-      <dt className="text-caption text-ink-soft">{label}</dt>
-      <dd className="text-title font-semibold tabular-nums lining-nums">
-        {value === null ? '—' : formatPercent(value)}
-      </dd>
-    </div>
-  )
+/** One side's accuracy, or a dash while there is none. */
+function accuracy(value: number | null): string {
+  return value === null ? '—' : formatPercent(value)
 }
 
 /**
@@ -50,10 +44,14 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
         <p className="mt-1 text-body italic">{statusLabel}</p>
       </div>
 
-      <dl className="grid grid-cols-2 border-y border-ink/30">
-        <AccuracyStat label="Précision blancs" value={summary.accuracyWhite} />
-        <AccuracyStat label="Précision noirs" value={summary.accuracyBlack} />
-      </dl>
+      <BoxScore
+        columns={2}
+        size="title"
+        figures={[
+          { label: 'Précision blancs', value: accuracy(summary.accuracyWhite) },
+          { label: 'Précision noirs', value: accuracy(summary.accuracyBlack) },
+        ]}
+      />
 
       <div className="flex flex-wrap gap-x-4 gap-y-2">
         {counted.map(({ quality, count }) => {

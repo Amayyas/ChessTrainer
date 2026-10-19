@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import Alert from '@/components/UI/Alert'
+import BoxScore from '@/components/UI/BoxScore'
 import { INLINE_LINK } from '@/components/UI/link'
 import HuntBoard from '@/features/hunt/HuntBoard'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
@@ -17,40 +18,6 @@ const CHAMPIONS: ChampionType[] = ['q', 'r', 'b', 'n']
 const GLYPHS: Record<ChampionType, string> = { q: '♛', r: '♜', b: '♝', n: '♞' }
 
 const PANEL_HEAD = 'text-kicker font-semibold uppercase'
-
-/**
- * A box score: each figure over its name, the columns ruled apart. A figure
- * marked `urgent` — the last ten seconds — is set in the rubric, which marks
- * what needs attention; nothing else is, good news included.
- */
-function Figures({
-  figures,
-  className,
-}: {
-  figures: Array<{ label: string; value: string; urgent?: boolean }>
-  className?: string
-}) {
-  return (
-    <dl className={cn('grid grid-cols-2 border-y border-ink/30 sm:grid-cols-4', className)}>
-      {figures.map((figure) => (
-        <div
-          key={figure.label}
-          className="flex flex-col-reverse justify-end py-3 even:border-l even:border-ink/30 even:pl-3 sm:border-l sm:border-ink/30 sm:pl-3 sm:first:border-l-0 sm:first:pl-0"
-        >
-          <dt className="text-caption text-ink-soft">{figure.label}</dt>
-          <dd
-            className={cn(
-              'text-heading font-semibold tabular-nums lining-nums',
-              figure.urgent && 'text-rubric',
-            )}
-          >
-            {figure.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
 
 /**
  * Piece Hunt: capture as many enemies as possible in sixty
@@ -208,8 +175,8 @@ export default function HuntPage() {
       <div>
         <PageHeader title="Chasse aux Pièces" subtitle="Manche terminée." />
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
-          <Figures
-            className="sm:grid-cols-3"
+          <BoxScore
+            columns={3}
             figures={[
               { label: 'Score', value: String(game.score) },
               { label: 'Captures', value: String(game.captures) },
@@ -304,7 +271,8 @@ export default function HuntPage() {
         </div>
 
         <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
-          <Figures
+          <BoxScore
+            columns={4}
             figures={[
               { label: 'Temps', value: `${seconds} s`, urgent: seconds <= 10 },
               { label: 'Score', value: String(game.score) },

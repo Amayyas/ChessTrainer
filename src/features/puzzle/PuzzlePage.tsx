@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { ChessBoard } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
@@ -20,26 +21,6 @@ function formatDuration(ms: number): string {
 }
 
 const PANEL_HEAD = 'text-kicker font-semibold uppercase'
-
-/** A box score: each figure over its name, the columns ruled apart. */
-function Figures({ figures }: { figures: Array<{ label: string; value: ReactNode }> }) {
-  return (
-    <dl
-      className="grid border-y border-ink/30"
-      style={{ gridTemplateColumns: `repeat(${figures.length}, minmax(0, 1fr))` }}
-    >
-      {figures.map((figure) => (
-        <div
-          key={figure.label}
-          className="flex flex-col-reverse justify-end border-l border-ink/30 py-3 pl-3 first:border-l-0 first:pl-0"
-        >
-          <dt className="text-caption text-ink-soft">{figure.label}</dt>
-          <dd className="text-heading font-semibold tabular-nums lining-nums">{figure.value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
 
 /** The board and its side panel — shared by the daily series and free practice. */
 function PuzzleBoard({
@@ -98,7 +79,9 @@ function PuzzleBoard({
           {runner.solverColor === 'w' ? 'Les blancs jouent' : 'Les noirs jouent'} et gagnent.
         </p>
 
-        <Figures
+        <BoxScore
+          columns={3}
+          phoneColumns={3}
           figures={[
             { label: 'Temps', value: formatDuration(runner.elapsedMs) },
             { label: 'Erreurs', value: runner.errors },
@@ -158,7 +141,9 @@ function DailyView() {
         <PageHeader title="Puzzles" subtitle="Série du jour terminée." actions={streakBadge} />
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
           <h2 className={PANEL_HEAD}>Bilan de la série</h2>
-          <Figures
+          <BoxScore
+            columns={3}
+            phoneColumns={3}
             figures={[
               { label: 'Points', value: session.totalPoints },
               { label: 'Résolus', value: `${solved}/${DAILY_COUNT}` },

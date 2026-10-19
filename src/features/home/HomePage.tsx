@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
 import DoubleRule from '@/components/UI/DoubleRule'
 import Gauge from '@/components/UI/Gauge'
 import ModeGrid from '@/features/home/ModeGrid'
@@ -55,20 +56,7 @@ export default function HomePage() {
           <LevelBar progress={progress} />
           <p className="mt-2 text-caption italic text-ink-soft">{xp} XP au total</p>
 
-          {/* The figures as a box score: ruled under, each number over its name. */}
-          <dl className="mt-9 grid grid-cols-2 border-t border-ink sm:grid-cols-4">
-            {figures.map((figure) => (
-              <div
-                key={figure.label}
-                className="flex flex-col-reverse justify-end border-b border-ink/30 py-4 even:pl-5 sm:border-b-0 sm:border-l sm:px-5 sm:first:border-l-0 sm:first:pl-0"
-              >
-                <dt className="text-caption text-ink-soft">{figure.label}</dt>
-                <dd className="text-title font-semibold tabular-nums lining-nums">
-                  {figure.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <BoxScore figures={figures} columns={4} size="title" rule="ink" className="mt-9" />
         </section>
 
         <div className="flex flex-col gap-10 lg:border-l lg:border-ink/30 lg:pl-11">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, PageHeader, Tag } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
 import Input from '@/components/UI/Input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
@@ -221,21 +222,7 @@ export default function ProfilePage() {
             <LevelBar progress={progress} />
             <p className="mt-2 text-caption italic text-ink-soft">{xp} XP au total</p>
 
-            {/* The figures as a box score, three to a row (two on a phone),
-                each number over its name. */}
-            <dl className="mt-8 grid grid-cols-2 border-t border-ink sm:grid-cols-3">
-              {figures.map((figure) => (
-                <div
-                  key={figure.label}
-                  className="flex flex-col-reverse justify-end border-b border-ink/30 py-3.5 max-sm:even:border-l max-sm:even:pl-4 sm:[&:not(:nth-child(3n+1))]:border-l sm:[&:not(:nth-child(3n+1))]:pl-4"
-                >
-                  <dt className="text-caption text-ink-soft">{figure.label}</dt>
-                  <dd className="text-heading font-semibold tabular-nums lining-nums">
-                    {figure.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <BoxScore figures={figures} columns={3} rule="ink" className="mt-8" />
           </section>
 
           <AccuracyHistoryPanel entries={accuracyHistory} />
