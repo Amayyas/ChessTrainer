@@ -13,6 +13,16 @@ describe('StatusLine', () => {
     expect(screen.getAllByRole('status')).toHaveLength(1)
   })
 
+  it('sets an alert in the same live region rather than one of its own', () => {
+    // A live region is heard when its words change, not when it is removed, so
+    // a state that needs acting on stays in this line, set as an alert.
+    const { rerender } = render(<StatusLine>Trait aux blancs</StatusLine>)
+    const status = screen.getByRole('status')
+    rerender(<StatusLine alert>L&apos;IA ne répond plus</StatusLine>)
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveClass('bg-rubric', 'text-paper-bright')
+  })
+
   it('shows a spinner while busy and a dot once done, in the same box', () => {
     const { container, rerender } = render(<StatusLine busy>Analyse…</StatusLine>)
     const box = container.querySelector('[aria-hidden="true"]')!

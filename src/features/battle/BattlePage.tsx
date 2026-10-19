@@ -43,6 +43,7 @@ export default function BattlePage() {
     })
   }, [phase, result, game.status.reason, level.label, recordBattle])
 
+  const stalled = !battle.isThinking && battle.isEngineStalled && phase === 'playing'
   const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
   const engineLabel = playerColor === 'w' ? `IA (noirs)` : `IA (blancs)`
   const playerMs = playerColor === 'w' ? clock.whiteMs : clock.blackMs
@@ -66,13 +67,15 @@ export default function BattlePage() {
         title="Affrontement"
         subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
         actions={
-          battle.isThinking ? (
-            <StatusLine busy>L&apos;IA réfléchit…</StatusLine>
-          ) : battle.isEngineStalled && phase === 'playing' ? (
-            <Tag tone="alert">L&apos;IA ne répond plus</Tag>
-          ) : (
-            <StatusLine>{describeStatus(game.status, game.turn)}</StatusLine>
-          )
+          // One status line whatever it says, so a screen reader hears each
+          // change, the stall included.
+          <StatusLine busy={battle.isThinking} alert={stalled}>
+            {battle.isThinking
+              ? "L'IA réfléchit…"
+              : stalled
+                ? "L'IA ne répond plus"
+                : describeStatus(game.status, game.turn)}
+          </StatusLine>
         }
       />
 
