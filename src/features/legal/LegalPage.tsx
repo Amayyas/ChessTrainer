@@ -20,7 +20,10 @@ export default function LegalPage() {
           Statut : particulier, publiant à titre non professionnel
           <br />
           Contact :{' '}
-          <a className="font-semibold text-ebene underline" href="mailto:contact@chesstrainer.fr">
+          <a
+            className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
+            href="mailto:contact@chesstrainer.fr"
+          >
             contact@chesstrainer.fr
           </a>
           <br />
@@ -41,7 +44,7 @@ export default function LegalPage() {
           ChessTrainer AI est un logiciel libre, publié sous licence <strong>GNU AGPL v3</strong>.
           Son code source complet est disponible sur{' '}
           <a
-            className="font-semibold text-ebene underline"
+            className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
             href={brand.sourceUrl}
             target="_blank"
             rel="noreferrer"

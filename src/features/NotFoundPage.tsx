@@ -7,12 +7,12 @@ export default function NotFoundPage() {
     <Box className="mx-auto max-w-xl text-center">
       <span
         aria-hidden="true"
-        className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-ebene text-4xl text-or"
+        className="mx-auto mb-4 block font-figurine text-[4rem] leading-none"
       >
         ♘
       </span>
-      <h1 className="font-display text-3xl font-bold text-ebene">Page introuvable</h1>
-      <p className="mt-3 text-ardoise">Ce coup n'est pas légal. Retour à la case départ.</p>
+      <h1 className="text-title font-semibold">Page introuvable</h1>
+      <p className="mt-3 italic text-ink-soft">Ce coup n'est pas légal. Retour à la case départ.</p>
       <Button asChild className="mt-6">
         <Link to={ROUTES.home}>Retour à l'accueil</Link>
       </Button>

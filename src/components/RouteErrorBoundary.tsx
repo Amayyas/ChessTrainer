@@ -48,10 +48,8 @@ export default class RouteErrorBoundary extends Component<Props, State> {
 
     return (
       <Box className="mx-auto max-w-md text-center">
-        <h1 className="font-display text-2xl font-bold text-ebene">
-          Cette page n'a pas pu s'ouvrir
-        </h1>
-        <p className="mt-2 text-sm text-ardoise">
+        <h1 className="text-title font-semibold">Cette page n'a pas pu s'ouvrir</h1>
+        <p className="mt-2 text-caption italic text-ink-soft">
           Le chargement a échoué, souvent une simple coupure réseau. Votre progression est
           conservée.
         </p>
