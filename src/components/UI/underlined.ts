@@ -18,7 +18,7 @@ export const UNDERLINED_ROW = 'flex-wrap items-end gap-x-6 gap-y-1 border-b bord
 
 export const UNDERLINED_ITEM = cn(
   'inline-flex min-h-11 items-end px-0.5 pb-2',
-  'text-base text-ink-soft transition-colors hover:text-ink',
+  'text-body text-ink-soft transition-colors hover:text-ink',
   'decoration-rubric decoration-2 underline-offset-[6px]',
   'disabled:pointer-events-none disabled:opacity-50',
 )

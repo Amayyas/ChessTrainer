@@ -43,7 +43,7 @@ const ITEM = {
     'data-[state=on]:font-semibold data-[state=on]:text-ink data-[state=on]:underline',
   ),
   plain: cn(
-    'border border-ink/30 px-3 py-2 text-left text-sm text-ink hover:border-ink',
+    'border border-ink/30 px-3 py-2 text-left text-caption text-ink hover:border-ink',
     'data-[state=on]:border-ink data-[state=on]:bg-ink data-[state=on]:font-semibold',
     'data-[state=on]:text-paper',
   ),

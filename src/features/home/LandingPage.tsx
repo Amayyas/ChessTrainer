@@ -229,7 +229,7 @@ export default function LandingPage() {
               Après chaque partie, Stockfish rejoue vos coups et les classe du meilleur coup à la
               gaffe, avec la meilleure alternative affichée sur l’échiquier.
             </p>
-            <p className="mt-7 max-w-[28em] border-t border-ink/30 pt-5 text-[1.25rem] font-semibold leading-[1.65] sm:text-[1.4375rem]">
+            <p className="mt-7 max-w-[28em] border-t border-ink/30 pt-5 text-heading font-semibold leading-[1.65]">
               <GameText />
               <span className="whitespace-nowrap text-body font-normal italic text-ink-soft">
                 (

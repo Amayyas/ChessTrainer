@@ -31,9 +31,10 @@
   }
 
   /* The page and its ink. One family sets everything, so headings no longer
-     need a rule of their own to switch typeface. */
+     need a rule of their own to switch typeface; and text that names no size
+     is body text, not the browser's 16 px, which is not on the scale. */
   body {
-    @apply bg-paper font-serif text-ink antialiased;
+    @apply bg-paper font-serif text-body text-ink antialiased;
     font-kerning: normal;
   }
 
