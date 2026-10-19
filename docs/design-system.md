@@ -29,8 +29,11 @@ into that test before it goes into a component.
   follows the font size, so a headline gets the display cut without asking for
   it.
 - The roman is preloaded, and the fallbacks are local serifs reshaped to its
-  metrics (`fallbackFaces`), so the page does not move when it arrives. A change
-  of family means measuring new fallbacks, not just renaming them.
+  metrics (`fallbackFaces`), so the page does not move when it arrives. Their
+  scales are measured at the sizes and weights the pages set: a new size can
+  mean measuring them again, and a change of family always does.
+- Medium is the headlines' weight and nothing else's: its fallback is scaled
+  for their sizes, and would set text at body size too wide.
 - The scale: `text-kicker`, `text-caption`, `text-body`, `text-lead`,
   `text-heading`, `text-title`, `text-headline`, `text-display`, and no other
   size: the theme offers none of Tailwind's own, and text that names no size is
@@ -68,15 +71,7 @@ alone would not, the band does.
 
 ## Migration
 
-The interface is moving to these rules one pull request at a time, and what
-has not moved yet does not follow them. Until then:
-
-- the board keeps the previous identity's colours — ebony, gold and slate,
-  written out in `board` — and animates its pieces at its own speed, until it
-  moves to chessground;
-- the fallbacks are measured for the sizes the pages set today, and have no
-  italic faces, since nothing is set in italic yet: both are measured again
-  when the pages move to the type scale.
-
-Each of these goes with the pull request that rebuilds the component it lives
-in.
+The interface has moved to these rules one pull request at a time, and one
+piece has not moved yet: the board. It keeps the previous identity's colours —
+ebony, gold and slate, written out in `board` — and animates its pieces at its
+own speed until it moves to chessground, in the pull request that rebuilds it.

@@ -148,23 +148,46 @@ describe('design tokens', () => {
     expect(existsSync(resolve('src', url!)), url).toBe(true)
   })
 
-  it('reshapes a regular and a bold face for every fallback family', () => {
-    // A family with no face for a weight hands that weight to the next family
-    // in the stack, or to a synthetic bold, which sets wider and brings the
-    // reflow back for every heading. So each family covers 200 to 800, no gap.
-    const families = new Map<string, Array<[number, number]>>()
+  it('reshapes a regular, a bold and an italic face for every fallback family', () => {
+    // A family with no face for a weight or a style makes the browser take its
+    // nearest face and fake the rest — a bold drawn over the regular, a roman
+    // slanted for an italic — at widths nothing here measured, which brings the
+    // reflow back. So each family covers 200 to 800 in roman, with no gap, and
+    // in italic the weights below its bold, which are all the pages set in
+    // italic.
+    const families = new Map<string, Record<string, Array<[number, number]>>>()
     for (const face of fallbackFaces) {
       const [from, to] = face.weight.split(' ').map(Number) as [number, number]
-      families.set(face.family, [...(families.get(face.family) ?? []), [from, to]])
+      const styles = families.get(face.family) ?? {}
+      styles[face.style] = [...(styles[face.style] ?? []), [from, to]]
+      families.set(face.family, styles)
     }
-    for (const [family, ranges] of families) {
-      const sorted = [...ranges].sort((a, b) => a[0] - b[0])
-      expect(sorted[0]![0], family).toBe(200)
-      expect(sorted.at(-1)![1], family).toBe(800)
-      sorted.slice(1).forEach(([from], index) => expect(from, family).toBe(sorted[index]![1] + 1))
+    for (const [family, { normal = [], italic = [] }] of families) {
+      const roman = [...normal].sort((a, b) => a[0] - b[0])
+      expect(roman[0]?.[0], family).toBe(200)
+      expect(roman.at(-1)?.[1], family).toBe(800)
+      roman.slice(1).forEach(([from], index) => expect(from, family).toBe(roman[index]![1] + 1))
+      const bold = roman.find(([from, to]) => from <= 700 && 700 <= to)!
+      expect(italic, `${family} italic`).toEqual([[200, bold[0] - 1]])
     }
     // And the stack asks for exactly these families, after the web font.
     expect(fonts.serif.slice(1, -1)).toEqual([...families.keys()].map((family) => `"${family}"`))
+  })
+
+  it('declares each fallback face for its own style, so the italic cannot replace the roman', () => {
+    // Faces of one family and style whose weights overlap compete for the same
+    // text, and the later rule wins. An italic emitted without its style is a
+    // normal face over the regular weights, and would set every regular word
+    // in italic.
+    const taken = new Map<string, Array<[number, number]>>()
+    for (const { '@font-face': face } of fallbackFontFaces()) {
+      const slot = `${face.fontFamily} ${face.fontStyle}`
+      const [from, to] = face.fontWeight.split(' ').map(Number) as [number, number]
+      for (const [otherFrom, otherTo] of taken.get(slot) ?? []) {
+        expect(to < otherFrom || from > otherTo, `${slot} ${face.fontWeight}`).toBe(true)
+      }
+      taken.set(slot, [...(taken.get(slot) ?? []), [from, to]])
+    }
   })
 
   it("derives each fallback's overrides from its own scale", () => {

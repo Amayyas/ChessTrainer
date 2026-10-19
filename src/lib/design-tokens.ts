@@ -146,35 +146,67 @@ export const newsreaderMetrics = { ascent: 0.735, descent: 0.265, lineGap: 0 } a
  * by several. The preload in vite.config.ts makes the swap itself rare; these
  * cover the visits it does not.
  *
- * The widths were measured in Chromium at the sizes the interface sets today,
- * 14 to 18 px for text and 14 to 48 px for bold. Newsreader's optical-size axis
- * makes its width relative to a fixed serif drift by about ten per cent across
- * that range, so each value is the geometric mean over it, per weight range,
- * and is off by up to five per cent at either end. They are measured again when
- * the pages move to the type scale above, whose sizes differ. Georgia covers
- * macOS, iOS and Windows; Times New Roman, Liberation Serif and Tinos share one
- * set of metrics and cover Linux and ChromeOS; Noto Serif, and Droid Serif
- * before it, covers Android. There are no italic faces yet: nothing is set in
- * italic until the pages move over.
+ * The widths were measured in Chromium at every size and weight of the type
+ * scale that the pages set, once each. Newsreader's optical-size axis sets its
+ * roman narrowest at 18 px and wider below and above, so no one scale fits
+ * every size, and the faces split where the sizes do: the regular weights are
+ * measured on text, 15 to 22 px; medium, which only the headlines use, on the
+ * headlines, 32 to 64 px; the bold on the 13 px capitals of labels and buttons
+ * and on 15 to 64 px semibold and bold. Each value is the geometric mean over
+ * its sizes, and is off by up to five per cent at the ends of the text, three
+ * on the headlines and eight on bold text. The bold capitals stray further:
+ * Newsreader's set twelve per cent wider than the scaled Georgia's (nineteen
+ * against Noto Serif), enough for a row of buttons to wrap onto one line fewer
+ * in the fallback. The italic has no optical-size axis, so its scale holds at
+ * every size, and it has faces of its own because a slanted roman would set
+ * wider than Newsreader's italic.
+ *
+ * Georgia covers macOS, iOS and Windows; Times New Roman, Liberation Serif and
+ * Tinos share one set of metrics and cover Linux and ChromeOS; Noto Serif, and
+ * Droid Serif before it, covers Android.
  */
 export const fallbackFaces = [
   {
     family: 'Newsreader Fallback Georgia',
     local: ['Georgia'],
-    weight: '200 549',
-    sizeAdjust: 0.9498,
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 0.9252,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 0.9841,
   },
   {
     family: 'Newsreader Fallback Georgia',
     local: ['Georgia Bold', 'Georgia-Bold'],
+    style: 'normal',
     weight: '550 800',
-    sizeAdjust: 0.8728,
+    sizeAdjust: 0.8628,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia Italic', 'Georgia-Italic'],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.8753,
   },
   {
     family: 'Newsreader Fallback Times',
     local: ['Times New Roman', 'TimesNewRomanPSMT', 'Liberation Serif', 'LiberationSerif', 'Tinos'],
-    weight: '200 549',
-    sizeAdjust: 1.0321,
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 1.0053,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: ['Times New Roman', 'TimesNewRomanPSMT', 'Liberation Serif', 'LiberationSerif', 'Tinos'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 1.0693,
   },
   {
     family: 'Newsreader Fallback Times',
@@ -185,20 +217,50 @@ export const fallbackFaces = [
       'LiberationSerif-Bold',
       'Tinos Bold',
     ],
+    style: 'normal',
     weight: '550 800',
-    sizeAdjust: 1.044,
+    sizeAdjust: 1.0207,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: [
+      'Times New Roman Italic',
+      'TimesNewRomanPS-ItalicMT',
+      'Liberation Serif Italic',
+      'LiberationSerif-Italic',
+      'Tinos Italic',
+    ],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.9716,
   },
   {
     family: 'Newsreader Fallback Noto',
     local: ['Noto Serif', 'NotoSerif-Regular', 'Droid Serif', 'DroidSerif'],
-    weight: '200 549',
-    sizeAdjust: 0.8717,
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 0.8493,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif', 'NotoSerif-Regular', 'Droid Serif', 'DroidSerif'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 0.9033,
   },
   {
     family: 'Newsreader Fallback Noto',
     local: ['Noto Serif Bold', 'NotoSerif-Bold', 'Droid Serif Bold', 'DroidSerif-Bold'],
+    style: 'normal',
     weight: '550 800',
-    sizeAdjust: 0.8788,
+    sizeAdjust: 0.8751,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif Italic', 'NotoSerif-Italic', 'Droid Serif Italic', 'DroidSerif-Italic'],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.8432,
   },
 ] as const
 
@@ -213,6 +275,7 @@ export function fallbackFontFaces() {
     '@font-face': {
       fontFamily: `'${face.family}'`,
       src: face.local.map((name) => `local('${name}')`).join(', '),
+      fontStyle: face.style,
       fontWeight: face.weight,
       sizeAdjust: percent(face.sizeAdjust),
       ascentOverride: percent(newsreaderMetrics.ascent / face.sizeAdjust),
