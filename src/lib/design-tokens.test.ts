@@ -78,6 +78,31 @@ describe('design tokens', () => {
     expect(themeColor?.toUpperCase()).toBe(newsprint.paper.DEFAULT.toUpperCase())
   })
 
+  it('draws the favicon in the paper and the ink', () => {
+    // The tab's icon kept the previous identity, a gold knight on a rounded
+    // ebony tile, after every page had moved to paper and ink.
+    const svg = readFileSync(resolve('public/favicon.svg'), 'utf8')
+    const fills = new Set(
+      [...svg.matchAll(/fill="(#[0-9A-Fa-f]{6})"/g)].map((m) => m[1]!.toUpperCase()),
+    )
+    expect(fills).toEqual(
+      new Set([newsprint.paper.DEFAULT.toUpperCase(), newsprint.ink.DEFAULT.toUpperCase()]),
+    )
+    expect(svg).not.toMatch(/\brx=/)
+  })
+
+  it('renders the social image at the size the page declares for it', () => {
+    // scripts/render-social-image.mjs draws it; the og:image dimensions in
+    // index.html have to describe the file that is there.
+    const html = readFileSync(resolve('index.html'), 'utf8')
+    const declared = ['width', 'height'].map((side) =>
+      Number(new RegExp(`og:image:${side}" content="(\\d+)"`).exec(html)?.[1]),
+    )
+    // A PNG's header holds its width and height, as big-endian words, at 16.
+    const png = readFileSync(resolve('public/og-image.png'))
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual(declared)
+  })
+
   it('measures contrast the way WCAG does', () => {
     // The control for the test below: a formula that inflated every ratio would
     // pass it. Black on white is 21:1 by definition, and the one pair the faint

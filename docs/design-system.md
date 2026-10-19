@@ -55,6 +55,10 @@ into that test before it goes into a component.
 
 - No icon library. Chess figurines are the pictograms; actions are named in
   words.
+- The mark is the figurine knight, ink on paper: the favicon draws it from the
+  figurine face's own outline, and the social image, which
+  `scripts/render-social-image.mjs` renders from the tokens, sets the
+  masthead around the name.
 - Moves are written in figurine notation. Grades use the chess annotation signs
   (`!`, `?!`, `?`, `??`), ★ for the best move, and ✓✓ and ✓ for very good and
   good moves.
