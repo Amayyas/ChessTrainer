@@ -27,11 +27,11 @@ export default function AuthLayout({
   if (!isSupabaseConfigured) {
     return (
       <Box className="mx-auto max-w-md text-center">
-        <span aria-hidden="true" className="text-4xl text-or">
+        <span aria-hidden="true" className="font-figurine text-[2.5rem] leading-none">
           ♜
         </span>
-        <h1 className="mt-3 font-display text-2xl font-bold text-ebene">Comptes indisponibles</h1>
-        <p className="mt-2 text-sm text-ardoise">
+        <h1 className="mt-3 text-title font-semibold">Comptes indisponibles</h1>
+        <p className="mt-2 text-caption italic text-ink-soft">
           Aucun serveur n'est configuré sur cette installation. Tous les modes restent jouables en
           invité ; seul le classement mondial demande un compte.
         </p>
@@ -45,12 +45,12 @@ export default function AuthLayout({
   return (
     <Box className="mx-auto flex max-w-md flex-col gap-5">
       <div className="text-center">
-        <h1 className="font-display text-2xl font-bold text-ebene">{title}</h1>
-        <p className="mt-1 text-sm text-ardoise">{subtitle}</p>
+        <h1 className="text-title font-semibold">{title}</h1>
+        <p className="mt-1 text-caption italic text-ink-soft">{subtitle}</p>
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
           {error}
         </p>
       )}
@@ -59,10 +59,10 @@ export default function AuthLayout({
 
       {showGoogle && (
         <>
-          <div className="flex items-center gap-3 text-xs text-ardoise">
-            <span className="h-px flex-1 bg-ebene/10" />
+          <div className="flex items-center gap-3 text-caption italic text-ink-soft">
+            <span className="h-px flex-1 bg-ink/30" />
             ou
-            <span className="h-px flex-1 bg-ebene/10" />
+            <span className="h-px flex-1 bg-ink/30" />
           </div>
 
           <Button variant="secondary" fullWidth onClick={() => void signInWithGoogle()}>
@@ -71,7 +71,7 @@ export default function AuthLayout({
         </>
       )}
 
-      <p className="text-center text-sm text-ardoise">{footer}</p>
+      <p className="text-center text-caption">{footer}</p>
     </Box>
   )
 }

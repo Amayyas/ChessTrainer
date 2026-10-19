@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/UI'
+import Input from '@/components/UI/Input'
 import AuthLayout from '@/features/auth/AuthLayout'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -33,27 +34,29 @@ export default function ForgotPasswordPage() {
       subtitle="Nous vous envoyons un lien pour en choisir un nouveau."
       showGoogle={false}
       footer={
-        <Link to={ROUTES.login} className="font-semibold text-ebene underline">
+        <Link
+          to={ROUTES.login}
+          className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
+        >
           Retour à la connexion
         </Link>
       }
     >
       {isSent ? (
-        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <p role="status" className="border-y border-ink py-3 text-caption">
           Si un compte existe avec cette adresse, un lien vient d'être envoyé. Pensez à regarder vos
           spams, et gardez cette page ouverte&nbsp;: le lien s'ouvre dans le même navigateur.
         </p>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-ardoise">Email</span>
-            <input
+          <label className="block">
+            <span className="mb-1.5 block text-caption font-semibold">Email</span>
+            <Input
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-lg border border-ebene/20 px-3 py-2"
             />
           </label>
           <Button type="submit" fullWidth isLoading={isSubmitting}>

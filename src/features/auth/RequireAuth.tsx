@@ -42,8 +42,8 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   if (!isSupabaseConfigured) {
     return (
       <Box className="mx-auto max-w-md text-center">
-        <h1 className="font-display text-2xl font-bold text-ebene">Classement indisponible</h1>
-        <p className="mt-2 text-sm text-ardoise">
+        <h1 className="text-title font-semibold">Classement indisponible</h1>
+        <p className="mt-2 text-caption italic text-ink-soft">
           Le classement mondial a besoin d'un serveur, qui n'est pas configuré ici. Vos scores
           restent enregistrés localement dans le mode Chasse.
         </p>

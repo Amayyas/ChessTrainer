@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/UI'
+import Input from '@/components/UI/Input'
 import AuthLayout from '@/features/auth/AuthLayout'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -50,16 +51,22 @@ export default function ResetPasswordPage() {
       subtitle="Choisissez un mot de passe, vous serez connecté aussitôt."
       showGoogle={false}
       footer={
-        <Link to={ROUTES.login} className="font-semibold text-ebene underline">
+        <Link
+          to={ROUTES.login}
+          className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
+        >
           Retour à la connexion
         </Link>
       }
     >
       {isReady && !isRecovering ? (
-        <p role="alert" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
           Ce lien n'est plus valide. Les liens de récupération expirent au bout d'une heure et ne
           servent qu'une fois&nbsp;:{' '}
-          <Link to={ROUTES.forgotPassword} className="font-semibold underline">
+          <Link
+            to={ROUTES.forgotPassword}
+            className="font-semibold underline underline-offset-4 transition-colors hover:text-rubric"
+          >
             demandez-en un nouveau
           </Link>
           .
@@ -67,32 +74,30 @@ export default function ResetPasswordPage() {
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3">
           {localError && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="bg-rubric px-3 py-2 text-caption text-paper-bright">
               {localError}
             </p>
           )}
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-ardoise">Nouveau mot de passe</span>
-            <input
+          <label className="block">
+            <span className="mb-1.5 block text-caption font-semibold">Nouveau mot de passe</span>
+            <Input
               type="password"
               required
               minLength={MIN_LENGTH}
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-ebene/20 px-3 py-2"
             />
           </label>
-          <label className="text-sm">
-            <span className="mb-1 block font-medium text-ardoise">Confirmation</span>
-            <input
+          <label className="block">
+            <span className="mb-1.5 block text-caption font-semibold">Confirmation</span>
+            <Input
               type="password"
               required
               minLength={MIN_LENGTH}
               autoComplete="new-password"
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
-              className="w-full rounded-lg border border-ebene/20 px-3 py-2"
             />
           </label>
           <Button type="submit" fullWidth isLoading={isSubmitting} disabled={!isReady}>
