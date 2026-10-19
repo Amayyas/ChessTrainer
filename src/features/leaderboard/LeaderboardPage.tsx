@@ -120,7 +120,10 @@ export default function LeaderboardPage() {
                   <span className="w-8 shrink-0 text-right text-heading font-bold tabular-nums lining-nums">
                     {index + 1}.
                   </span>
-                  <span aria-hidden="true" className="w-7 text-center font-figurine text-xl">
+                  <span
+                    aria-hidden="true"
+                    className="w-7 text-center font-figurine text-[1.25rem] leading-7"
+                  >
                     {AVATAR_GLYPHS[row.avatarPiece as AvatarPiece] ?? '♟'}
                   </span>
                   <span className="min-w-0 flex-1">

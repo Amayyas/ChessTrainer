@@ -261,7 +261,7 @@ export default function ProfilePage() {
                 >
                   <span
                     aria-hidden="true"
-                    className="w-7 shrink-0 text-center font-figurine text-2xl leading-none"
+                    className="w-7 shrink-0 text-center font-figurine text-[1.5rem] leading-none"
                   >
                     {badge.glyph}
                   </span>

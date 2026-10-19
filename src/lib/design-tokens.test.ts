@@ -10,7 +10,9 @@ import {
   fonts,
   newsprint,
   newsreaderMetrics,
+  typeScale,
 } from '@/lib/design-tokens'
+import tailwindConfig from '../../tailwind.config'
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
 function luminance(hex: string): number {
@@ -174,6 +176,15 @@ describe('design tokens', () => {
       expect(fraction(face.ascentOverride) * scale).toBeCloseTo(newsreaderMetrics.ascent, 4)
       expect(fraction(face.descentOverride) * scale).toBeCloseTo(newsreaderMetrics.descent, 4)
     }
+  })
+
+  it('offers the type scale and no other size', () => {
+    // Tailwind's own sizes fail nothing when used: the tabs and the toggles set
+    // their text at its 16 and 14 px until the pages were measured. The scale
+    // replaces them in the theme instead of joining them, so they are not there
+    // to be taken.
+    expect(tailwindConfig.theme.fontSize).toBe(typeScale)
+    expect(tailwindConfig.theme.extend).not.toHaveProperty('fontSize')
   })
 
   it('keeps the name and the mark in one place', () => {

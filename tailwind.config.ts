@@ -24,6 +24,11 @@ export default {
   // colour of a wrong move, left on the undo button.
   future: { hoverOnlyWhenSupported: true },
   theme: {
+    // The type scale replaces Tailwind's sizes rather than joining them: with
+    // `text-sm` and `text-base` on offer, the tabs and the toggles took them and
+    // set text off the scale without anything failing. Now such a class sets
+    // nothing, and the text keeps the body size it inherits.
+    fontSize: typeScale,
     extend: {
       colors: {
         // `bg-paper`, `text-ink-soft`, `text-rubric`: the newsprint palette.
@@ -37,7 +42,6 @@ export default {
         sans: [...fonts.serif],
         figurine: [...fonts.figurine],
       },
-      fontSize: typeScale,
       keyframes: {
         'spin-slow': {
           to: { transform: 'rotate(360deg)' },

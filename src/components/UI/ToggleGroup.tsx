@@ -48,7 +48,7 @@ const ITEM = {
     'data-[state=on]:text-paper',
   ),
   tiles: cn(
-    'flex h-11 w-11 items-center justify-center border border-ink/30 font-figurine text-xl text-ink',
+    'flex h-11 w-11 items-center justify-center border border-ink/30 font-figurine text-[1.25rem] leading-7 text-ink',
     'hover:border-ink data-[state=on]:border-ink data-[state=on]:bg-ink',
     'data-[state=on]:text-paper',
   ),

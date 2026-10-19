@@ -109,7 +109,10 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
         {COLOR_CHOICES.map((choice) => (
           <ToggleGroupItem key={choice.value} value={choice.value}>
             {choice.glyph && (
-              <span aria-hidden="true" className="mr-1.5 font-figurine text-lg leading-none">
+              <span
+                aria-hidden="true"
+                className="mr-1.5 font-figurine text-[1.125rem] leading-none"
+              >
                 {choice.glyph}
               </span>
             )}

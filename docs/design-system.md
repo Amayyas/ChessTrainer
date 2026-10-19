@@ -32,7 +32,9 @@ into that test before it goes into a component.
   metrics (`fallbackFaces`), so the page does not move when it arrives. A change
   of family means measuring new fallbacks, not just renaming them.
 - The scale: `text-kicker`, `text-caption`, `text-body`, `text-lead`,
-  `text-heading`, `text-title`, `text-headline`, `text-display`.
+  `text-heading`, `text-title`, `text-headline`, `text-display`, and no other
+  size: the theme offers none of Tailwind's own, and text that names no size is
+  body text.
 - Kickers are capitals with tracking: the served font has no true small caps.
 - Figures that line up in a table use `tabular-nums lining-nums`.
 
