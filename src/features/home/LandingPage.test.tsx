@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import LandingPage from '@/features/home/LandingPage'
 import { MODES } from '@/features/home/modes'
+import { COACH_PROPOSAL, SAMPLE_GAME, moveNumber } from '@/features/home/sampleGame'
 import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
 import { FIGURINES } from '@/utils/notation'
 
@@ -106,6 +107,19 @@ describe('LandingPage', () => {
     for (const quality of ['excellent', 'mistake'] as const) {
       expect(game).toHaveTextContent(MOVE_QUALITY[quality].label.toLowerCase())
     }
+  })
+
+  it('captions its diagram from the sample game', () => {
+    // The caption quoted "5…♞xd5" and "6.♞xf7" by hand, beside a game held as
+    // data: a different game would have kept the old caption.
+    const { container } = renderLanding()
+    const caption = container.querySelector('figcaption')!
+    const last = SAMPLE_GAME.length - 1
+    expect(caption).toHaveTextContent(last % 2 === 0 ? 'Les Noirs jouent' : 'Les Blancs jouent')
+    expect(caption).toHaveTextContent(`noté ${moveNumber(last)}`)
+    expect(caption).toHaveTextContent(MOVE_QUALITY[SAMPLE_GAME[last]!.grade!].label.toLowerCase())
+    expect(caption).toHaveTextContent(`propose ${moveNumber(last + 1)}`)
+    expect(caption).toHaveTextContent(COACH_PROPOSAL.san.slice(1))
   })
 
   it('counts modes and tiers nowhere in its static prose', () => {

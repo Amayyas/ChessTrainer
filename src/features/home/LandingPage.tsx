@@ -9,9 +9,10 @@ import { INLINE_LINK_PLAIN } from '@/components/UI/link'
 import Notation from '@/components/UI/Notation'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
+import { COACH_PROPOSAL, DIAGRAM, SAMPLE_GAME, moveNumber } from '@/features/home/sampleGame'
 import { board, brand } from '@/lib/design-tokens'
 import { ROUTES } from '@/routes'
-import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
+import { MOVE_QUALITY } from '@/utils/evaluation'
 
 /**
  * The public front door on '/', set as the front page of a paper.
@@ -33,28 +34,19 @@ import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 const LEVEL_FLOOR = ENGINE_LEVELS[0]!.elo
 const LEVEL_CEILING = ENGINE_LEVELS[ENGINE_LEVELS.length - 1]!.elo
 
-/**
- * The game the page prints, and the position its diagram shows: the Two
- * Knights after 4.Ng5 d5 5.exd5 Nxd5?, where the coach's arrow points at
- * 6.Nxf7, the Fried Liver. The grades are an illustration of the coach's
- * marks, set by hand. Display-only: the board never takes a move, so its move
- * callbacks are no-ops.
- */
-const GAME: ReadonlyArray<{ san: string; grade?: MoveQuality }> = [
-  { san: 'e4' },
-  { san: 'e5' },
-  { san: 'Nf3' },
-  { san: 'Nc6' },
-  { san: 'Bc4', grade: 'excellent' },
-  { san: 'Nf6' },
-  { san: 'Ng5', grade: 'excellent' },
-  { san: 'd5' },
-  { san: 'exd5' },
-  { san: 'Nxd5', grade: 'mistake' },
+const DIAGRAM_LAST_MOVE = {
+  from: DIAGRAM.lastMove.from as Square,
+  to: DIAGRAM.lastMove.to as Square,
+}
+const COACH_ARROW: [Square, Square, string] = [
+  COACH_PROPOSAL.from as Square,
+  COACH_PROPOSAL.to as Square,
+  board.arrow,
 ]
-const DIAGRAM_FEN = 'r1bqkb1r/ppp2ppp/2n5/3np1N1/2B5/8/PPPP1PPP/RNBQK2R w KQkq - 0 6'
-const DIAGRAM_LAST_MOVE = { from: 'f6' as Square, to: 'd5' as Square }
-const COACH_ARROW: [Square, Square, string] = ['g5' as Square, 'f7' as Square, board.arrow]
+/** The game's last move, the one the caption quotes, at its place in the score. */
+const LAST_PLY = SAMPLE_GAME.length - 1
+const LAST_MOVE = SAMPLE_GAME[LAST_PLY]!
+// Display-only: the diagram never takes a move, so its move callbacks are no-ops.
 const noop = () => false
 const noTargets = (): Square[] => []
 
@@ -83,9 +75,9 @@ function SectionHead({ id, title, aside }: { id: string; title: string; aside?: 
 function GameText() {
   return (
     <>
-      {GAME.map((move, index) => (
+      {SAMPLE_GAME.map((move, index) => (
         <Fragment key={index}>
-          {index % 2 === 0 && <>{index / 2 + 1}.</>}
+          {index % 2 === 0 && moveNumber(index)}
           <span className="whitespace-nowrap">
             <Notation san={move.san} />
             {move.grade && (
@@ -136,7 +128,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-[30rem]">
             <Suspense fallback={<div className="aspect-square w-full bg-paper-bright" />}>
               <ChessBoard
-                fen={DIAGRAM_FEN}
+                fen={DIAGRAM.fen}
                 turn="w"
                 interactive={false}
                 onMove={noop}
@@ -148,17 +140,23 @@ export default function LandingPage() {
             </Suspense>
           </div>
           <figcaption className="mx-auto mt-5 max-w-[30rem] text-pretty text-caption italic text-ink-soft">
-            <b className="font-semibold not-italic text-ink">Diagramme 1</b> · Les Blancs jouent. Le
-            coach a noté{' '}
+            <b className="font-semibold not-italic text-ink">Diagramme 1</b> ·{' '}
+            {(LAST_PLY + 1) % 2 === 0 ? 'Les Blancs jouent' : 'Les Noirs jouent'}. Le coach a noté{' '}
             <span className="whitespace-nowrap">
-              5…
-              <Notation san="Nxd5" />
-            </span>{' '}
-            d’un «&nbsp;
-            <GradeSign quality="mistake" />
-            <span className="sr-only">{MOVE_QUALITY.mistake.label.toLowerCase()}</span>
-            &nbsp;» et propose 6.
-            <Notation san="Nxf7" />.
+              {moveNumber(LAST_PLY)}
+              <Notation san={LAST_MOVE.san} />
+            </span>
+            {LAST_MOVE.grade && (
+              <>
+                {' '}
+                d’un «&nbsp;
+                <GradeSign quality={LAST_MOVE.grade} />
+                <span className="sr-only">{MOVE_QUALITY[LAST_MOVE.grade].label.toLowerCase()}</span>
+                &nbsp;»
+              </>
+            )}{' '}
+            et propose {moveNumber(LAST_PLY + 1)}
+            <Notation san={COACH_PROPOSAL.san} />.
           </figcaption>
         </figure>
       </section>
