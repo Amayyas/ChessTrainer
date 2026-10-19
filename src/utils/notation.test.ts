@@ -6,7 +6,6 @@ import {
   FIGURINE_RANGES,
   FIGURINES,
   FRENCH_LETTERS,
-  frenchSan,
   inFigurineFace,
   notationParts,
   type PieceLetter,
@@ -28,24 +27,22 @@ function figurineRange(): Array<[number, number]> {
 }
 
 describe('notation', () => {
-  it('draws every piece and reads it in French', () => {
+  it('draws every piece and has a French letter to read it by', () => {
     for (const letter of LETTERS) {
       expect(notationParts(`${letter}f3`), letter).toEqual([{ piece: letter }, { text: 'f3' }])
-      expect(frenchSan(`${letter}f3`), letter).toBe(`${FRENCH_LETTERS[letter]}f3`)
+      expect(FRENCH_LETTERS[letter], letter).toMatch(/^[A-Z]$/)
     }
   })
 
   it('leaves pawn moves and castling as they are written', () => {
     for (const san of ['e4', 'exd5', 'O-O', 'O-O-O+']) {
       expect(notationParts(san), san).toEqual([{ text: san }])
-      expect(frenchSan(san), san).toBe(san)
     }
   })
 
   it('finds a piece inside the move, and the one a pawn promotes to', () => {
     expect(notationParts('Nbxd7+')).toEqual([{ piece: 'N' }, { text: 'bxd7+' }])
     expect(notationParts('e8=Q#')).toEqual([{ text: 'e8=' }, { piece: 'Q' }, { text: '#' }])
-    expect(frenchSan('e8=Q#')).toBe('e8=D#')
   })
 
   it('reads every piece with a letter of its own', () => {

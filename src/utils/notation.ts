@@ -78,10 +78,3 @@ export function notationParts(san: string): NotationPart[] {
   if (text) parts.push({ text })
   return parts
 }
-
-/** The move in French letters, for the places that only take text: `Cf3`, `e8=D#`. */
-export function frenchSan(san: string): string {
-  return notationParts(san)
-    .map((part) => ('piece' in part ? FRENCH_LETTERS[part.piece] : part.text))
-    .join('')
-}
