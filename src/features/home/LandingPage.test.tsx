@@ -5,6 +5,7 @@ import { ENGINE_LEVELS } from '@/engine/levels'
 import LandingPage from '@/features/home/LandingPage'
 import { MODES } from '@/features/home/modes'
 import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
+import { FIGURINES } from '@/utils/notation'
 
 function renderLanding() {
   return render(
@@ -80,7 +81,7 @@ describe('LandingPage', () => {
     )
   })
 
-  it('styles those two with the button, on a section that inverts the palette', () => {
+  it('styles those two with the button', () => {
     renderLanding()
 
     const primary = screen.getByRole('link', { name: 'Essayer le coach' })
@@ -92,12 +93,19 @@ describe('LandingPage', () => {
     expect(primary).toHaveAttribute('data-variant', 'primary')
     expect(primary.closest('button')).toBeNull()
     expect(secondary).toHaveAttribute('data-variant', 'secondary')
+  })
 
-    // And the mechanism that keeps both legible on the ebony band. Without
-    // theme-inverse the buttons draw ink on ebony: still there, and nobody can
-    // see them.
-    expect(primary.closest('.theme-inverse')).not.toBeNull()
-    expect(secondary.closest('.theme-inverse')).not.toBeNull()
+  it('prints its sample game in figurines, with the grades said in words', () => {
+    renderLanding()
+
+    const game = screen.getByText(/^1\./, { selector: 'p' })
+    // No English piece letter reaches the page, and the knight is drawn.
+    expect(game).not.toHaveTextContent(/[KQRBN][a-h1-8x]/)
+    expect(game).toHaveTextContent(FIGURINES.N)
+    // The signs are hidden from assistive tech, so each grade is also written.
+    for (const quality of ['excellent', 'mistake'] as const) {
+      expect(game).toHaveTextContent(MOVE_QUALITY[quality].label.toLowerCase())
+    }
   })
 
   it('counts modes and tiers nowhere in its static prose', () => {
