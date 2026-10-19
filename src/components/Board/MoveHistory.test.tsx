@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import MoveHistory from '@/components/Board/MoveHistory'
 import { MOVE_QUALITY } from '@/utils/evaluation'
+import { FIGURINES, FRENCH_LETTERS } from '@/utils/notation'
 
 /**
  * The move list is where the coach's grades actually reach the player: the
@@ -21,7 +22,23 @@ describe('MoveHistory', () => {
     expect(screen.getByText('1.')).toBeInTheDocument()
     expect(screen.getByText('2.')).toBeInTheDocument()
     // A lone white move ends the list rather than pairing with nothing.
-    expect(screen.getByText('Nf3')).toBeInTheDocument()
+    const [, second] = screen.getAllByRole('listitem')
+    expect(second).toHaveTextContent(`2.${FIGURINES.N}${FRENCH_LETTERS.N}f3`)
+  })
+
+  it('writes the moves in figurines, never in English letters', () => {
+    render(<MoveHistory moves={['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']} />)
+
+    expect(screen.getByTestId('move-history')).not.toHaveTextContent(/[NB][a-h]/)
+    expect(screen.getAllByText(FIGURINES.N)).toHaveLength(2)
+    expect(screen.getByText(FIGURINES.B)).toBeInTheDocument()
+  })
+
+  it('marks the move being shown as the current step', () => {
+    render(<MoveHistory moves={['e4', 'e5', 'Nf3']} activeIndex={1} />)
+
+    const current = screen.getByTestId('move-history').querySelector('[aria-current="step"]')
+    expect(current).toHaveTextContent('e5')
   })
 
   it('marks each move with the symbol its tier carries', () => {

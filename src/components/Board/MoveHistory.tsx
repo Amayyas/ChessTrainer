@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import Notation from '@/components/UI/Notation'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 import { cn } from '@/utils/cn'
 
@@ -26,31 +27,38 @@ function toPairs(moves: string[]): MovePair[] {
   return pairs
 }
 
-/** A single move cell: notation plus optional coach quality symbol. */
+/**
+ * A single move: the figurine notation, then the coach's grade if it has one.
+ * The move being shown is set off as a printed score marks it, a tint over a
+ * rule in the rubric, and is the list's current step for assistive tech.
+ */
 function MoveCell({
   san,
   quality,
-  isLast,
+  isCurrent,
 }: {
   san: string
   quality: MoveQuality | null | undefined
-  isLast: boolean
+  isCurrent: boolean
 }) {
   const meta = quality ? MOVE_QUALITY[quality] : null
   return (
     <span
+      aria-current={isCurrent ? 'step' : undefined}
       className={cn(
-        'inline-flex min-w-14 items-center gap-0.5 rounded px-1.5 py-0.5 font-medium text-ebene',
-        isLast && 'bg-or/30',
+        'justify-self-start whitespace-nowrap px-2 pb-1 pt-1.5',
+        isCurrent && 'border-b-2 border-rubric bg-rubric/10 pb-0.5',
       )}
     >
-      {san}
-      {meta?.symbol && <span className={cn('font-bold', meta.color)}>{meta.symbol}</span>}
+      <Notation san={san} />
+      {meta?.symbol && (
+        <span className={cn('ml-[0.28em] font-bold', meta.color)}>{meta.symbol}</span>
+      )}
     </span>
   )
 }
 
-/** Move list in algebraic notation, paired by move number. */
+/** The game as a printed score: numbered rows, White's move then Black's. */
 export default function MoveHistory({
   moves,
   qualities,
@@ -69,7 +77,7 @@ export default function MoveHistory({
 
   if (moves.length === 0) {
     return (
-      <p className={cn('py-6 text-center text-sm text-ardoise', className)}>
+      <p className={cn('py-6 text-center text-caption text-ink-soft', className)}>
         Aucun coup joué pour l'instant.
       </p>
     )
@@ -79,26 +87,24 @@ export default function MoveHistory({
     <ol
       ref={scrollRef}
       data-testid="move-history"
-      className={cn('max-h-72 overflow-y-auto pr-1', className)}
+      className={cn('max-h-72 overflow-y-auto pr-1 text-body leading-[1.3] text-ink', className)}
     >
       {pairs.map((pair) => {
         const whiteIndex = (pair.number - 1) * 2
         const blackIndex = whiteIndex + 1
         return (
-          <li key={pair.number} className="flex items-center gap-2 py-0.5 text-sm">
-            <span className="w-7 shrink-0 text-right text-xs font-medium text-ardoise">
-              {pair.number}.
-            </span>
+          <li key={pair.number} className="grid grid-cols-[2.25rem_1fr_1fr] items-baseline">
+            <span className="font-semibold tabular-nums lining-nums">{pair.number}.</span>
             <MoveCell
               san={pair.white}
               quality={qualities?.[whiteIndex]}
-              isLast={whiteIndex === highlightIndex}
+              isCurrent={whiteIndex === highlightIndex}
             />
             {pair.black && (
               <MoveCell
                 san={pair.black}
                 quality={qualities?.[blackIndex]}
-                isLast={blackIndex === highlightIndex}
+                isCurrent={blackIndex === highlightIndex}
               />
             )}
           </li>

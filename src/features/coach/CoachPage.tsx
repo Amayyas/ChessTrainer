@@ -4,6 +4,7 @@ import { Box, Button, PageHeader, Spinner, Tag } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
+import HintList from '@/components/HintList'
 
 /**
  * Coach mode: a playable board with live Stockfish analysis —
@@ -201,14 +202,7 @@ export default function CoachPage() {
                         Bloqué ? Révélez un indice à la fois, sans dévoiler tout le coup.
                       </p>
                     ) : (
-                      <ul className="space-y-1 text-sm text-ebene">
-                        {coach.hintMessages.slice(0, coach.hintLevel).map((message, index) => (
-                          <li key={index} className="flex gap-2">
-                            <span className="font-semibold text-or">{index + 1}.</span>
-                            {message}
-                          </li>
-                        ))}
-                      </ul>
+                      <HintList hints={coach.hintMessages.slice(0, coach.hintLevel)} />
                     )}
                     <Button
                       variant="quiet"

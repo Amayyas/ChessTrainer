@@ -1,4 +1,5 @@
 import { Box, Tag } from '@/components/UI'
+import Notation from '@/components/UI/Notation'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 
@@ -67,7 +68,8 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
         <p className="text-sm text-ardoise">
           Meilleur coup de la partie :{' '}
           <span className="font-semibold text-ebene">
-            {summary.bestMove.san} ({summary.bestMove.color === 'w' ? 'blancs' : 'noirs'})
+            <Notation san={summary.bestMove.san} /> (
+            {summary.bestMove.color === 'w' ? 'blancs' : 'noirs'})
           </span>
         </p>
       )}

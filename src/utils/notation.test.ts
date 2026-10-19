@@ -1,0 +1,66 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import {
+  FIGURINES,
+  FRENCH_LETTERS,
+  frenchSan,
+  notationParts,
+  type PieceLetter,
+} from '@/utils/notation'
+
+const LETTERS = Object.keys(FIGURINES) as PieceLetter[]
+
+/** The code points the figurine face's unicode-range declares in src/index.css. */
+function figurineRange(): Array<[number, number]> {
+  const css = readFileSync(resolve('src/index.css'), 'utf8')
+  const face = /@font-face\s*{[^}]*font-family:\s*'Figurines'[^}]*unicode-range:\s*([^;]+);/.exec(
+    css,
+  )
+  if (!face) throw new Error('no unicode-range on the Figurines face')
+  return face[1]!.split(',').map((range) => {
+    const [from, to = from] = range.trim().replace(/^U\+/, '').split('-')
+    return [Number.parseInt(from!, 16), Number.parseInt(to!, 16)]
+  })
+}
+
+describe('notation', () => {
+  it('draws every piece and reads it in French', () => {
+    for (const letter of LETTERS) {
+      expect(notationParts(`${letter}f3`), letter).toEqual([{ piece: letter }, { text: 'f3' }])
+      expect(frenchSan(`${letter}f3`), letter).toBe(`${FRENCH_LETTERS[letter]}f3`)
+    }
+  })
+
+  it('leaves pawn moves and castling as they are written', () => {
+    for (const san of ['e4', 'exd5', 'O-O', 'O-O-O+']) {
+      expect(notationParts(san), san).toEqual([{ text: san }])
+      expect(frenchSan(san), san).toBe(san)
+    }
+  })
+
+  it('finds a piece inside the move, and the one a pawn promotes to', () => {
+    expect(notationParts('Nbxd7+')).toEqual([{ piece: 'N' }, { text: 'bxd7+' }])
+    expect(notationParts('e8=Q#')).toEqual([{ text: 'e8=' }, { piece: 'Q' }, { text: '#' }])
+    expect(frenchSan('e8=Q#')).toBe('e8=D#')
+  })
+
+  it('reads every piece with a letter of its own', () => {
+    // Two pieces sharing a letter would read the same to a screen reader.
+    expect(new Set(Object.values(FRENCH_LETTERS)).size).toBe(LETTERS.length)
+    expect(new Set(Object.values(FIGURINES)).size).toBe(LETTERS.length)
+  })
+
+  it('sets every figurine from the self-hosted face', () => {
+    // A figurine outside the face's unicode-range falls through to whatever
+    // symbol font the system has, at its own size and weight.
+    const ranges = figurineRange()
+    for (const [letter, glyph] of Object.entries(FIGURINES)) {
+      const code = glyph.codePointAt(0)!
+      expect(
+        ranges.some(([from, to]) => code >= from && code <= to),
+        `${letter} ${glyph}`,
+      ).toBe(true)
+    }
+  })
+})

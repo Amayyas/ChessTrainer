@@ -7,6 +7,7 @@ import { useChessGame } from '@/hooks/useChessGame'
 import { board } from '@/lib/design-tokens'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
+import type { Hint } from '@/components/HintList'
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pion',
@@ -208,11 +209,11 @@ export function useCoachPageState() {
     return { piece: piece ? PIECE_NAMES[piece.type] : 'pièce', from: analysis.bestMove.from, san }
   }, [analysis.bestMove, game.fen])
 
-  const hintMessages = hint
+  const hintMessages: Hint[] = hint
     ? [
         `Cherchez le meilleur coup pour votre ${hint.piece}.`,
         `Déplacez votre ${hint.piece} depuis ${hint.from}.`,
-        hint.san ? `Le meilleur coup est ${hint.san}.` : 'Analyse en cours…',
+        hint.san ? { lead: 'Le meilleur coup est', san: hint.san } : 'Analyse en cours…',
       ]
     : []
 

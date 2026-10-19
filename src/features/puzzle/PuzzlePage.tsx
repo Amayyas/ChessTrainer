@@ -10,6 +10,7 @@ import { usePracticeSession } from '@/features/puzzle/usePracticeSession'
 import { DIFFICULTIES, DIFFICULTY_LABELS, difficultyOf, themeLabel } from '@/features/puzzle/types'
 import type { Puzzle } from '@/features/puzzle/types'
 import { cn } from '@/utils/cn'
+import HintList from '@/components/HintList'
 
 /** Seconds, or m:ss once past a minute. */
 function formatDuration(ms: number): string {
@@ -99,14 +100,7 @@ function PuzzleBoard({
                   Bloqué ? Chaque indice coûte {HINT_COST} points.
                 </p>
               ) : (
-                <ul className="space-y-1 text-sm text-ebene">
-                  {runner.hintMessages.slice(0, runner.hintLevel).map((message, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="font-semibold text-or">{i + 1}.</span>
-                      {message}
-                    </li>
-                  ))}
-                </ul>
+                <HintList hints={runner.hintMessages.slice(0, runner.hintLevel)} />
               )}
               <Button
                 variant="quiet"
