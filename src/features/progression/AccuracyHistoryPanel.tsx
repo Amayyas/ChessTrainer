@@ -1,6 +1,6 @@
 import { Tag } from '@/components/UI'
 import { recentTrend, type AccuracyEntry } from '@/features/progression/accuracyHistory'
-import { formatPercent } from '@/utils/format'
+import { formatPercent, formatSignedWhole } from '@/utils/format'
 
 const OUTCOME_LABEL: Record<AccuracyEntry['outcome'], string> = {
   win: 'Victoire',
@@ -84,8 +84,7 @@ export default function AccuracyHistoryPanel({ entries }: { entries: readonly Ac
         </h2>
         {trend !== null && (
           <Tag tone={trend.delta > 0 ? 'ink' : trend.delta < 0 ? 'accent' : 'muted'}>
-            {trend.delta > 0 ? '+' : ''}
-            {trend.delta} pts sur vos 5 dernières
+            {formatSignedWhole(trend.delta)} pts sur vos 5 dernières
           </Tag>
         )}
       </div>

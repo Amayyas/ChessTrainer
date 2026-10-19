@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDecimal, formatPercent, formatSigned } from '@/utils/format'
+import { formatDecimal, formatPercent, formatSigned, formatSignedWhole } from '@/utils/format'
 
 describe('format', () => {
   it('writes a decimal comma, never a point', () => {
@@ -26,6 +26,13 @@ describe('format', () => {
     }
     expect(formatSigned(-0.25)).toBe('\u22120,3')
     expect(formatSigned(-0.05)).toBe('\u22120,1')
+  })
+
+  it('signs whole numbers the same way', () => {
+    expect(formatSignedWhole(3)).toBe('+3')
+    expect(formatSignedWhole(-3)).toBe('\u22123')
+    expect(formatSignedWhole(0)).toBe('0')
+    expect(formatSignedWhole(-0.4)).toBe('0')
   })
 
   it('leaves zero unsigned, even when a tiny negative rounds to it', () => {

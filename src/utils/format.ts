@@ -12,6 +12,8 @@ const oneDecimal = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 1,
 })
 
+const whole = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 })
+
 const wholePercent = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFractionDigits: 0 })
 
 /**
@@ -26,6 +28,13 @@ export function formatSigned(value: number): string {
   const magnitude = Math.round(Math.abs(value) * 10) / 10
   if (magnitude === 0) return oneDecimal.format(0)
   return `${value > 0 ? '+' : MINUS}${oneDecimal.format(magnitude)}`
+}
+
+/** A signed whole number: `+3`, `−3`, and `0` with no sign. */
+export function formatSignedWhole(value: number): string {
+  const magnitude = Math.round(Math.abs(value))
+  if (magnitude === 0) return whole.format(0)
+  return `${value > 0 ? '+' : MINUS}${whole.format(magnitude)}`
 }
 
 /** A value to one decimal, as given: `9,5`. Rounding is the caller's choice. */
