@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { MOVE_QUALITY } from '@/utils/evaluation'
 import {
+  FIGURINE_RANGES,
   FIGURINES,
   FRENCH_LETTERS,
   frenchSan,
+  inFigurineFace,
   notationParts,
   type PieceLetter,
 } from '@/utils/notation'
@@ -51,16 +54,27 @@ describe('notation', () => {
     expect(new Set(Object.values(FIGURINES)).size).toBe(LETTERS.length)
   })
 
+  it('knows the same characters the self-hosted face declares', () => {
+    // The face's unicode-range is written in src/index.css, the ranges the
+    // components test against are written here: the two must not drift.
+    expect(figurineRange()).toEqual(FIGURINE_RANGES.map(([from, to]) => [from, to]))
+  })
+
   it('sets every figurine from the self-hosted face', () => {
-    // A figurine outside the face's unicode-range falls through to whatever
-    // symbol font the system has, at its own size and weight.
-    const ranges = figurineRange()
+    // A figurine outside the face falls through to whatever symbol font the
+    // system has, at its own size and weight.
     for (const [letter, glyph] of Object.entries(FIGURINES)) {
-      const code = glyph.codePointAt(0)!
-      expect(
-        ranges.some(([from, to]) => code >= from && code <= to),
-        `${letter} ${glyph}`,
-      ).toBe(true)
+      expect(inFigurineFace(glyph), `${letter} ${glyph}`).toBe(true)
     }
+  })
+
+  it('draws a grade sign from the face only when the face has all of it', () => {
+    // A sign half in the face and half out would be set in two fonts at once.
+    for (const [quality, meta] of Object.entries(MOVE_QUALITY)) {
+      const inFace = [...meta.symbol].map((char) => inFigurineFace(char))
+      expect(new Set(inFace).size, `${quality} ${meta.symbol}`).toBe(1)
+    }
+    expect(inFigurineFace('★')).toBe(true)
+    expect(inFigurineFace('?!')).toBe(false)
   })
 })

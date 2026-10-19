@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import GradeSign from '@/components/UI/GradeSign'
 import Notation from '@/components/UI/Notation'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
 import { cn } from '@/utils/cn'
@@ -51,8 +52,11 @@ function MoveCell({
       )}
     >
       <Notation san={san} />
-      {meta?.symbol && (
-        <span className={cn('ml-[0.28em] font-bold', meta.color)}>{meta.symbol}</span>
+      {quality && meta && (
+        <>
+          <GradeSign quality={quality} className="ml-[0.28em]" />
+          <span className="sr-only">, {meta.label.toLowerCase()}</span>
+        </>
       )}
     </span>
   )

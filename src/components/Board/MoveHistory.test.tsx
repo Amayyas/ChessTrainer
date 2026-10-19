@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import MoveHistory from '@/components/Board/MoveHistory'
-import { MOVE_QUALITY } from '@/utils/evaluation'
+import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
 import { FIGURINES, FRENCH_LETTERS } from '@/utils/notation'
 
 /**
@@ -48,12 +48,26 @@ describe('MoveHistory', () => {
     expect(screen.getByText(MOVE_QUALITY.blunder.symbol)).toBeInTheDocument()
   })
 
-  it('colours the symbol with the token the tier declares', () => {
-    render(<MoveHistory moves={['e4']} qualities={['blunder']} />)
+  it('inks a fault in the rubric and every other grade in ink', () => {
+    // The tone is half of what tells two tiers apart at a glance, and the
+    // half no label would catch if the table and the list drifted.
+    for (const quality of MOVE_QUALITY_ORDER) {
+      const { unmount } = render(<MoveHistory moves={['e4']} qualities={[quality]} />)
+      const sign = screen.getByText(MOVE_QUALITY[quality].symbol)
+      expect(sign, quality).toHaveClass(
+        MOVE_QUALITY[quality].tone === 'rubric' ? 'text-rubric' : 'text-ink',
+      )
+      unmount()
+    }
+  })
 
-    // The colour is half of what tells two tiers apart at a glance, and it is
-    // the half no label would catch if the table and the list drifted.
-    expect(screen.getByText(MOVE_QUALITY.blunder.symbol)).toHaveClass(MOVE_QUALITY.blunder.color)
+  it('says the grade in words, and keeps the sign from being read out', () => {
+    render(<MoveHistory moves={['e4']} qualities={['best']} />)
+
+    expect(screen.getByText(MOVE_QUALITY.best.symbol)).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByTestId('move-history')).toHaveTextContent(
+      `e4${MOVE_QUALITY.best.symbol}, ${MOVE_QUALITY.best.label.toLowerCase()}`,
+    )
   })
 
   it('leaves an ungraded move bare', () => {

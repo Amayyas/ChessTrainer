@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import type { Square } from 'react-chessboard/dist/chessboard/types'
 import { Button } from '@/components/UI'
+import GradeSign from '@/components/UI/GradeSign'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
 import { board, brand } from '@/lib/design-tokens'
@@ -140,9 +141,7 @@ export default function LandingPage() {
                   key={quality}
                   className="flex items-baseline gap-3 rounded-xl bg-white px-4 py-2.5"
                 >
-                  <span className={`w-7 shrink-0 text-center font-bold ${meta.color}`}>
-                    {meta.symbol}
-                  </span>
+                  <GradeSign quality={quality} className="w-7 shrink-0 text-center" />
                   <span className="text-sm text-ebene">{meta.label}</span>
                 </li>
               )

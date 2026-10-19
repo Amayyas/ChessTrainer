@@ -33,6 +33,25 @@ export const FRENCH_LETTERS: Record<PieceLetter, string> = {
   N: 'C',
 }
 
+/**
+ * The code points the self-hosted figurine face covers: the twelve chess
+ * pieces, ★ and ✓. The @font-face in src/index.css declares the same
+ * unicode-range, and a test holds the two together.
+ */
+export const FIGURINE_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x2605, 0x2605],
+  [0x2654, 0x265f],
+  [0x2713, 0x2713],
+]
+
+/** Whether every character of `text` is drawn by the figurine face. */
+export function inFigurineFace(text: string): boolean {
+  return [...text].every((char) => {
+    const code = char.codePointAt(0)!
+    return FIGURINE_RANGES.some(([from, to]) => code >= from && code <= to)
+  })
+}
+
 export type NotationPart = { text: string } | { piece: PieceLetter }
 
 function isPieceLetter(char: string): char is PieceLetter {
