@@ -70,8 +70,7 @@ export const typeScale = {
  *
  * Nothing reads them yet. The board takes them when it moves to chessground;
  * until then react-chessboard glides at its own 200 ms (120 ms in the Piece
- * Hunt), and the framer-motion timings in src/lib/motion.ts leave with the
- * entrance animations they drive.
+ * Hunt).
  */
 export const durations = {
   piece: 140,

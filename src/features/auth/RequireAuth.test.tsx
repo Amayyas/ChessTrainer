@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import type { Session } from '@supabase/supabase-js'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RequireAuth from '@/features/auth/RequireAuth'
 import { ROUTES } from '@/routes'
@@ -24,37 +23,33 @@ function LoginProbe() {
 }
 
 /**
- * The layout animates route changes, which keeps a leaving route mounted for
- * the length of its exit transition. That is what turned a redirect rendered as
- * <Navigate> into a loop, so the tests reproduce it rather than mounting the
- * guard bare.
+ * The guard inside a wrapper keyed on the path, the way the layout renders a
+ * page, so a redirect remounts what it should.
  */
 function renderApp(initialPath: string) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <Animated />
+      <Keyed />
     </MemoryRouter>,
   )
 }
 
-function Animated() {
+function Keyed() {
   const location = useLocation()
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div key={location.pathname}>
-        <Routes location={location}>
-          <Route
-            path={ROUTES.leaderboard}
-            element={
-              <RequireAuth>
-                <p>classement mondial</p>
-              </RequireAuth>
-            }
-          />
-          <Route path={ROUTES.login} element={<LoginProbe />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <div key={location.pathname}>
+      <Routes location={location}>
+        <Route
+          path={ROUTES.leaderboard}
+          element={
+            <RequireAuth>
+              <p>classement mondial</p>
+            </RequireAuth>
+          }
+        />
+        <Route path={ROUTES.login} element={<LoginProbe />} />
+      </Routes>
+    </div>
   )
 }
 

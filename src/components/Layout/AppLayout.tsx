@@ -1,4 +1,3 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useLocation, useOutlet } from 'react-router-dom'
 import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 import BottomBar from '@/components/Layout/BottomBar'
@@ -7,12 +6,10 @@ import Masthead from '@/components/Layout/Masthead'
 import { PAGE_WIDTH } from '@/components/Layout/pageWidth'
 import SkipLink from '@/components/Layout/SkipLink'
 import { ROUTES } from '@/routes'
-import { pageTransition, pageVariants } from '@/lib/motion'
 
 export default function AppLayout() {
   const location = useLocation()
   const outlet = useOutlet()
-  const reduceMotion = useReducedMotion()
 
   return (
     // A column the height of the viewport, so the footer below can be pushed to
@@ -27,21 +24,11 @@ export default function AppLayout() {
       {/* flex-1 takes the slack, which is what keeps the footer down. */}
       <main id="contenu" className="flex-1 pt-6 sm:pt-9">
         <div className={PAGE_WIDTH}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={location.pathname}
-              variants={reduceMotion ? undefined : pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={pageTransition}
-            >
-              {/* Catches a chunk that failed to load, or a page that threw,
-                  without losing the shell around it. Remounts with the
-                  motion.div on every navigation, so it never sticks. */}
-              <RouteErrorBoundary>{outlet}</RouteErrorBoundary>
-            </motion.div>
-          </AnimatePresence>
+          {/* Catches a chunk that failed to load, or a page that threw,
+              without losing the shell around it. Keyed on the path, so it
+              remounts on every navigation and never sticks. A page arrives
+              without a transition: nothing enters on arrival. */}
+          <RouteErrorBoundary key={location.pathname}>{outlet}</RouteErrorBoundary>
         </div>
       </main>
 

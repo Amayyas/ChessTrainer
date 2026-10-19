@@ -1,5 +1,5 @@
-import { useReducedMotion } from 'framer-motion'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { Chessboard } from 'react-chessboard'
 import type { PromotionPieceOption, Square } from 'react-chessboard/dist/chessboard/types'
 import type { PieceSymbol } from '@/utils/chess'
@@ -41,7 +41,7 @@ export default function ChessBoard({
   boardWidth,
   arrows,
 }: ChessBoardProps) {
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = usePrefersReducedMotion()
   const [selected, setSelected] = useState<Square | null>(null)
   const [targets, setTargets] = useState<Square[]>([])
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(

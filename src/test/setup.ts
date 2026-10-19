@@ -14,7 +14,8 @@ class ResizeObserverStub {
 }
 vi.stubGlobal('ResizeObserver', ResizeObserverStub)
 
-// framer-motion's useReducedMotion reads matchMedia; jsdom does not implement it.
+// usePrefersReducedMotion and the bottom bar read matchMedia; jsdom does not
+// implement it.
 if (!window.matchMedia) {
   vi.stubGlobal(
     'matchMedia',

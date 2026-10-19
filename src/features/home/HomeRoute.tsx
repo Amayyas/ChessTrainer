@@ -16,8 +16,7 @@ import { useAuthStore } from '@/store/useAuthStore'
  * The redirect waits for the stored session to be read (`isReady`), or a
  * signed-in player would see the landing flash on every refresh before being
  * bounced. It runs from an effect, not <Navigate>, for the reason RequireAuth
- * documents: the layout keeps this subtree mounted through its exit animation,
- * and <Navigate> re-fires every render until React gives up.
+ * documents: an effect redirects once, however long the subtree stays mounted.
  *
  * It also stands down while an emailed auth link is being processed. Supabase
  * drops a recovery or confirmation link on '/' whenever its redirect target is

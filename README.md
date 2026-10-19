@@ -66,7 +66,6 @@ every mode, kept locally for guests and synced to your account once you sign in.
 | Board        | react-chessboard                 |
 | Engine       | Stockfish (WASM) in a Web Worker |
 | Global state | Zustand                          |
-| Animations   | Framer Motion                    |
 | Backend      | Supabase — Auth + PostgreSQL     |
 | Tests        | Vitest + Testing Library         |
 
