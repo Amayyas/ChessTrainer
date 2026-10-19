@@ -1,15 +1,17 @@
-import { Box } from '@/components/UI'
-import LevelBar from '@/features/progression/LevelBar'
+import { PageHeader } from '@/components/UI'
+import DoubleRule from '@/components/UI/DoubleRule'
+import Gauge from '@/components/UI/Gauge'
 import ModeGrid from '@/features/home/ModeGrid'
+import LevelBar from '@/features/progression/LevelBar'
 import { challengeProgress } from '@/features/progression/challenges'
 import { levelFromXp } from '@/features/progression/levels'
 import { useProgressionStore } from '@/store/useProgressionStore'
-import { brand } from '@/lib/design-tokens'
 import { formatPercent } from '@/utils/format'
 
 /**
- * Dashboard: progression, the day's challenges, recent
- * activity, and a way into each mode.
+ * Dashboard: progression, the day's challenges, recent activity, and a way
+ * into each mode — set as a paper's results page: the figures as a box score,
+ * the day's business in a ruled column beside them.
  */
 const ACTIVITY_GLYPHS: Record<string, string> = {
   battle: '♜',
@@ -17,6 +19,8 @@ const ACTIVITY_GLYPHS: Record<string, string> = {
   hunt: '♟',
   coach: '♞',
 }
+
+const COLUMN_HEAD = 'mb-3 text-kicker font-semibold uppercase'
 
 export default function HomePage() {
   const xp = useProgressionStore((state) => state.xp)
@@ -26,91 +30,111 @@ export default function HomePage() {
 
   const progress = levelFromXp(xp)
   const challenges = challengeProgress(daily)
+  const figures = [
+    { label: 'Parties jouées', value: stats.gamesPlayed },
+    { label: 'Puzzles résolus', value: stats.puzzlesSolved },
+    {
+      label: 'Précision moyenne',
+      value: stats.battleAccuracy === null ? '—' : formatPercent(stats.battleAccuracy),
+    },
+    { label: 'Record Chasse', value: stats.bestHuntScore },
+  ]
 
   return (
     <div>
-      <section className="mb-8 rounded-2xl bg-ebene px-6 py-8 text-ivoire sm:px-10 sm:py-10">
-        <p className="mb-2 font-semibold uppercase tracking-[0.2em] text-or">{brand.fullName}</p>
-        <h1 className="max-w-2xl font-display text-3xl font-bold leading-tight sm:text-4xl">
-          Apprenez les échecs avec un coach intelligent
-        </h1>
-        <div className="mt-6 max-w-md">
-          <LevelBar progress={progress} onDark />
-          <p className="mt-2 text-sm text-ivoire/70">{xp} XP au total</p>
-        </div>
-      </section>
+      <PageHeader
+        title="Tableau de bord"
+        subtitle="Votre progression, les défis du jour et vos dernières parties."
+      />
 
-      <div className="mb-8 grid gap-4 lg:grid-cols-2">
-        <Box>
-          <h2 className="mb-3 font-display text-lg font-bold text-ebene">Challenges du jour</h2>
-          <ul className="space-y-3">
-            {challenges.map(({ challenge, progress: done, isComplete }) => (
-              <li key={challenge.id}>
-                <div className="mb-1 flex items-center justify-between gap-2 text-sm">
-                  <span className={isComplete ? 'text-ardoise line-through' : 'text-ebene'}>
-                    {challenge.label}
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-ardoise">
-                    {done} / {challenge.target}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-ebene/10">
-                  <div
-                    className={isComplete ? 'h-full bg-emerald-500' : 'h-full bg-or'}
-                    style={{ width: `${Math.round((done / challenge.target) * 100)}%` }}
-                  />
-                </div>
-              </li>
+      <div className="grid grid-cols-1 gap-y-12 pb-14 sm:pb-20 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <section aria-labelledby="t-progression" className="lg:pr-14">
+          <h2 id="t-progression" className={COLUMN_HEAD}>
+            Progression
+          </h2>
+          <LevelBar progress={progress} />
+          <p className="mt-2 text-caption italic text-ink-soft">{xp} XP au total</p>
+
+          {/* The figures as a box score: ruled under, each number over its name. */}
+          <dl className="mt-9 grid grid-cols-2 border-t border-ink sm:grid-cols-4">
+            {figures.map((figure) => (
+              <div
+                key={figure.label}
+                className="flex flex-col-reverse justify-end border-b border-ink/30 py-4 even:pl-5 sm:border-b-0 sm:border-l sm:px-5 sm:first:border-l-0 sm:first:pl-0"
+              >
+                <dt className="text-caption text-ink-soft">{figure.label}</dt>
+                <dd className="text-title font-semibold tabular-nums lining-nums">
+                  {figure.value}
+                </dd>
+              </div>
             ))}
-          </ul>
-        </Box>
+          </dl>
+        </section>
 
-        <Box>
-          <h2 className="mb-3 font-display text-lg font-bold text-ebene">Activités récentes</h2>
-          {activities.length === 0 ? (
-            <p className="text-sm text-ardoise">
-              Rien pour l'instant — lancez un mode et vos progrès s'afficheront ici.
-            </p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {activities.slice(0, 5).map((activity) => (
-                <li key={activity.id} className="flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span aria-hidden="true" className="text-base text-or">
-                      {ACTIVITY_GLYPHS[activity.kind]}
+        <div className="flex flex-col gap-10 lg:border-l lg:border-ink/30 lg:pl-11">
+          <section aria-labelledby="t-defis">
+            <h2 id="t-defis" className={COLUMN_HEAD}>
+              Défis du jour
+            </h2>
+            <ul>
+              {challenges.map(({ challenge, progress: done, isComplete }) => (
+                <li
+                  key={challenge.id}
+                  className="border-t border-ink/30 py-3 first:border-t-0 first:pt-0"
+                >
+                  <div className="mb-2 flex items-baseline justify-between gap-3">
+                    <span className={isComplete ? 'text-ink-soft line-through' : undefined}>
+                      {challenge.label}
                     </span>
-                    <span className="truncate text-ebene">{activity.label}</span>
-                  </span>
-                  <span className="shrink-0 text-xs font-semibold text-ardoise">
-                    +{activity.xp} XP
-                  </span>
+                    <span className="shrink-0 text-caption tabular-nums lining-nums text-ink-soft">
+                      {done} / {challenge.target}
+                    </span>
+                  </div>
+                  <Gauge value={done / challenge.target} label={challenge.label} />
                 </li>
               ))}
             </ul>
-          )}
-        </Box>
+          </section>
+
+          <section aria-labelledby="t-activites">
+            <h2 id="t-activites" className={COLUMN_HEAD}>
+              Activités récentes
+            </h2>
+            {activities.length === 0 ? (
+              <p className="text-caption italic text-ink-soft">
+                Rien pour l&apos;instant — lancez un mode et vos progrès s&apos;afficheront ici.
+              </p>
+            ) : (
+              <ul>
+                {activities.slice(0, 5).map((activity) => (
+                  <li
+                    key={activity.id}
+                    className="flex items-baseline justify-between gap-3 border-t border-ink/30 py-2 first:border-t-0 first:pt-0"
+                  >
+                    <span className="flex min-w-0 items-baseline gap-2.5">
+                      <span aria-hidden="true" className="font-figurine">
+                        {ACTIVITY_GLYPHS[activity.kind]}
+                      </span>
+                      <span className="truncate">{activity.label}</span>
+                    </span>
+                    <span className="shrink-0 text-caption font-semibold tabular-nums lining-nums">
+                      +{activity.xp} XP
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'Parties jouées', value: stats.gamesPlayed },
-          { label: 'Puzzles résolus', value: stats.puzzlesSolved },
-          {
-            label: 'Précision moyenne',
-            value: stats.battleAccuracy === null ? '—' : formatPercent(stats.battleAccuracy),
-          },
-          { label: 'Record Chasse', value: stats.bestHuntScore },
-        ].map((stat) => (
-          <Box key={stat.label} className="px-4 py-3 text-center">
-            <p className="font-display text-2xl font-bold text-ebene">{stat.value}</p>
-            <p className="text-xs text-ardoise">{stat.label}</p>
-          </Box>
-        ))}
-      </div>
-
-      <h2 className="mb-4 font-display text-2xl font-bold text-ebene">Choisissez un mode</h2>
-
-      <ModeGrid />
+      <section aria-labelledby="t-modes" className="pb-2">
+        <DoubleRule />
+        <h2 id="t-modes" className="pt-4 text-title font-semibold sm:pt-[22px]">
+          Choisissez un mode
+        </h2>
+        <ModeGrid />
+      </section>
     </div>
   )
 }
