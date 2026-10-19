@@ -17,11 +17,15 @@ const wholePercent = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumF
 /**
  * A signed value to one decimal: `+1,3`, `−0,4`. A value that rounds to zero
  * is `0,0`, with no sign, rather than the `−0,0` a tiny negative would give.
+ *
+ * The magnitude is rounded, then signed: Math.round takes a half towards +∞,
+ * so rounding the signed value printed +0,25 as `+0,3` and −0,25 as `−0,2`, two
+ * evaluations of the same size read as different ones.
  */
 export function formatSigned(value: number): string {
-  const rounded = Math.round(value * 10) / 10
-  if (rounded === 0) return oneDecimal.format(0)
-  return `${rounded > 0 ? '+' : MINUS}${oneDecimal.format(Math.abs(rounded))}`
+  const magnitude = Math.round(Math.abs(value) * 10) / 10
+  if (magnitude === 0) return oneDecimal.format(0)
+  return `${value > 0 ? '+' : MINUS}${oneDecimal.format(magnitude)}`
 }
 
 /** A value to one decimal, as given: `9,5`. Rounding is the caller's choice. */

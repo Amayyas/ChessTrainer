@@ -17,6 +17,17 @@ describe('format', () => {
     expect(formatSigned(-0.4)).not.toContain('-')
   })
 
+  it('rounds both signs alike', () => {
+    // Evaluations arrive in centipawns, so halves are common: ±25 is ±0.25.
+    for (const cp of [5, 25, 125, 250, 1, 49]) {
+      const plus = formatSigned(cp / 100)
+      const minus = formatSigned(-cp / 100)
+      expect(minus.replace('\u2212', '+'), `${cp}`).toBe(plus)
+    }
+    expect(formatSigned(-0.25)).toBe('\u22120,3')
+    expect(formatSigned(-0.05)).toBe('\u22120,1')
+  })
+
   it('leaves zero unsigned, even when a tiny negative rounds to it', () => {
     expect(formatSigned(0)).toBe('0,0')
     expect(formatSigned(-0.04)).toBe('0,0')
