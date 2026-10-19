@@ -152,8 +152,8 @@ export default function BattlePage() {
               </div>
             )}
 
-            <section aria-labelledby="t-coups">
-              <h2 id="t-coups" className="mb-1 text-kicker font-semibold uppercase">
+            <section aria-labelledby="t-moves">
+              <h2 id="t-moves" className="mb-1 text-kicker font-semibold uppercase">
                 Coups joués
               </h2>
               <MoveHistory moves={game.sanHistory} />

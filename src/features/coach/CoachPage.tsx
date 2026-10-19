@@ -123,8 +123,8 @@ export default function CoachPage() {
             )}
 
             {!game.status.isOver && (
-              <section aria-labelledby="t-etat">
-                <h2 id="t-etat" className={PANEL_HEAD}>
+              <section aria-labelledby="t-state">
+                <h2 id="t-state" className={PANEL_HEAD}>
                   État de la partie
                 </h2>
                 {/* A check needs answering, so it is set as an alert; the
@@ -139,9 +139,9 @@ export default function CoachPage() {
               </section>
             )}
 
-            <section aria-labelledby="t-coups">
+            <section aria-labelledby="t-moves">
               <div className="mb-1 flex items-center justify-between gap-4">
-                <h2 id="t-coups" className={PANEL_HEAD}>
+                <h2 id="t-moves" className={PANEL_HEAD}>
                   Coups joués
                 </h2>
                 <Button
@@ -164,8 +164,8 @@ export default function CoachPage() {
             </section>
 
             {inReplay ? (
-              <section aria-labelledby="t-rejouer">
-                <h2 id="t-rejouer" className={cn(PANEL_HEAD, 'mb-2')}>
+              <section aria-labelledby="t-replay">
+                <h2 id="t-replay" className={cn(PANEL_HEAD, 'mb-2')}>
                   Rejouer
                 </h2>
                 <div className="flex items-center gap-1">

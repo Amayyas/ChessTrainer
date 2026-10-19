@@ -97,7 +97,7 @@ export default function LandingPage() {
   return (
     <div>
       <section
-        aria-labelledby="t-une"
+        aria-labelledby="t-lead"
         className="grid grid-cols-1 pb-14 sm:pb-[4.5rem] sm:pt-3 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
       >
         <div className="lg:pr-14 lg:pt-1.5">
@@ -105,7 +105,7 @@ export default function LandingPage() {
             Le coach
           </p>
           <h1
-            id="t-une"
+            id="t-lead"
             className="mb-[18px] text-balance text-title font-medium sm:mb-7 sm:text-display sm:font-medium"
           >
             {brand.tagline}
@@ -170,11 +170,11 @@ export default function LandingPage() {
         <ModeGrid />
       </section>
 
-      <section aria-labelledby="t-niveaux" className="pb-14 sm:pb-20">
+      <section aria-labelledby="t-levels" className="pb-14 sm:pb-20">
         <DoubleRule />
         <div className="grid grid-cols-1 pt-4 sm:pt-[22px] lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="flex flex-col lg:pr-14">
-            <h2 id="t-niveaux" className="mb-5 text-balance text-title font-semibold">
+            <h2 id="t-levels" className="mb-5 text-balance text-title font-semibold">
               Une IA qui joue à votre niveau, pas au sien
             </h2>
             <p className="mb-5 text-pretty">
@@ -240,11 +240,11 @@ export default function LandingPage() {
             </p>
           </div>
           <aside
-            aria-labelledby="t-signes"
+            aria-labelledby="t-signs"
             className="mt-8 lg:mt-0 lg:border-l lg:border-ink/30 lg:pl-11"
           >
             <Box className="px-[22px] pb-[18px] pt-5">
-              <h3 id="t-signes" className="mb-3 text-kicker font-semibold uppercase">
+              <h3 id="t-signs" className="mb-3 text-kicker font-semibold uppercase">
                 Signes conventionnels
               </h3>
               <GradeKey />

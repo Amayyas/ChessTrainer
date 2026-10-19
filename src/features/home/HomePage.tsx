@@ -60,8 +60,8 @@ export default function HomePage() {
         </section>
 
         <div className="flex flex-col gap-10 lg:border-l lg:border-ink/30 lg:pl-11">
-          <section aria-labelledby="t-defis">
-            <h2 id="t-defis" className={COLUMN_HEAD}>
+          <section aria-labelledby="t-challenges">
+            <h2 id="t-challenges" className={COLUMN_HEAD}>
               Défis du jour
             </h2>
             <ul>
@@ -84,8 +84,8 @@ export default function HomePage() {
             </ul>
           </section>
 
-          <section aria-labelledby="t-activites">
-            <h2 id="t-activites" className={COLUMN_HEAD}>
+          <section aria-labelledby="t-activity">
+            <h2 id="t-activity" className={COLUMN_HEAD}>
               Activités récentes
             </h2>
             {activities.length === 0 ? (

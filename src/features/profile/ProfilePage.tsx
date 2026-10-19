@@ -76,8 +76,8 @@ export default function ProfilePage() {
 
       <div className="grid gap-y-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
         <div className="flex flex-col gap-12 lg:pr-14">
-          <section aria-labelledby="t-compte" className="flex flex-col gap-4">
-            <h2 id="t-compte" className={COLUMN_HEAD}>
+          <section aria-labelledby="t-account" className="flex flex-col gap-4">
+            <h2 id="t-account" className={COLUMN_HEAD}>
               Compte
             </h2>
             {!isSupabaseConfigured ? (

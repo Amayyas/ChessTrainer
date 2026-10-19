@@ -62,8 +62,8 @@ function Sparkline({ entries }: { entries: readonly AccuracyEntry[] }) {
 export default function AccuracyHistoryPanel({ entries }: { entries: readonly AccuracyEntry[] }) {
   if (entries.length === 0) {
     return (
-      <section aria-labelledby="t-precision">
-        <h2 id="t-precision" className="mb-2 text-kicker font-semibold uppercase">
+      <section aria-labelledby="t-accuracy">
+        <h2 id="t-accuracy" className="mb-2 text-kicker font-semibold uppercase">
           Précision par partie
         </h2>
         <p className="text-caption italic text-ink-soft">
@@ -77,9 +77,9 @@ export default function AccuracyHistoryPanel({ entries }: { entries: readonly Ac
   const trend = recentTrend(entries)
 
   return (
-    <section aria-labelledby="t-precision">
+    <section aria-labelledby="t-accuracy">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 id="t-precision" className="text-kicker font-semibold uppercase">
+        <h2 id="t-accuracy" className="text-kicker font-semibold uppercase">
           Précision par partie
         </h2>
         {trend !== null && (
