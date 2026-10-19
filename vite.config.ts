@@ -67,8 +67,8 @@ function discoveryFiles(mode: string): Plugin {
  * A browser asks for a web font only once it has the CSS and has laid out text
  * that needs it, so a first visit painted in the fallback and reflowed when
  * Newsreader arrived. A preload starts the download with the HTML instead. Only
- * the latin roman: it is the one file every page sets text in, while the other
- * subsets stay on demand. The build fails if the file goes
+ * the latin roman: it is the one file every page sets text in, while the italic
+ * and the other subsets stay on demand. The build fails if the file goes
  * missing, rather than shipping a preload that points at nothing.
  */
 function preloadFonts(): Plugin {
