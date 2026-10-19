@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '@/components/Layout/navigation'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/UI/Sheet'
 import { brand } from '@/lib/design-tokens'
+import { ROUTES } from '@/routes'
 import { cn } from '@/utils/cn'
 
 export interface MobileNavSheetProps {
@@ -10,7 +11,9 @@ export interface MobileNavSheetProps {
 }
 
 /**
- * The whole navigation, on small widths, behind the bottom bar's last column.
+ * The whole navigation, on small widths, behind the bottom bar's last column:
+ * every section as a ruled list, its figurine in a column of its own, the
+ * current one underlined in the rubric.
  *
  * This module is never imported statically. The bottom bar reaches it through
  * a dynamic import, because it pulls Radix in and the bar itself sits in the
@@ -21,41 +24,44 @@ export interface MobileNavSheetProps {
 export default function MobileNavSheet({ open, onOpenChange }: MobileNavSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="max-h-[80dvh] overflow-y-auto border-t border-white/10 bg-ebene pb-8 text-ivoire"
-      >
+      <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto pb-8">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-2 text-ivoire">
-            <span aria-hidden="true" className="text-2xl text-or">
-              {brand.mark}
-            </span>
-            {brand.name}
-          </SheetTitle>
+          <SheetTitle className="text-title font-bold">{brand.name}</SheetTitle>
         </SheetHeader>
 
-        <nav aria-label="Toutes les sections" className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              onClick={() => onOpenChange(false)}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors',
-                  isActive
-                    ? 'bg-or/15 font-semibold text-or'
-                    : 'text-ivoire/70 hover:bg-white/5 hover:text-ivoire',
-                )
-              }
-            >
-              <span aria-hidden="true" className="w-5 text-center text-lg">
-                {item.glyph}
-              </span>
-              <span>{item.label}</span>
-              <span className="sr-only">{item.description}</span>
-            </NavLink>
-          ))}
+        <nav aria-label="Toutes les sections">
+          <ul>
+            {NAV_ITEMS.map((item) => (
+              <li key={item.path} className="border-t border-ink/30 first:border-t-0">
+                <NavLink
+                  to={item.path}
+                  end={item.path === ROUTES.dashboard}
+                  onClick={() => onOpenChange(false)}
+                  className="flex min-h-12 items-center gap-4 text-body transition-colors hover:text-rubric"
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="w-7 text-center font-figurine text-[1.4rem] leading-none"
+                      >
+                        {item.glyph}
+                      </span>
+                      <span
+                        className={cn(
+                          isActive &&
+                            'font-semibold underline decoration-rubric decoration-2 underline-offset-[6px]',
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                      <span className="sr-only">{item.description}</span>
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
         </nav>
       </SheetContent>
     </Sheet>

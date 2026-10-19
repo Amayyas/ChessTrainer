@@ -20,7 +20,7 @@ interface State {
  * The root ErrorBoundary answers a render error by offering a full reload,
  * which is right when the whole tree may be in a bad state. A chunk that
  * failed to load, or one page that threw, is narrower than that: this sits
- * inside the layout, so the sidebar and navigation stay, and "Réessayer"
+ * inside the layout, so the masthead and navigation stay, and "Réessayer"
  * remounts just the page — which re-runs the dynamic import behind a lazy
  * route rather than reloading everything.
  */

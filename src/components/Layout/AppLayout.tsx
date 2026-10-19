@@ -3,8 +3,10 @@ import { useLocation, useOutlet } from 'react-router-dom'
 import RouteErrorBoundary from '@/components/RouteErrorBoundary'
 import BottomBar from '@/components/Layout/BottomBar'
 import Footer from '@/components/Layout/Footer'
-import Sidebar from '@/components/Layout/Sidebar'
+import Masthead from '@/components/Layout/Masthead'
+import { PAGE_WIDTH } from '@/components/Layout/pageWidth'
 import SkipLink from '@/components/Layout/SkipLink'
+import { ROUTES } from '@/routes'
 import { pageTransition, pageVariants } from '@/lib/motion'
 
 export default function AppLayout() {
@@ -17,13 +19,14 @@ export default function AppLayout() {
     // the bottom of a short page instead of floating up under the content.
     <div className="flex min-h-dvh flex-col bg-paper">
       <SkipLink />
-      <Sidebar />
+      {/* The landing carries the full masthead, every other page the compact
+          one. */}
+      <Masthead variant={location.pathname === ROUTES.home ? 'full' : 'compact'} />
       <BottomBar />
 
-      {/* flex-1 takes the slack, which is what keeps the footer down.
-          md:pl-64 clears the desktop sidebar. */}
-      <main id="contenu" className="flex-1 px-4 pt-6 md:pl-64 md:pr-8">
-        <div className="mx-auto max-w-6xl">
+      {/* flex-1 takes the slack, which is what keeps the footer down. */}
+      <main id="contenu" className="flex-1 pt-6 sm:pt-9">
+        <div className={PAGE_WIDTH}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
@@ -46,16 +49,16 @@ export default function AppLayout() {
           sidebar's links on desktop, a bare pair for the screens where the
           sidebar is hidden, and the landing's own. Kept outside <main> on
           purpose: a <footer> nested in main is a generic element, and only a
-          top-level one maps to the contentinfo landmark. pb-20 clears the
-          mobile bottom bar.
+          top-level one maps to the contentinfo landmark. The bottom padding
+          clears the bottom bar, below lg.
 
           It stays invisible while a page is loading. Under the spinner it sat
           in view, and the page then pushed it off the screen: a layout shift
           that grew with the page, 0.17 on /coach. Hidden, it is not painted,
           and an element that was not painted does not shift when it appears —
           on a short page as on a long one. */}
-      <div className="px-4 pb-20 md:pb-8 md:pl-64 md:pr-8 [main:has([data-route-fallback])~&]:invisible">
-        <div className="mx-auto max-w-6xl">
+      <div className="pb-16 lg:pb-0 [main:has([data-route-fallback])~&]:invisible">
+        <div className={PAGE_WIDTH}>
           <Footer />
         </div>
       </div>
