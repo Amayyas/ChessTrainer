@@ -1,15 +1,25 @@
 import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
-import QualityLegend from '@/features/coach/QualityLegend'
-import { Box, Button, PageHeader, Spinner, Tag } from '@/components/UI'
+import HintList from '@/components/HintList'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import Input from '@/components/UI/Input'
+import StatusLine from '@/components/UI/StatusLine'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
+import QualityLegend from '@/features/coach/QualityLegend'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
-import HintList from '@/components/HintList'
+import { cn } from '@/utils/cn'
+
+/** The head of each block in the panel: capitals, as a paper heads a column. */
+const PANEL_HEAD = 'text-kicker font-semibold uppercase'
 
 /**
  * Coach mode: a playable board with live Stockfish analysis —
  * evaluation bar, best-move arrow, per-move classification, progressive hints,
  * an end-of-game summary and a move-by-move replay.
+ *
+ * Laid out as the newsprint column: the diagram and its gauge, and beside them
+ * the panel, ruled off, its blocks headed in capitals and the hints boxed as
+ * an aside.
  *
  * All of the orchestration lives in useCoachPageState; this file is the view.
  */
@@ -27,23 +37,20 @@ export default function CoachPage() {
         subtitle="Jouez les deux camps ; l'IA évalue la position, classe chaque coup et suggère le meilleur."
         actions={
           analysis.isAnalyzing ? (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> Analyse…
-            </span>
+            <StatusLine busy>Analyse…</StatusLine>
           ) : analysis.isReady ? (
-            <Tag tone="muted">IA prête</Tag>
+            <StatusLine>IA prête</StatusLine>
           ) : (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> Chargement de l'IA…
-            </span>
+            <StatusLine busy>Chargement de l&apos;IA…</StatusLine>
           )
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        {/* self-start keeps the eval bar tied to the board height instead of
-            stretching to the (taller) side panel as the move list grows. */}
-        <div className="mx-auto flex w-full max-w-[560px] gap-3 self-start">
+      <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+        {/* self-start keeps the gauge tied to the board height instead of
+            stretching to the (taller) side panel as the move list grows. On a
+            phone the gauge lies across the top of the board. */}
+        <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 self-start sm:flex-row sm:gap-3.5 lg:pr-12">
           <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
           <div className="min-w-0 flex-1">
             <ChessBoard
@@ -61,12 +68,12 @@ export default function CoachPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
           {game.status.isOver && !inReplay && (
             <GameSummary summary={analysis.summary} statusLabel={statusLabel} />
           )}
 
-          <Box className="flex h-fit flex-col gap-5">
+          <div className="flex flex-col gap-[22px]">
             {!inReplay && (
               <div>
                 <ToggleGroup
@@ -88,25 +95,27 @@ export default function CoachPage() {
                 </ToggleGroup>
 
                 {coach.mode === 'analysis' && (
-                  <div className="mt-3">
-                    <label htmlFor="fen-input" className="text-xs font-medium text-ardoise">
+                  <div className="mt-4">
+                    <label htmlFor="fen-input" className="text-caption font-semibold">
                       Position de départ (FEN)
                     </label>
-                    <div className="mt-1 flex gap-2">
-                      <input
+                    <div className="mt-1.5 flex gap-2">
+                      <Input
                         id="fen-input"
                         value={coach.fenInput}
                         onChange={(event) => coach.setFenInput(event.target.value)}
                         onKeyDown={(event) => event.key === 'Enter' && coach.loadFen()}
                         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                        className="min-w-0 flex-1 rounded-lg border border-ebene/20 px-2 py-1.5 text-sm"
+                        aria-invalid={coach.fenError ? true : undefined}
+                        aria-describedby={coach.fenError ? 'fen-error' : undefined}
+                        className="min-w-0 flex-1 text-caption"
                       />
-                      <Button size="sm" onClick={coach.loadFen}>
-                        Charger
-                      </Button>
+                      <Button onClick={coach.loadFen}>Charger</Button>
                     </div>
                     {coach.fenError && (
-                      <p className="mt-1 text-xs text-red-600">{coach.fenError}</p>
+                      <p id="fen-error" className="mt-1.5 text-caption text-rubric">
+                        {coach.fenError}
+                      </p>
                     )}
                   </div>
                 )}
@@ -114,39 +123,51 @@ export default function CoachPage() {
             )}
 
             {!game.status.isOver && (
-              <div>
-                <h2 className="mb-2 font-display text-lg font-bold text-ebene">
+              <section aria-labelledby="t-etat">
+                <h2 id="t-etat" className={PANEL_HEAD}>
                   État de la partie
                 </h2>
-                <Tag tone={coach.statusTone}>{statusLabel}</Tag>
-              </div>
+                {/* A check needs answering, so it is set as an alert; the
+                    rest of the time the state is a line of italic. */}
+                {coach.statusTone === 'alert' ? (
+                  <Tag tone="alert" className="mt-2">
+                    {statusLabel}
+                  </Tag>
+                ) : (
+                  <p className="mt-1 text-body italic">{statusLabel}</p>
+                )}
+              </section>
             )}
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold text-ebene">Coups joués</h2>
-                <button
-                  type="button"
+            <section aria-labelledby="t-coups">
+              <div className="mb-1 flex items-center justify-between gap-4">
+                <h2 id="t-coups" className={PANEL_HEAD}>
+                  Coups joués
+                </h2>
+                <Button
+                  variant="quiet"
+                  size="sm"
                   onClick={coach.toggleArrow}
-                  className="text-xs font-semibold text-ardoise underline-offset-2 hover:text-ebene hover:underline"
                   aria-pressed={coach.showArrow}
                 >
                   {coach.showArrow ? 'Masquer la flèche' : 'Afficher la flèche'}
-                </button>
+                </Button>
               </div>
               <MoveHistory
                 moves={game.sanHistory}
                 qualities={analysis.qualities}
                 activeIndex={inReplay ? coach.replayPly - 1 : undefined}
               />
-              <div className="mt-2">
+              <div className="mt-3">
                 <QualityLegend />
               </div>
-            </div>
+            </section>
 
             {inReplay ? (
-              <div>
-                <h2 className="mb-2 font-display text-lg font-bold text-ebene">Rejouer</h2>
+              <section aria-labelledby="t-rejouer">
+                <h2 id="t-rejouer" className={cn(PANEL_HEAD, 'mb-2')}>
+                  Rejouer
+                </h2>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="secondary"
@@ -188,17 +209,17 @@ export default function CoachPage() {
                     Quitter
                   </Button>
                 </div>
-                <p className="mt-2 text-xs text-ardoise">
+                <p className="mt-2 text-caption italic text-ink-soft">
                   Coup {coach.replayPly} / {coach.lastPly}
                 </p>
-              </div>
+              </section>
             ) : (
               <>
                 {!game.status.isOver && (
-                  <div>
-                    <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
+                  <Box className="px-[22px] pb-4 pt-5">
+                    <h2 className={cn(PANEL_HEAD, 'mb-2.5')}>Indices</h2>
                     {coach.hintLevel === 0 ? (
-                      <p className="text-sm text-ardoise">
+                      <p className="text-caption italic text-ink-soft">
                         Bloqué ? Révélez un indice à la fois, sans dévoiler tout le coup.
                       </p>
                     ) : (
@@ -207,7 +228,7 @@ export default function CoachPage() {
                     <Button
                       variant="quiet"
                       size="sm"
-                      className="mt-2"
+                      className="mt-1.5"
                       disabled={!coach.canRevealHint}
                       onClick={coach.revealHint}
                     >
@@ -217,10 +238,10 @@ export default function CoachPage() {
                           ? 'Indice complet'
                           : 'Indice suivant'}
                     </Button>
-                  </div>
+                  </Box>
                 )}
 
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2.5">
                   <Button
                     variant="primary"
                     size="sm"
@@ -246,7 +267,7 @@ export default function CoachPage() {
                 </div>
               </>
             )}
-          </Box>
+          </div>
         </div>
       </div>
     </div>

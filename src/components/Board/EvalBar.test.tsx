@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import EvalBar from '@/components/Board/EvalBar'
+import { winningChances } from '@/utils/evaluation'
 
 describe('EvalBar', () => {
   it('formats a White advantage in pawns', () => {
@@ -35,6 +36,19 @@ describe('EvalBar', () => {
   it('exposes the evaluation to assistive tech', () => {
     render(<EvalBar evaluation={{ cp: 50, mate: null }} />)
     expect(screen.getByRole('img', { name: 'Évaluation +0,5' })).toBeInTheDocument()
+  })
+
+  it("inks Black's share of the chances, half at an equal position", () => {
+    const { rerender } = render(<EvalBar evaluation={{ cp: 0, mate: null }} />)
+    const gauge = screen.getByRole('img')
+    expect(gauge).toHaveStyle({ '--black': '50%' })
+
+    // White well ahead: Black's share shrinks, read from the same curve the
+    // grades use rather than from a fixed number.
+    rerender(<EvalBar evaluation={{ cp: 400, mate: null }} />)
+    const black = Number.parseInt(gauge.style.getPropertyValue('--black'), 10)
+    expect(black).toBe(100 - Math.round(winningChances(400) * 100))
+    expect(black).toBeLessThan(50)
   })
 
   it('renders a neutral bar when no evaluation is available', () => {

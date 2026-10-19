@@ -101,6 +101,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50',
         VARIANTS[variant],
         SIZES[size],
+        // An underlined word sets flush with the words around it, as a link in
+        // a column does; its height still gives the finger its target.
+        variant === 'quiet' && 'px-0',
         fullWidth && 'w-full',
         asChild && isInert && 'pointer-events-none cursor-not-allowed opacity-50',
         className,

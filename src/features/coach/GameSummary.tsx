@@ -10,13 +10,14 @@ interface GameSummaryProps {
   statusLabel: string
 }
 
+/** One side's accuracy, as a box score sets a figure: the number over its name. */
 function AccuracyStat({ label, value }: { label: string; value: number | null }) {
   return (
-    <div className="rounded-xl bg-ebene/5 px-3 py-2 text-center">
-      <p className="font-display text-2xl font-bold text-ebene">
+    <div className="flex flex-col-reverse justify-end py-3 even:border-l even:border-ink/30 even:pl-4">
+      <dt className="text-caption text-ink-soft">{label}</dt>
+      <dd className="text-title font-semibold tabular-nums lining-nums">
         {value === null ? '—' : formatPercent(value)}
-      </p>
-      <p className="text-xs text-ardoise">{label}</p>
+      </dd>
     </div>
   )
 }
@@ -45,16 +46,16 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
   return (
     <Box className="flex flex-col gap-4">
       <div>
-        <h2 className="font-display text-lg font-bold text-ebene">Résumé de la partie</h2>
-        <p className="mt-1 text-sm text-ardoise">{statusLabel}</p>
+        <h2 className="text-kicker font-semibold uppercase">Résumé de la partie</h2>
+        <p className="mt-1 text-body italic">{statusLabel}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <dl className="grid grid-cols-2 border-y border-ink/30">
         <AccuracyStat label="Précision blancs" value={summary.accuracyWhite} />
         <AccuracyStat label="Précision noirs" value={summary.accuracyBlack} />
-      </div>
+      </dl>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {counted.map(({ quality, count }) => {
           const meta = MOVE_QUALITY[quality]
           return (
@@ -66,9 +67,9 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
       </div>
 
       {summary.bestMove && (
-        <p className="text-sm text-ardoise">
+        <p className="text-caption text-ink-soft">
           Meilleur coup de la partie :{' '}
-          <span className="font-semibold text-ebene">
+          <span className="font-semibold text-ink">
             <Notation san={summary.bestMove.san} /> (
             {summary.bestMove.color === 'w' ? 'blancs' : 'noirs'})
           </span>
