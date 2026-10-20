@@ -6,14 +6,19 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 function stubMatchMedia(initial: boolean) {
   let matches = initial
   const listeners = new Set<() => void>()
-  vi.stubGlobal('matchMedia', (media: string) => ({
-    get matches() {
-      return media === '(prefers-reduced-motion: reduce)' ? matches : false
-    },
-    media,
-    addEventListener: (_: string, listener: () => void) => listeners.add(listener),
-    removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
-  }))
+  // A spy rather than a stubbed global: unstubbing every global after each
+  // test also took away the ones src/test/setup.ts lays down for the file.
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (media: string) =>
+      ({
+        get matches() {
+          return media === '(prefers-reduced-motion: reduce)' ? matches : false
+        },
+        media,
+        addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      }) as unknown as MediaQueryList,
+  )
   return {
     set(next: boolean) {
       matches = next
@@ -24,7 +29,7 @@ function stubMatchMedia(initial: boolean) {
 
 describe('usePrefersReducedMotion', () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('reads the reader’s setting', () => {
@@ -39,5 +44,11 @@ describe('usePrefersReducedMotion', () => {
 
     act(() => media.set(true))
     expect(result.current).toBe(true)
+  })
+
+  it('leaves the stand-ins the test setup lays down in place', () => {
+    // Last, on purpose: it reads what the tests before it left behind.
+    expect(window.matchMedia).toBeTypeOf('function')
+    expect(globalThis.ResizeObserver).toBeTypeOf('function')
   })
 })

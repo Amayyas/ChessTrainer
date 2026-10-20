@@ -10,13 +10,18 @@ vi.mock('react-chessboard', () => ({
   },
 }))
 
+// A spy rather than a stubbed global: unstubbing every global after each test
+// also took away the ones src/test/setup.ts lays down for the file.
 function stubReducedMotion(reduce: boolean) {
-  vi.stubGlobal('matchMedia', (media: string) => ({
-    matches: media === '(prefers-reduced-motion: reduce)' ? reduce : false,
-    media,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }))
+  vi.spyOn(window, 'matchMedia').mockImplementation(
+    (media: string) =>
+      ({
+        matches: media === '(prefers-reduced-motion: reduce)' ? reduce : false,
+        media,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }) as unknown as MediaQueryList,
+  )
 }
 
 function renderBoard() {
@@ -35,7 +40,7 @@ function renderBoard() {
 
 describe('HuntBoard', () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('moves its pieces without a glide when the reader asks for less motion', () => {
@@ -50,5 +55,11 @@ describe('HuntBoard', () => {
     stubReducedMotion(false)
     renderBoard()
     expect(boardProps.animationDuration).toBe(120)
+  })
+
+  it('leaves the stand-ins the test setup lays down in place', () => {
+    // Last, on purpose: it reads what the tests before it left behind.
+    expect(window.matchMedia).toBeTypeOf('function')
+    expect(globalThis.ResizeObserver).toBeTypeOf('function')
   })
 })
