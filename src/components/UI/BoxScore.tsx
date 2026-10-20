@@ -10,8 +10,8 @@ export interface BoxScoreFigure {
 
 interface BoxScoreProps {
   figures: readonly BoxScoreFigure[]
-  /** Figures to a row from 640 px. */
-  columns: 2 | 3 | 4
+  /** Figures to a row from 640 px: as many as there are figures, up to four, unless given. */
+  columns?: 2 | 3 | 4
   /** Figures to a row on a phone. */
   phoneColumns?: 2 | 3
   /** `title` for a page's own figures, `heading` for a panel's. */
@@ -53,7 +53,7 @@ const GRID = {
  */
 export default function BoxScore({
   figures,
-  columns,
+  columns = Math.min(Math.max(figures.length, 2), 4) as 2 | 3 | 4,
   phoneColumns = 2,
   size = 'heading',
   rule = 'hairline',

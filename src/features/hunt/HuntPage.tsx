@@ -176,7 +176,6 @@ export default function HuntPage() {
         <PageHeader title="Chasse aux Pièces" subtitle="Manche terminée." />
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
           <BoxScore
-            columns={3}
             figures={[
               { label: 'Score', value: String(game.score) },
               { label: 'Captures', value: String(game.captures) },
@@ -272,7 +271,6 @@ export default function HuntPage() {
 
         <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
           <BoxScore
-            columns={4}
             figures={[
               { label: 'Temps', value: `${seconds} s`, urgent: seconds <= 10 },
               { label: 'Score', value: String(game.score) },

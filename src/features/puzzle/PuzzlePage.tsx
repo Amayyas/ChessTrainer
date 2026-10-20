@@ -80,7 +80,6 @@ function PuzzleBoard({
         </p>
 
         <BoxScore
-          columns={3}
           phoneColumns={3}
           figures={[
             { label: 'Temps', value: formatDuration(runner.elapsedMs) },
@@ -142,7 +141,6 @@ function DailyView() {
         <Box className="mx-auto flex max-w-xl flex-col gap-4">
           <h2 className={PANEL_HEAD}>Bilan de la série</h2>
           <BoxScore
-            columns={3}
             phoneColumns={3}
             figures={[
               { label: 'Points', value: session.totalPoints },

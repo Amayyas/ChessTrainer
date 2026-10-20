@@ -16,7 +16,6 @@ describe('BoxScore', () => {
   it('pairs each figure with its name, the name first for assistive tech', () => {
     render(
       <BoxScore
-        columns={2}
         figures={[
           { label: 'Temps', value: '12 s' },
           { label: 'Erreurs', value: 0 },
@@ -32,7 +31,6 @@ describe('BoxScore', () => {
   it('sets a figure that needs attention now in the rubric, and only that one', () => {
     render(
       <BoxScore
-        columns={2}
         figures={[
           { label: 'Temps', value: '8 s', urgent: true },
           { label: 'Score', value: 40 },
@@ -41,6 +39,23 @@ describe('BoxScore', () => {
     )
     expect(screen.getByText('8 s')).toHaveClass('text-rubric')
     expect(screen.getByText('40')).not.toHaveClass('text-rubric')
+  })
+
+  it('sets as many figures to a row as it has, up to four, unless told otherwise', () => {
+    // The puzzle's score once took its row from its figures; a count restated by
+    // every caller would let a fourth figure wrap under a stray rule.
+    const figures = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ label: `F${i}`, value: i }))
+    const grid = (props: Parameters<typeof BoxScore>[0]) => {
+      const { container, unmount } = render(<BoxScore {...props} />)
+      const classes = container.querySelector('dl')!.className
+      unmount()
+      return classes
+    }
+    expect(grid({ figures: figures(3) })).toContain('sm:grid-cols-3')
+    expect(grid({ figures: figures(4) })).toContain('sm:grid-cols-4')
+    expect(grid({ figures: figures(6) })).toContain('sm:grid-cols-4')
+    expect(grid({ figures: figures(6), columns: 3 })).toContain('sm:grid-cols-3')
   })
 
   it('is the only place a box score is written', () => {

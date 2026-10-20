@@ -45,7 +45,6 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
       </div>
 
       <BoxScore
-        columns={2}
         size="title"
         figures={[
           { label: 'Précision blancs', value: accuracy(summary.accuracyWhite) },

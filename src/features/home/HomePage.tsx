@@ -56,7 +56,7 @@ export default function HomePage() {
           <LevelBar progress={progress} />
           <p className="mt-2 text-caption italic text-ink-soft">{xp} XP au total</p>
 
-          <BoxScore figures={figures} columns={4} size="title" rule="ink" className="mt-9" />
+          <BoxScore figures={figures} size="title" rule="ink" className="mt-9" />
         </section>
 
         <div className="flex flex-col gap-10 lg:border-l lg:border-ink/30 lg:pl-11">
