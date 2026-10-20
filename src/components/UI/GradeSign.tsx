@@ -10,6 +10,11 @@ import { cn } from '@/utils/cn'
  *
  * Hidden from assistive tech: a sign read aloud is "black star" or "check
  * mark", and the caller says the grade in words beside it.
+ *
+ * The smaller size is set on the sign inside, so a size the caller gives sets
+ * the context rather than replacing it: tailwind-merge keeps the last font
+ * size it is handed, and a key that sized the sign once set its star and
+ * ticks as large as the marks.
  */
 export default function GradeSign({
   quality,
@@ -20,15 +25,16 @@ export default function GradeSign({
 }) {
   const meta = MOVE_QUALITY[quality]
   return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        inFigurineFace(meta.symbol) ? 'font-figurine text-[0.8em] font-normal' : 'font-bold',
-        meta.tone === 'rubric' ? 'text-rubric' : 'text-ink',
-        className,
-      )}
-    >
-      {meta.symbol}
+    <span className={className}>
+      <span
+        aria-hidden="true"
+        className={cn(
+          inFigurineFace(meta.symbol) ? 'font-figurine text-[0.8em] font-normal' : 'font-bold',
+          meta.tone === 'rubric' ? 'text-rubric' : 'text-ink',
+        )}
+      >
+        {meta.symbol}
+      </span>
     </span>
   )
 }

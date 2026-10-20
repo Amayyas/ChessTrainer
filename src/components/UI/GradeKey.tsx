@@ -15,11 +15,7 @@ export default function GradeKey({ className }: { className?: string }) {
           key={quality}
           className="grid grid-cols-[3.25rem_1fr] items-baseline border-t border-ink/30 py-[7px] text-caption first:border-t-0 first:pt-0.5"
         >
-          {/* The size goes on a wrapper: handed to GradeSign, it would replace the
-              sign's own, which sets the star and the ticks a size smaller. */}
-          <span className="text-[1.2em] leading-[1.2]">
-            <GradeSign quality={quality} />
-          </span>
+          <GradeSign quality={quality} className="text-[1.2em] leading-[1.2]" />
           <span>{MOVE_QUALITY[quality].label}</span>
         </li>
       ))}

@@ -15,7 +15,7 @@ describe('GradeKey', () => {
     ).getAllByRole('listitem')
     MOVE_QUALITY_ORDER.forEach((quality, index) => {
       const { container } = render(<GradeSign quality={quality} />)
-      const alone = container.firstElementChild!
+      const alone = within(container as HTMLElement).getByText(MOVE_QUALITY[quality].symbol)
       const inKey = within(rows[index]!).getByText(MOVE_QUALITY[quality].symbol)
       expect(inKey.className, quality).toBe(alone.className)
     })
