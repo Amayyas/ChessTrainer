@@ -3,7 +3,7 @@ import { Chessboard } from 'react-chessboard'
 import type { BoardPosition, Piece, Square } from 'react-chessboard/dist/chessboard/types'
 import { useMeasuredWidth } from '@/hooks/useMeasuredWidth'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { board } from '@/lib/design-tokens'
+import { previousBoard } from '@/lib/design-tokens'
 import type { ChampionType, EnemyType } from '@/features/hunt/board'
 
 export interface HuntBoardProps {
@@ -57,15 +57,15 @@ export default function HuntBoard({
     // Only empty reachable squares are dotted. Marking capturable enemies would
     // hand the player the next move, which is not the point of the exercise.
     for (const square of moves) {
-      if (!enemies.has(square)) styles[square] = { backgroundImage: board.legalTarget }
+      if (!enemies.has(square)) styles[square] = { backgroundImage: previousBoard.legalTarget }
     }
     for (const square of threats) {
-      styles[square] = { ...styles[square], backgroundColor: board.threat }
+      styles[square] = { ...styles[square], backgroundColor: previousBoard.threat }
     }
     if (championSquare) {
       styles[championSquare] = {
         ...styles[championSquare],
-        backgroundColor: threats.length > 0 ? board.threat : board.selected,
+        backgroundColor: threats.length > 0 ? previousBoard.threat : previousBoard.selected,
       }
     }
     return styles
@@ -81,8 +81,8 @@ export default function HuntBoard({
           onSquareClick={(square) => {
             if (interactive) onMove(square)
           }}
-          customLightSquareStyle={{ backgroundColor: board.lightSquare }}
-          customDarkSquareStyle={{ backgroundColor: board.darkSquare }}
+          customLightSquareStyle={{ backgroundColor: previousBoard.lightSquare }}
+          customDarkSquareStyle={{ backgroundColor: previousBoard.darkSquare }}
           customSquareStyles={squareStyles}
           customBoardStyle={{ borderRadius: '0' }}
           animationDuration={reduceMotion ? 0 : 120}

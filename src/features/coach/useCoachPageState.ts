@@ -4,7 +4,6 @@ import { useLocation } from 'react-router-dom'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
-import { board } from '@/lib/design-tokens'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
 import type { Hint } from '@/components/HintList'
@@ -189,7 +188,7 @@ export function useCoachPageState() {
 
   const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
   const arrows = showBestArrow
-    ? ([[insight.bestMove!.from, insight.bestMove!.to, board.arrow]] as [Square, Square, string][])
+    ? ([[insight.bestMove!.from, insight.bestMove!.to]] as [Square, Square][])
     : undefined
 
   const hint = useMemo(() => {

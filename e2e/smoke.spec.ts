@@ -26,6 +26,22 @@ test('the landing renders, then hydrates into a working SPA', async ({ page }) =
   expect(errors).toEqual([])
 })
 
+/**
+ * Clicks a square on the board from its place on screen, as a player finds it:
+ * chessground draws the pieces and the marks, not an element per square. The
+ * board is taken to be turned to White.
+ */
+async function clickSquare(page: Page, square: string) {
+  const board = await page.locator('.cg-wrap').boundingBox()
+  if (!board) throw new Error('No board on the page')
+  const file = square.charCodeAt(0) - 'a'.charCodeAt(0)
+  const rank = Number(square[1])
+  await page.mouse.click(
+    board.x + ((file + 0.5) * board.width) / 8,
+    board.y + ((8 - rank + 0.5) * board.height) / 8,
+  )
+}
+
 test('a move in Affrontement gets a reply from the engine', async ({ page }) => {
   await page.goto('/battle')
 
@@ -39,10 +55,9 @@ test('a move in Affrontement gets a reply from the engine', async ({ page }) => 
   await page.getByRole('radio', { name: /Niveau 1 —/ }).click()
   await page.getByRole('button', { name: 'Commencer la partie' }).click({ timeout: 30_000 })
 
-  const e2 = page.locator('[data-square="e2"]')
-  await expect(e2).toBeVisible({ timeout: 30_000 })
-  await e2.click()
-  await page.locator('[data-square="e4"]').click()
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  await clickSquare(page, 'e2')
+  await clickSquare(page, 'e4')
 
   // 1. e4 followed by a move from Black (the cells render with no whitespace
   // between them) = Stockfish ran a search and replied.
@@ -51,10 +66,36 @@ test('a move in Affrontement gets a reply from the engine', async ({ page }) => 
   })
 })
 
+test('the landing’s diagram holds its squares before chessground arrives', async ({ page }) => {
+  // The diagram is the page's largest paint. Its frame draws the squares from
+  // the first paint, so the page does not wait for the board's script to show
+  // it: measured on a slowed phone, waiting cost the landing 1.6 s.
+  let release!: () => void
+  const held = new Promise<void>((resolve) => (release = resolve))
+  await page.route(/\/assets\/ChessBoard-[^/]*\.js$/, async (route) => {
+    await held
+    await route.continue()
+  })
+  await page.goto('/')
+
+  const frame = page.locator('#diagramme-1 .aspect-square')
+  const squares = () =>
+    frame.evaluate((element) => decodeURIComponent(getComputedStyle(element).backgroundImage))
+  await expect.poll(squares).toContain('pattern id="hatch"')
+  // The control: chessground has not arrived, so the squares are the frame's.
+  await expect(page.locator('.cg-wrap')).toHaveCount(0)
+
+  release()
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+})
+
 test('the coach boots the engine and shows the board', async ({ page }) => {
   await page.goto('/coach')
   await expect(page.getByText('IA prête')).toBeVisible({ timeout: 30_000 })
-  await expect(page.locator('[data-square="e2"]')).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Échiquier' })).toBeVisible()
+  // Every piece of the starting position; chessground also keeps a hidden ghost
+  // piece for dragging, which is not one.
+  await expect(page.locator('.cg-wrap piece:not(.ghost)')).toHaveCount(32)
 })
 
 test('the Piece Hunt renders its own board, no engine', async ({ page }) => {
@@ -70,7 +111,7 @@ test('the puzzle page switches to free practice and serves a board', async ({ pa
   await page.goto('/puzzle')
   // The daily series is the default view; its board renders in a browser.
   await expect(page.getByRole('heading', { level: 1, name: 'Puzzles' })).toBeVisible()
-  await expect(page.locator('[data-square]').first()).toBeVisible()
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible()
 
   // A tab, not a button. The two views are a tablist now: each control owns a
   // panel, which a pair of pressed buttons never expressed.

@@ -2,9 +2,9 @@
  * Every colour and typeface the app uses, in one place.
  *
  * Tailwind reads this file for its theme, and the few components that need a
- * colour as a plain string — the boards hand theirs to react-chessboard, which
- * takes CSS values rather than class names — import from here too. So a change
- * of palette is a change to this file, and nothing else.
+ * colour as a plain string — the boards, whose colours reach chessground and
+ * react-chessboard as values rather than class names — import from here too.
+ * So a change of palette is a change to this file, and nothing else.
  *
  * Values were previously repeated as literals inside those components, which
  * meant a new palette would have moved the interface while leaving the board
@@ -68,9 +68,9 @@ export const typeScale = {
  * coach's arrow fades in; nothing else animates, nothing enters on arrival and
  * nothing lifts under the pointer. Under prefers-reduced-motion both are zero.
  *
- * Nothing reads them yet. The board takes them when it moves to chessground;
- * until then react-chessboard glides at its own 200 ms (120 ms in the Piece
- * Hunt).
+ * The board reads them: chessground animates the pieces, and board.css fades a
+ * new arrow in. The Piece Hunt glides at its own 120 ms until it moves to
+ * chessground too.
  */
 export const durations = {
   piece: 140,
@@ -94,37 +94,47 @@ function alpha(hex: string, opacity: number): string {
 }
 
 /**
- * The colours the board kept from the previous identity — ebony, gold and
- * slate — until it moves to chessground in a pull request of its own. They are
- * written out here, rather than read from that identity's palette, so the
- * palette could go with the last page that used it.
+ * The colours the Piece Hunt's board kept from the previous identity — ebony,
+ * gold and slate — until it moves to chessground as the other boards have.
+ * They are written out here, rather than read from that identity's palette, so
+ * the palette could go with the last page that used it.
  */
 const PREVIOUS_BOARD = { ebony: '#1A1A2E', gold: '#C9A84C', slate: '#4A4A5A' } as const
 
-/**
- * The chessboards. react-chessboard styles squares with CSS values, so these
- * cannot be Tailwind classes.
- */
-export const board = {
+/** The Piece Hunt's board, as react-chessboard styles it: CSS values, not classes. */
+export const previousBoard = {
   /** Slightly deeper than the previous page so the light squares read against it. */
   lightSquare: '#EDE6D8',
   darkSquare: PREVIOUS_BOARD.slate,
-  /** The move just played. */
-  lastMove: alpha(PREVIOUS_BOARD.gold, 0.42),
-  /** The piece under the cursor, and the champion in the Piece Hunt. */
+  /** The champion. */
   selected: alpha(PREVIOUS_BOARD.gold, 0.55),
-  /** The king in check. Slightly softer than a Piece Hunt threat, as it was. */
-  check: alpha(danger, 0.5),
-  /** An enemy that can take the champion in the Piece Hunt. */
+  /** An enemy that can take the champion. */
   threat: alpha(danger, 0.55),
-  /** Where a selected piece may legally go, drawn as a dot. */
+  /** Where the champion may go, drawn as a dot. */
   legalTarget: `radial-gradient(circle, ${alpha(PREVIOUS_BOARD.ebony, 0.3)} 22%, transparent 26%)`,
-  /** A legal capture, drawn as a ring around the piece rather than a dot. */
-  legalCapture:
-    `radial-gradient(circle, transparent 55%, ${alpha(PREVIOUS_BOARD.ebony, 0.3)} 56%, ` +
-    `${alpha(PREVIOUS_BOARD.ebony, 0.3)} 62%, transparent 63%)`,
-  /** The best-move arrow the coach draws. */
-  arrow: PREVIOUS_BOARD.gold,
+} as const
+
+/**
+ * The board, set as a chess column prints its diagram: the light squares on
+ * the bright paper, the dark ones hatched in ink at 45°, and the corrector's
+ * red for the move just played, a king in check and the coach's arrow. The
+ * plain variant fills the dark squares with the diagram's grey instead, for
+ * long sessions, when a hatch tires the eye.
+ */
+export const board = {
+  light: newsprint.paper.bright,
+  /** The hatch over a dark square: an ink stripe every 7 units of a 100-unit square, 2.3 wide. */
+  hatch: { colour: newsprint.ink.DEFAULT, period: 7, stripe: 2.3 },
+  /** The dark squares of the plain variant. */
+  plain: '#CFC6B3',
+  /** The squares of the move just played. */
+  lastMove: alpha(newsprint.rubric, 0.22),
+  /** The king in check, which also takes a rubric rule. */
+  check: alpha(newsprint.rubric, 0.3),
+  /** Where a selected piece may go: an ink dot, or a ring round a piece it takes. */
+  destination: alpha(newsprint.ink.DEFAULT, 0.7),
+  /** The coach's arrow. */
+  arrow: { colour: newsprint.rubric, opacity: 0.86 },
 } as const
 
 /**

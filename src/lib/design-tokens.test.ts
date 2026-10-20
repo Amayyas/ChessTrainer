@@ -10,6 +10,7 @@ import {
   fonts,
   newsprint,
   newsreaderMetrics,
+  previousBoard,
   typeScale,
 } from '@/lib/design-tokens'
 import { MODES } from '@/features/home/modes'
@@ -40,24 +41,29 @@ function contrast(first: string, second: string): number {
  * rather than the change reaching a player's screen.
  */
 describe('design tokens', () => {
-  it('derives the board colours exactly as the components did', () => {
-    expect(board.lightSquare).toBe('#EDE6D8')
-    expect(board.darkSquare).toBe('#4A4A5A')
-    expect(board.lastMove).toBe('rgba(201, 168, 76, 0.42)')
-    expect(board.selected).toBe('rgba(201, 168, 76, 0.55)')
-    expect(board.check).toBe('rgba(220, 38, 38, 0.5)')
-    expect(board.threat).toBe('rgba(220, 38, 38, 0.55)')
-    expect(board.arrow).toBe('#C9A84C')
-  })
-
-  it('builds the square overlays as CSS gradients', () => {
-    expect(board.legalTarget).toBe(
+  it('keeps the Piece Hunt’s board as it was until it moves', () => {
+    expect(previousBoard.lightSquare).toBe('#EDE6D8')
+    expect(previousBoard.darkSquare).toBe('#4A4A5A')
+    expect(previousBoard.selected).toBe('rgba(201, 168, 76, 0.55)')
+    expect(previousBoard.threat).toBe('rgba(220, 38, 38, 0.55)')
+    expect(previousBoard.legalTarget).toBe(
       'radial-gradient(circle, rgba(26, 26, 46, 0.3) 22%, transparent 26%)',
     )
-    expect(board.legalCapture).toBe(
-      'radial-gradient(circle, transparent 55%, rgba(26, 26, 46, 0.3) 56%, ' +
-        'rgba(26, 26, 46, 0.3) 62%, transparent 63%)',
-    )
+  })
+
+  it('draws the board from the newsprint palette', () => {
+    // The board's colours are the page's: its light squares the bright paper,
+    // its hatch the ink, and what it marks — the last move, a check, the
+    // coach's arrow — the rubric. A hex written into the board instead would
+    // drift from the palette the day the palette changes.
+    const rgb = (hex: string) =>
+      [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)).join(', ')
+    expect(board.light).toBe(newsprint.paper.bright)
+    expect(board.hatch.colour).toBe(newsprint.ink.DEFAULT)
+    expect(board.lastMove).toMatch(new RegExp(`^rgba\\(${rgb(newsprint.rubric)}, `))
+    expect(board.check).toMatch(new RegExp(`^rgba\\(${rgb(newsprint.rubric)}, `))
+    expect(board.destination).toMatch(new RegExp(`^rgba\\(${rgb(newsprint.ink.DEFAULT)}, `))
+    expect(board.arrow.colour).toBe(newsprint.rubric)
   })
 
   it('keeps danger out of the newsprint palette', () => {

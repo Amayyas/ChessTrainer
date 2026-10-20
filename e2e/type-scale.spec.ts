@@ -11,11 +11,10 @@ import { expect, test } from './csp'
  * pages, two paragraphs of the landing and the tabs were set at the browser's
  * 16 px, which is not on the scale, until the rendered pages were measured.
  *
- * Three things are set off the scale on purpose and are left out: the
- * figurines, pictograms drawn at the size of what they stand beside; the
- * board's coordinates, which are the board's own; and the labels of the tab bar
- * fixed to the foot of a phone's screen, set below the scale so that six fit
- * across 320 px.
+ * Two things are set off the scale on purpose and are left out: the figurines,
+ * pictograms drawn at the size of what they stand beside, and the labels of the
+ * tab bar fixed to the foot of a phone's screen, set below the scale so that six
+ * fit across 320 px. The board's coordinates are on the scale.
  */
 
 const SCALE = Object.values(typeScale).map(([size]) => Number.parseFloat(size) * 16)
@@ -41,7 +40,7 @@ for (const width of [1440, 390]) {
           const text = node.textContent?.trim()
           const element = node.parentElement
           if (!text || !element || element.getClientRects().length === 0) continue
-          if (element.closest('.sr-only, [data-square]')) continue
+          if (element.closest('.sr-only')) continue
           const nav = element.closest('nav')
           if (nav && getComputedStyle(nav).position === 'fixed') continue
           if (firstFamily(element) === figurineFamily) continue

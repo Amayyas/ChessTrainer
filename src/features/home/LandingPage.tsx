@@ -1,6 +1,7 @@
 import { Fragment, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
-import type { Square } from 'react-chessboard/dist/chessboard/types'
+import BoardFrame from '@/components/Board/BoardFrame'
+import { boardStyle } from '@/components/Board/boardTheme'
 import { Box, Button } from '@/components/UI'
 import DoubleRule from '@/components/UI/DoubleRule'
 import GradeKey from '@/components/UI/GradeKey'
@@ -10,8 +11,9 @@ import Notation from '@/components/UI/Notation'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import ModeGrid from '@/features/home/ModeGrid'
 import { COACH_PROPOSAL, DIAGRAM, SAMPLE_GAME, moveNumber } from '@/features/home/sampleGame'
-import { board, brand } from '@/lib/design-tokens'
+import { brand } from '@/lib/design-tokens'
 import { ROUTES } from '@/routes'
+import type { Square } from '@/utils/chess'
 import { MOVE_QUALITY } from '@/utils/evaluation'
 
 /**
@@ -38,11 +40,7 @@ const DIAGRAM_LAST_MOVE = {
   from: DIAGRAM.lastMove.from as Square,
   to: DIAGRAM.lastMove.to as Square,
 }
-const COACH_ARROW: [Square, Square, string] = [
-  COACH_PROPOSAL.from as Square,
-  COACH_PROPOSAL.to as Square,
-  board.arrow,
-]
+const COACH_ARROW: [Square, Square] = [COACH_PROPOSAL.from as Square, COACH_PROPOSAL.to as Square]
 /** The game's last move, the one the caption quotes, at its place in the score. */
 const LAST_PLY = SAMPLE_GAME.length - 1
 const LAST_MOVE = SAMPLE_GAME[LAST_PLY]!
@@ -50,10 +48,11 @@ const LAST_MOVE = SAMPLE_GAME[LAST_PLY]!
 const noop = () => false
 const noTargets = (): Square[] => []
 
-// The board pulls in react-chessboard (~29 kB gzip). It illustrates one section
-// of a page that is otherwise eager for the first paint, so it loads on its own
-// and holds an aspect-square gap until it does. Imported by its own path, not
-// the Board barrel, which would also pull in EvalBar and MoveHistory.
+// The board pulls in chessground and the pieces. It illustrates one section of a
+// page that is otherwise eager for the first paint, so it loads on its own, and
+// until it does its empty frame holds the same room, coordinates included.
+// Imported by its own path, not the Board barrel, which would also pull in
+// EvalBar and MoveHistory.
 const ChessBoard = lazy(() => import('@/components/Board/ChessBoard'))
 
 /** The opening of a section: the double rule, then its heading. */
@@ -126,8 +125,13 @@ export default function LandingPage() {
 
         <figure id="diagramme-1" className="mt-9 lg:mt-0 lg:border-l lg:border-ink/30 lg:pl-11">
           <div className="mx-auto max-w-[30rem]">
-            <Suspense fallback={<div className="aspect-square w-full bg-paper-bright" />}>
+            {/* The frame waits for chessground with the squares already in it:
+                the diagram is the page's largest paint, and the pieces can
+                arrive after it. */}
+            <Suspense fallback={<BoardFrame style={boardStyle('hatched', false)} />}>
               <ChessBoard
+                diagram
+                label="Diagramme 1"
                 fen={DIAGRAM.fen}
                 turn="w"
                 interactive={false}
