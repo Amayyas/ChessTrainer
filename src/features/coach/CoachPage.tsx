@@ -128,14 +128,17 @@ export default function CoachPage() {
                   État de la partie
                 </h2>
                 {/* A check needs answering, so it is set as an alert; the
-                    rest of the time the state is a line of italic. */}
-                {coach.statusTone === 'alert' ? (
-                  <Tag tone="alert" className="mt-2">
-                    {statusLabel}
-                  </Tag>
-                ) : (
-                  <p className="mt-1 text-body italic">{statusLabel}</p>
-                )}
+                    rest of the time the state is a line of italic. Both sit in
+                    one live region that stays put, so a screen reader hears a
+                    check arrive as it hears the turn change: a line swapped for
+                    a tag outside one was never said. */}
+                <div role="status" className={coach.statusTone === 'alert' ? 'mt-2' : 'mt-1'}>
+                  {coach.statusTone === 'alert' ? (
+                    <Tag tone="alert">{statusLabel}</Tag>
+                  ) : (
+                    <p className="text-body italic">{statusLabel}</p>
+                  )}
+                </div>
               </section>
             )}
 
