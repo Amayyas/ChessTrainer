@@ -9,9 +9,15 @@ export type { ClassValue }
  * (`text-sm`, `text-lg`) and reads any other `text-*` as a colour, so without
  * this `cn('text-body text-ink')` kept only the ink and dropped the size, with
  * no warning.
+ *
+ * Its major follows Tailwind's: version 2 knows Tailwind 3, which this project
+ * runs, and version 3 knows Tailwind 4 alone. The two disagree in silence.
+ * Under 3, `outline` is a width, as Tailwind 4 has it, so `outline
+ * outline-[3px]` came out as the width without the style — and under Tailwind 3
+ * an outline with no style is not drawn at all.
  */
 const twMerge = extendTailwindMerge({
-  extend: { theme: { text: Object.keys(typeScale) } },
+  extend: { classGroups: { 'font-size': [{ text: Object.keys(typeScale) }] } },
 })
 
 /**

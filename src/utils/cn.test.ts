@@ -17,6 +17,17 @@ describe('cn', () => {
     expect(cn('text-caption', 'text-lg')).toBe('text-lg')
   })
 
+  it('merges as Tailwind 3 reads the classes, an outline keeping its style', () => {
+    // Tailwind 3's `outline` is the style, solid, and `outline-[3px]` the width:
+    // two properties, so both stay. Merged as Tailwind 4 reads them, the style
+    // went and the puzzle's frame was never drawn.
+    expect(cn('outline outline-[3px]', 'outline-rubric')).toBe(
+      'outline outline-[3px] outline-rubric',
+    )
+    // The control: two widths are still one property, and the later one wins.
+    expect(cn('outline-1', 'outline-[3px]')).toBe('outline-[3px]')
+  })
+
   it('still settles colour conflicts', () => {
     // The control: registering the sizes must not turn colours into sizes.
     expect(cn('text-ink', 'text-rubric')).toBe('text-rubric')
