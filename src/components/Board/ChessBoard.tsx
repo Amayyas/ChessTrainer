@@ -12,6 +12,7 @@ import { boardStyle } from '@/components/Board/boardTheme'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board, durations } from '@/lib/design-tokens'
 import type { PieceSymbol, Square } from '@/utils/chess'
+import { piecesOf } from '@/utils/fen'
 
 export interface ChessBoardProps {
   fen: string
@@ -34,25 +35,6 @@ export interface ChessBoardProps {
   diagram?: boolean
   /** What the board shows, for assistive technology. */
   label?: string
-}
-
-/** The squares holding a piece of the side to move, read from the FEN. */
-function squaresOf(fen: string, turn: 'w' | 'b'): Square[] {
-  const rows = (fen.split(' ')[0] ?? '').split('/')
-  const squares: Square[] = []
-  rows.forEach((row, index) => {
-    let file = 0
-    for (const char of row) {
-      if (/\d/.test(char)) {
-        file += Number(char)
-        continue
-      }
-      const white = char === char.toUpperCase()
-      if (white === (turn === 'w')) squares.push(`${'abcdefgh'[file]}${8 - index}` as Square)
-      file += 1
-    }
-  })
-  return squares
 }
 
 /**
@@ -94,7 +76,8 @@ export default function ChessBoard({
   const dests = useMemo(() => {
     const map = new Map<Key, Key[]>()
     if (!interactive || diagram) return map
-    for (const square of squaresOf(fen, turn)) {
+    for (const [square, piece] of piecesOf(fen)) {
+      if (piece.color !== turn) continue
       const targets = getLegalTargets(square)
       if (targets.length > 0) map.set(square, targets)
     }
