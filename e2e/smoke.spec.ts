@@ -98,6 +98,32 @@ test('the coach boots the engine and shows the board', async ({ page }) => {
   await expect(page.locator('.cg-wrap piece:not(.ghost)')).toHaveCount(32)
 })
 
+test('a move typed into the field under the board is played on it', async ({ page }) => {
+  // chessground answers the pointer alone; the field is the keyboard's way in.
+  await page.goto('/coach')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  const field = page.getByRole('textbox', { name: 'Jouer au clavier' })
+
+  await field.fill('e4')
+  await field.press('Enter')
+  await field.fill('Cf6')
+  await field.press('Enter')
+
+  // Both moves in the list, and on the board the rubric on the last one's
+  // squares; the field is empty and still has the focus for the next.
+  await expect(page.getByTestId('move-history')).toContainText(/1\.\s*e4.*f6/)
+  // Shown ones only: chessground hides the marks it is done with, to reuse.
+  await expect(page.locator('.cg-wrap square.last-move:visible')).toHaveCount(2)
+  await expect(field).toHaveValue('')
+  await expect(field).toBeFocused()
+
+  // A move the position does not allow is said, not played.
+  await field.fill('Dh4')
+  await field.press('Enter')
+  await expect(page.getByText(/Dh4.+n’est pas un coup possible ici/)).toBeVisible()
+  await expect(field).toHaveAttribute('aria-invalid', 'true')
+})
+
 test('the Piece Hunt renders its own board, no engine', async ({ page }) => {
   await page.goto('/hunt')
   await expect(page.getByRole('heading', { level: 1, name: 'Chasse aux Pièces' })).toBeVisible()

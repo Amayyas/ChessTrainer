@@ -1,4 +1,4 @@
-import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
+import { ChessBoard, EvalBar, MoveHistory, MoveInput } from '@/components/Board'
 import HintList from '@/components/HintList'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import Input from '@/components/UI/Input'
@@ -48,24 +48,42 @@ export default function CoachPage() {
 
       <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
         {/* self-start keeps the gauge tied to the board height instead of
-            stretching to the (taller) side panel as the move list grows. On a
-            phone the gauge lies across the top of the board. */}
-        <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 self-start sm:flex-row sm:gap-3.5 lg:pr-12">
-          <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
-          <div className="min-w-0 flex-1">
-            <ChessBoard
-              fen={coach.viewFen}
-              turn={game.turn}
-              orientation={coach.orientation}
-              interactive={!inReplay}
-              onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
-              getLegalTargets={game.getLegalTargets}
-              isPromotion={game.isPromotion}
-              lastMove={coach.viewLastMove}
-              checkSquare={inReplay ? null : game.checkSquare}
-              arrows={coach.arrows}
-            />
+            stretching to the (taller) side panel as the move list grows; the
+            keyboard field sits below the two, so the gauge does not stretch
+            down beside it either. On a phone the gauge lies across the top of
+            the board. */}
+        <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:gap-3.5">
+            <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
+            <div className="min-w-0 flex-1">
+              <ChessBoard
+                fen={coach.viewFen}
+                turn={game.turn}
+                orientation={coach.orientation}
+                interactive={!inReplay}
+                onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
+                getLegalTargets={game.getLegalTargets}
+                isPromotion={game.isPromotion}
+                lastMove={coach.viewLastMove}
+                checkSquare={inReplay ? null : game.checkSquare}
+                arrows={coach.arrows}
+              />
+            </div>
           </div>
+          <MoveInput
+            className="mt-6"
+            fen={game.fen}
+            turn={game.turn}
+            enabled={!inReplay && !game.status.isOver}
+            onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
+            getLegalTargets={game.getLegalTargets}
+            isPromotion={game.isPromotion}
+            idleMessage={
+              inReplay
+                ? 'Vous revoyez la partie\u00a0: quittez la revue pour jouer.'
+                : 'La partie est terminée.'
+            }
+          />
         </div>
 
         <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
