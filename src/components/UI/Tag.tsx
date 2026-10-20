@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react'
+import { RUBRIC_INLINE } from '@/components/UI/rubricBlock'
 import { cn } from '@/utils/cn'
 
 /**
@@ -22,7 +23,7 @@ const TONES = {
   muted: 'text-ink-soft',
   ink: 'text-ink',
   accent: 'text-rubric',
-  alert: 'bg-rubric px-1.5 py-1 -my-1 text-paper-bright',
+  alert: RUBRIC_INLINE,
 } as const
 
 export type TagTone = keyof typeof TONES

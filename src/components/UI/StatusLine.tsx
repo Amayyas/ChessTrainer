@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { RUBRIC_INLINE } from '@/components/UI/rubricBlock'
 import Spinner from '@/components/UI/Spinner'
 import { cn } from '@/utils/cn'
 
@@ -29,7 +30,7 @@ export default function StatusLine({
       role="status"
       className={cn(
         'inline-flex items-center gap-2 text-kicker font-semibold uppercase',
-        alert ? '-my-1 bg-rubric px-1.5 py-1 text-paper-bright' : 'text-ink-soft',
+        alert ? RUBRIC_INLINE : 'text-ink-soft',
       )}
     >
       <span aria-hidden="true" className="inline-flex size-4 items-center justify-center">
