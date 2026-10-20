@@ -325,6 +325,8 @@ export const brand = {
   /** Stands in for a logo until there is one. */
   mark: '♞',
   tagline: 'Apprenez les échecs avec un coach intelligent',
+  /** What the masthead promises above the name. */
+  promise: 'Gratuit, sans compte obligatoire',
   /** The AGPL obliges the offer of source, so this link is not decorative. */
   sourceUrl: 'https://github.com/Amayyas/ChessTrainer',
 } as const

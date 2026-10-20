@@ -105,7 +105,7 @@ export default function Masthead({ variant }: { variant: 'full' | 'compact' }) {
               'sm:order-none sm:flex sm:min-h-11 sm:items-center sm:border-b sm:border-ink/30 sm:pb-0 sm:text-left',
             )}
           >
-            Gratuit, sans compte obligatoire.
+            {brand.promise}.
           </p>
           <Account className="order-1 self-end sm:order-none sm:border-b sm:border-ink/30" />
           <Link

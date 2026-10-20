@@ -12,6 +12,7 @@ import {
   newsreaderMetrics,
   typeScale,
 } from '@/lib/design-tokens'
+import { MODES } from '@/features/home/modes'
 import tailwindConfig from '../../tailwind.config'
 
 /** WCAG 2.x relative luminance of a `#RRGGBB` colour. */
@@ -101,6 +102,31 @@ describe('design tokens', () => {
     // A PNG's header holds its width and height, as big-endian words, at 16.
     const png = readFileSync(resolve('public/og-image.png'))
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual(declared)
+  })
+
+  it('draws the social image from the words and colours the site holds', () => {
+    // scripts/render-social-image.mjs writes what it read into the PNG, as a
+    // tEXt chunk. A renamed mode or a new tagline would otherwise leave the old
+    // picture behind with nothing failing.
+    const png = readFileSync(resolve('public/og-image.png'))
+    let source: unknown = null
+    for (let at = 8; at < png.length;) {
+      const length = png.readUInt32BE(at)
+      if (png.toString('latin1', at + 4, at + 8) === 'tEXt') {
+        const data = png.toString('latin1', at + 8, at + 8 + length)
+        const split = data.indexOf('\0')
+        if (data.slice(0, split) === 'Source') source = JSON.parse(data.slice(split + 1))
+      }
+      at += 12 + length
+    }
+    expect(source, 'redraw it: node scripts/render-social-image.mjs').toEqual({
+      name: brand.name,
+      tagline: brand.tagline,
+      promise: brand.promise,
+      modes: MODES.map((mode) => mode.title),
+      paper: newsprint.paper.DEFAULT,
+      ink: newsprint.ink.DEFAULT,
+    })
   })
 
   it('measures contrast the way WCAG does', () => {
