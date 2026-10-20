@@ -1,4 +1,6 @@
-import { devices, type Page } from '@playwright/test'
+import { devices, type Locator, type Page } from '@playwright/test'
+import { INLINE_LINK } from '@/components/UI/link'
+import { RUBRIC_ALERT } from '@/components/UI/rubricBlock'
 import { newsprint } from '@/lib/design-tokens'
 import { expect, test } from './csp'
 
@@ -225,23 +227,49 @@ test('the evaluation gauge stands centred over its figures', async ({ page }) =>
 test('a link in an alert stays readable under the pointer', async ({ page }) => {
   // An inline link turns to the rubric under the pointer, the ground of an
   // alert: on the expired-link screen, the link to ask for a new one vanished
-  // when pointed at. Hover is a browser's to compute, so it is checked here.
+  // when pointed at. Hover is a browser's to compute, so it is checked here, on
+  // an alert set with the classes Alert and the inline links use. The screens
+  // that show one need an account server, which a build without its keys —
+  // this job's — does not have, so the alert is laid on a page that is always
+  // there.
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto('/nouveau-mot-de-passe')
-  const alert = page.getByRole('alert')
-  const link = alert.getByRole('link', { name: 'demandez-en un nouveau' })
-  await link.hover()
+  await page.goto('/mentions-legales')
+  const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(newsprint.rubric.slice(at, at + 2), 16))
+  const rubric = `rgb(${r}, ${g}, ${b})`
+
   // The colour eases over 150 ms, and a reading taken mid-way passes whatever
   // it eases to: wait for the transition to run out, then read it once.
-  await link.evaluate((element) =>
-    Promise.all(element.getAnimations().map((animation) => animation.finished)),
-  )
+  const colourUnderPointer = async (link: Locator) => {
+    await link.hover()
+    await link.evaluate((element) =>
+      Promise.all(element.getAnimations().map((animation) => animation.finished)),
+    )
+    return link.evaluate((element) => getComputedStyle(element).color)
+  }
 
-  const ground = await alert.evaluate((element) => getComputedStyle(element).backgroundColor)
-  // The control: the alert is on the rubric, so the comparison means something.
-  const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(newsprint.rubric.slice(at, at + 2), 16))
-  expect(ground).toBe(`rgb(${r}, ${g}, ${b})`)
-  expect(await link.evaluate((element) => getComputedStyle(element).color)).not.toBe(ground)
+  // The control: an inline link on the page does turn to the rubric under the
+  // pointer, so hover applies in this browser and a pass below means something.
+  expect(
+    await colourUnderPointer(page.getByRole('link', { name: 'contact@chesstrainer.fr' })),
+  ).toBe(rubric)
+
+  await page.evaluate(
+    ([alertClasses, linkClasses]) => {
+      const alert = document.createElement('p')
+      alert.setAttribute('role', 'alert')
+      alert.className = alertClasses!
+      const link = document.createElement('a')
+      link.href = '/mot-de-passe-oublie'
+      link.className = linkClasses!
+      link.textContent = 'demandez-en un nouveau'
+      alert.append('Ce lien n’est plus valide : ', link, '.')
+      document.querySelector('main')!.prepend(alert)
+    },
+    [RUBRIC_ALERT, INLINE_LINK],
+  )
+  const alert = page.getByRole('alert')
+  expect(await alert.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(rubric)
+  expect(await colourUnderPointer(alert.getByRole('link'))).not.toBe(rubric)
 })
 
 test('the footer sits at the bottom of a short page, not under its content', async ({ page }) => {
