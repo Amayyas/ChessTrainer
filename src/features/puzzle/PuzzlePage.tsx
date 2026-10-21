@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { ChessBoard, MoveInput } from '@/components/Board'
+import { BoardControls, ChessBoard, MoveInput } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import BoxScore from '@/components/UI/BoxScore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
@@ -59,16 +59,17 @@ function PuzzleBoard({
             lastMove={runner.lastMove}
           />
         </div>
-        <MoveInput
-          className="mt-6"
-          fen={runner.fen}
-          turn={runner.solverColor}
-          enabled={!runner.isSolved}
-          onMove={runner.attempt}
-          getLegalTargets={runner.getLegalTargets}
-          isPromotion={runner.isPromotion}
-          idleMessage="Ce puzzle est résolu."
-        />
+        <BoardControls>
+          <MoveInput
+            fen={runner.fen}
+            turn={runner.solverColor}
+            enabled={!runner.isSolved}
+            onMove={runner.attempt}
+            getLegalTargets={runner.getLegalTargets}
+            isPromotion={runner.isPromotion}
+            idleMessage="Ce puzzle est résolu."
+          />
+        </BoardControls>
         <p role="status" className="sr-only">
           {runner.feedback === 'correct'
             ? 'Bon coup.'

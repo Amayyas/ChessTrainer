@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChessBoard, MoveHistory, MoveInput } from '@/components/Board'
+import { BoardControls, ChessBoard, MoveHistory, MoveInput } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import StatusLine from '@/components/UI/StatusLine'
 import BattleSetup from '@/features/battle/BattleSetup'
@@ -92,18 +92,19 @@ export default function BattlePage() {
             lastMove={game.lastMove}
             checkSquare={game.checkSquare}
           />
-          <MoveInput
-            className="mt-6"
-            fen={game.fen}
-            turn={game.turn}
-            enabled={phase === 'playing' && game.turn === playerColor}
-            onMove={battle.playerMove}
-            getLegalTargets={game.getLegalTargets}
-            isPromotion={game.isPromotion}
-            idleMessage={
-              phase === 'playing' ? 'Ce n’est pas à vous de jouer.' : 'La partie est terminée.'
-            }
-          />
+          <BoardControls>
+            <MoveInput
+              fen={game.fen}
+              turn={game.turn}
+              enabled={phase === 'playing' && game.turn === playerColor}
+              onMove={battle.playerMove}
+              getLegalTargets={game.getLegalTargets}
+              isPromotion={game.isPromotion}
+              idleMessage={
+                phase === 'playing' ? 'Ce n’est pas à vous de jouer.' : 'La partie est terminée.'
+              }
+            />
+          </BoardControls>
         </div>
 
         <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">

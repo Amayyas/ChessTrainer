@@ -124,6 +124,38 @@ test('a move typed into the field under the board is played on it', async ({ pag
   await expect(field).toHaveAttribute('aria-invalid', 'true')
 })
 
+test('the squares turn plain on the button under the board, and stay so', async ({ page }) => {
+  /** The squares the board draws, as the data URI its frame is handed. */
+  const squares = () =>
+    page
+      .locator('.cg-wrap')
+      .evaluate((wrap) =>
+        decodeURIComponent(
+          getComputedStyle(wrap.parentElement!).getPropertyValue('--board-squares'),
+        ),
+      )
+
+  await page.goto('/coach')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  // The control: hatched to begin with, so the change below is the button's.
+  expect(await squares()).toContain('pattern id="hatch"')
+
+  const toggle = page.getByRole('button', { name: 'Cases unies' })
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  expect(await squares()).not.toContain('pattern')
+
+  // Kept on the device: still plain after a reload.
+  await page.reload()
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  expect(await squares()).not.toContain('pattern')
+
+  // The landing's diagram is the printed figure, hatched whatever the choice.
+  await page.goto('/')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  expect(await squares()).toContain('pattern id="hatch"')
+})
+
 test('the Piece Hunt renders its own board, no engine', async ({ page }) => {
   await page.goto('/hunt')
   await expect(page.getByRole('heading', { level: 1, name: 'Chasse aux Pièces' })).toBeVisible()

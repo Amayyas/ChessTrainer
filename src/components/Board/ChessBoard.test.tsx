@@ -3,8 +3,10 @@ import type { Config } from '@lichess-org/chessground/config'
 import type { Key, MoveMetadata } from '@lichess-org/chessground/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChessBoard from '@/components/Board/ChessBoard'
+import { boardStyle } from '@/components/Board/boardTheme'
 import { useChessGame } from '@/hooks/useChessGame'
 import { board, durations } from '@/lib/design-tokens'
+import { useBoardStore } from '@/store/useBoardStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
 
 // chessground finds a square from the pointer's place on a measured board,
@@ -84,6 +86,7 @@ function reduceMotion(reduce: boolean) {
 beforeEach(() => {
   ground.init = null
   ground.sets = []
+  useBoardStore.setState({ squares: 'hatched' })
 })
 
 afterEach(() => {
@@ -187,6 +190,32 @@ describe('ChessBoard', () => {
     // After 1.e4 f6 2.d4 g5 3.Qh5+: the black king is in check.
     render(<Harness fen="rnbqkbnr/ppppp2p/5p2/6pQ/3PP3/8/PPP2PPP/RNB1KBNR b KQkq - 1 3" />)
     expect(latest().check).toBe(true)
+  })
+
+  it('draws the squares the player chose, and a diagram always hatched', () => {
+    const squaresOf = (container: HTMLElement) =>
+      (container.querySelector('.cg-wrap')!.parentElement as HTMLElement).style.getPropertyValue(
+        '--board-squares',
+      )
+    const drawn = (variant: 'hatched' | 'plain') =>
+      (boardStyle(variant, false) as Record<string, string>)['--board-squares']
+
+    useBoardStore.setState({ squares: 'plain' })
+    const played = render(<Harness />)
+    expect(squaresOf(played.container)).toBe(drawn('plain'))
+    played.unmount()
+
+    const diagram = render(
+      <ChessBoard
+        diagram
+        fen="8/8/8/8/8/8/8/K6k w - - 0 1"
+        turn="w"
+        onMove={() => false}
+        getLegalTargets={() => []}
+        isPromotion={() => false}
+      />,
+    )
+    expect(squaresOf(diagram.container)).toBe(drawn('hatched'))
   })
 
   it('sets the coordinates outside the frame, turned with the board', () => {

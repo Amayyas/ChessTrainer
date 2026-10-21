@@ -11,6 +11,7 @@ import PromotionPicker from '@/components/Board/PromotionPicker'
 import { boardStyle } from '@/components/Board/boardTheme'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board, durations } from '@/lib/design-tokens'
+import { useBoardStore } from '@/store/useBoardStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
 import { piecesOf } from '@/utils/fen'
 
@@ -64,6 +65,9 @@ export default function ChessBoard({
   label = 'Échiquier',
 }: ChessBoardProps) {
   const reduceMotion = usePrefersReducedMotion()
+  // A diagram is the printed figure and keeps its hatching; the boards one
+  // plays on follow the player's choice.
+  const squares = useBoardStore((state) => state.squares)
   const wrapRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<Api | null>(null)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square } | null>(null)
@@ -194,7 +198,10 @@ export default function ChessBoard({
   }
 
   return (
-    <BoardFrame orientation={orientation} style={boardStyle('hatched', reduceMotion)}>
+    <BoardFrame
+      orientation={orientation}
+      style={boardStyle(diagram ? 'hatched' : squares, reduceMotion)}
+    >
       <div ref={wrapRef} role="img" aria-label={label} className="cg-wrap" />
       {promotion && (
         <PromotionPicker
