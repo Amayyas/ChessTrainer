@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import MoveInput from '@/components/Board/MoveInput'
 import { useChessGame } from '@/hooks/useChessGame'
+import { MOVE_EXAMPLES_LINE } from '@/utils/moveText'
 
 function Harness({
   fen,
@@ -38,7 +39,9 @@ function Harness({
 
 const field = () => screen.getByRole('textbox', { name: 'Jouer au clavier' })
 
-const EXAMPLE = 'Par exemple e4, Cf3, O-O, e8=D ou e2e4.'
+// The line the reader's own examples make: a line written here by hand would
+// stay put if the letters it reads changed.
+const EXAMPLE = MOVE_EXAMPLES_LINE
 
 describe('MoveInput', () => {
   it('plays the move typed on Enter, empties the field and keeps the focus in it', async () => {

@@ -49,6 +49,24 @@ const COORDINATES = new RegExp(`^([a-h][1-8])[-x:\\s]?([a-h][1-8])=?(${PROMOTED}
 /** A piece letter typed small, at the start where a piece is named. */
 const SMALL_PIECE = new RegExp(`^[${Object.keys(PIECE_OF).join('').toLowerCase()}]`)
 
+/**
+ * A move of each kind the reader takes, written as it reads them: from the
+ * letters it reads, so the examples change with them.
+ */
+const EXAMPLE = {
+  pawn: 'e4',
+  piece: `${FRENCH_LETTERS.N}f3`,
+  castling: 'O-O',
+  promotion: `e8=${FRENCH_LETTERS.Q}`,
+  squares: 'e2e4',
+} as const
+
+/** The examples the field shows under it. */
+export const MOVE_EXAMPLES: readonly string[] = Object.values(EXAMPLE)
+
+/** The line under the field: "Par exemple e4, Cf3, O-O, e8=D ou e2e4." */
+export const MOVE_EXAMPLES_LINE = `Par exemple ${orList([...MOVE_EXAMPLES])}.`
+
 /** O-O or O-O-O, written with the letter or the zero, the dashes optional. */
 const CASTLING = /^[O0o](-?[O0o]){1,2}$/
 
@@ -173,7 +191,12 @@ function readExactly(text: string, position: MovePosition, moves: Candidate[]): 
   const algebraic = ALGEBRAIC.exec(plain)
   if (!algebraic) {
     return {
-      error: `${quoted(text)} ne se lit pas comme un coup${NBSP}: essayez e4, Cf3, O-O ou e2e4.`,
+      error: `${quoted(text)} ne se lit pas comme un coup${NBSP}: essayez ${orList([
+        EXAMPLE.pawn,
+        EXAMPLE.piece,
+        EXAMPLE.castling,
+        EXAMPLE.squares,
+      ])}.`,
       respell: true,
     }
   }
@@ -220,7 +243,7 @@ function readExactly(text: string, position: MovePosition, moves: Candidate[]): 
  */
 export function readMove(typed: string, position: MovePosition): ReadMove {
   const text = typed.trim()
-  if (!text) return { error: 'Tapez un coup, par exemple e4 ou Cf3.' }
+  if (!text) return { error: `Tapez un coup, par exemple ${EXAMPLE.pawn} ou ${EXAMPLE.piece}.` }
   const moves = movesOf(position)
   const reading = readExactly(text, position, moves)
   if (!('error' in reading)) return reading

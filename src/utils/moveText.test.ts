@@ -1,6 +1,12 @@
 import { Chess, type Move } from 'chess.js'
 import { describe, expect, it } from 'vitest'
-import { readMove, type MovePosition, type ReadMove } from '@/utils/moveText'
+import {
+  MOVE_EXAMPLES,
+  MOVE_EXAMPLES_LINE,
+  readMove,
+  type MovePosition,
+  type ReadMove,
+} from '@/utils/moveText'
 import { FRENCH_LETTERS, type PieceLetter } from '@/utils/notation'
 
 /** A position as the board hands it over, from a chess.js game. */
@@ -129,6 +135,22 @@ describe('readMove, written in other ways', () => {
       expect(readMove(typed, position), typed).toEqual({ from: 'a7', to: 'a8', promotion: 'q' })
     }
     expect(readMove('axb8=C', position)).toEqual({ from: 'a7', to: 'b8', promotion: 'n' })
+  })
+})
+
+describe('the examples the field shows', () => {
+  it('are moves the reader reads, each in a position that allows it', () => {
+    const positions = [START, POSITIONS.italian, '8/4P3/8/8/8/8/k7/4K3 w - - 0 1'].map(positionOf)
+    for (const example of MOVE_EXAMPLES) {
+      expect(
+        positions.some((position) => !('error' in readMove(example, position))),
+        example,
+      ).toBe(true)
+    }
+  })
+
+  it('are all in the line under the field', () => {
+    for (const example of MOVE_EXAMPLES) expect(MOVE_EXAMPLES_LINE).toContain(example)
   })
 })
 

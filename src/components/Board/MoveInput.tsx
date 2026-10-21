@@ -1,6 +1,6 @@
 import KeyboardField from '@/components/Board/KeyboardField'
 import type { PieceSymbol, Square } from '@/utils/chess'
-import { readMove, type MovePosition } from '@/utils/moveText'
+import { MOVE_EXAMPLES_LINE, readMove, type MovePosition } from '@/utils/moveText'
 
 export interface MoveInputProps extends MovePosition {
   /** Whether the board takes a move now. */
@@ -29,7 +29,7 @@ export default function MoveInput({
   return (
     <KeyboardField
       label="Jouer au clavier"
-      example="Par exemple e4, Cf3, O-O, e8=D ou e2e4."
+      example={MOVE_EXAMPLES_LINE}
       enabled={enabled}
       position={fen}
       className={className}
