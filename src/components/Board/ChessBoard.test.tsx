@@ -269,6 +269,14 @@ describe('ChessBoard', () => {
     expect(latest().drawable?.autoShapes).toEqual([{ orig: 'b8', dest: 'c6', brush: 'coach' }])
   })
 
+  it('closes the promotion choice when the board stops taking moves', () => {
+    const { rerender } = render(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" />)
+    moveOnBoard('e7', 'e8')
+    expect(screen.getByRole('group', { name: /Promotion/ })).toBeInTheDocument()
+    rerender(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" interactive={false} />)
+    expect(screen.queryByRole('group', { name: /Promotion/ })).not.toBeInTheDocument()
+  })
+
   it('sets the coordinates outside the frame, turned with the board', () => {
     const { container, rerender } = render(
       <ChessBoard

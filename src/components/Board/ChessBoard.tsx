@@ -177,11 +177,14 @@ export default function ChessBoard({
   )
 
   // A new position from outside — the engine's reply, an undo — drops whatever
-  // was half done on the old one.
+  // was half done on the old one, and so does a board that stops taking moves:
+  // a clock run out, a game resigned, with a promotion's choice still open.
+  // The pawn comes back with the config, which either change renews and which
+  // chessground is handed whole.
   useEffect(() => {
     apiRef.current?.selectSquare(null)
     setPromotion(null)
-  }, [fen, apiRef])
+  }, [fen, interactive, apiRef])
 
   const choosePromotion = (piece: PieceSymbol) => {
     const pending = promotion
