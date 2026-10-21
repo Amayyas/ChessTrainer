@@ -26,6 +26,12 @@ test('the landing renders, then hydrates into a working SPA', async ({ page }) =
   expect(errors).toEqual([])
 })
 
+/** A token's `#RRGGBB` as a computed style writes it. */
+function rgbOf(hex: string): string {
+  const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
 /**
  * Clicks a square on the board from its place on screen, as a player finds it:
  * chessground draws the pieces and the marks, not an element per square. The
@@ -124,6 +130,35 @@ test('a promotion taken back leaves the board playable', async ({ page }) => {
   // The king can be picked up again: its five squares are dotted.
   await clickSquare(page, 'e1')
   await expect(page.locator('.cg-wrap square.move-dest:visible')).toHaveCount(5)
+})
+
+test('a square keeps its marks under the ones a selection adds', async ({ page }) => {
+  await page.goto('/coach')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  const field = page.getByRole('textbox', { name: 'Jouer au clavier' })
+  /** A square's computed style, found by the marks it carries. */
+  const styleOf = (marks: string, property: 'backgroundColor' | 'boxShadow') =>
+    page
+      .locator(`.cg-wrap square${marks}:visible`)
+      .evaluate((square, property) => getComputedStyle(square)[property], property)
+
+  // 1.e4 d5: d5 is the last move's, and the e4 pawn picked up can take there.
+  // The ring round the pawn to take must leave the last move's tint under it.
+  await field.fill('e4')
+  await field.press('Enter')
+  await field.fill('d5')
+  await field.press('Enter')
+  await clickSquare(page, 'e4')
+  expect(await styleOf('.last-move.move-dest', 'backgroundColor')).not.toBe('rgba(0, 0, 0, 0)')
+
+  // A king in check picked up shows the check's rule and the ring inside it.
+  await page.getByText('Analyse libre', { exact: true }).click()
+  await page.getByLabel('Position de départ (FEN)').fill('4k3/8/8/8/8/8/4r3/4K3 w - - 0 1')
+  await page.getByRole('button', { name: 'Charger' }).click()
+  await clickSquare(page, 'e1')
+  const rings = await styleOf('.check.selected', 'boxShadow')
+  expect(rings).toContain(rgbOf(newsprint.rubric))
+  expect(rings).toContain(rgbOf(newsprint.ink.DEFAULT))
 })
 
 test('a move typed into the field under the board is played on it', async ({ page }) => {
@@ -410,8 +445,7 @@ test('a link in an alert stays readable under the pointer', async ({ page }) => 
   // there.
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/mentions-legales')
-  const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(newsprint.rubric.slice(at, at + 2), 16))
-  const rubric = `rgb(${r}, ${g}, ${b})`
+  const rubric = rgbOf(newsprint.rubric)
 
   // The colour eases over 150 ms, and a reading taken mid-way passes whatever
   // it eases to: wait for the transition to run out, then read it once.
