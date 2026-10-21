@@ -6,7 +6,7 @@ afterEach(() => {
   cleanup()
 })
 
-// jsdom lacks ResizeObserver, which react-chessboard relies on to size the board.
+// jsdom lacks ResizeObserver, which chessground uses to redraw a board resized.
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

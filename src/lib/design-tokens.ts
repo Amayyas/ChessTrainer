@@ -3,7 +3,7 @@
  *
  * Tailwind reads this file for its theme, and the few components that need a
  * colour as a plain string — the boards, whose colours reach chessground and
- * react-chessboard as values rather than class names — import from here too.
+ * their stylesheet as values rather than class names — import from here too.
  * So a change of palette is a change to this file, and nothing else.
  *
  * Values were previously repeated as literals inside those components, which
@@ -68,17 +68,13 @@ export const typeScale = {
  * coach's arrow fades in; nothing else animates, nothing enters on arrival and
  * nothing lifts under the pointer. Under prefers-reduced-motion both are zero.
  *
- * The board reads them: chessground animates the pieces, and board.css fades a
- * new arrow in. The Piece Hunt glides at its own 120 ms until it moves to
- * chessground too.
+ * The boards read them: chessground animates the pieces, and board.css fades a
+ * new arrow in.
  */
 export const durations = {
   piece: 140,
   arrow: 120,
 } as const
-
-/** Danger, kept apart from the identity: it means "wrong", not "brand". */
-export const danger = '#DC2626'
 
 /** `#RRGGBB` to its three channels, 0–255. */
 function channels(hex: string): [number, number, number] {
@@ -92,27 +88,6 @@ function alpha(hex: string, opacity: number): string {
   const [r, g, b] = channels(hex)
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
-
-/**
- * The colours the Piece Hunt's board kept from the previous identity — ebony,
- * gold and slate — until it moves to chessground as the other boards have.
- * They are written out here, rather than read from that identity's palette, so
- * the palette could go with the last page that used it.
- */
-const PREVIOUS_BOARD = { ebony: '#1A1A2E', gold: '#C9A84C', slate: '#4A4A5A' } as const
-
-/** The Piece Hunt's board, as react-chessboard styles it: CSS values, not classes. */
-export const previousBoard = {
-  /** Slightly deeper than the previous page so the light squares read against it. */
-  lightSquare: '#EDE6D8',
-  darkSquare: PREVIOUS_BOARD.slate,
-  /** The champion. */
-  selected: alpha(PREVIOUS_BOARD.gold, 0.55),
-  /** An enemy that can take the champion. */
-  threat: alpha(danger, 0.55),
-  /** Where the champion may go, drawn as a dot. */
-  legalTarget: `radial-gradient(circle, ${alpha(PREVIOUS_BOARD.ebony, 0.3)} 22%, transparent 26%)`,
-} as const
 
 /**
  * The board, set as a chess column prints its diagram: the light squares on

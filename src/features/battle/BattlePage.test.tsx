@@ -6,7 +6,7 @@ import BattlePage from '@/features/battle/BattlePage'
 import type { UseBattleGame } from '@/features/battle/useBattleGame'
 
 // The board and the move list are not what is under test, and the board pulls
-// in react-chessboard; the page is checked around them.
+// in chessground; the page is checked around them.
 vi.mock('@/components/Board', () => ({
   BoardControls: () => null,
   ChessBoard: () => null,

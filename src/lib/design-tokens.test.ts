@@ -4,13 +4,11 @@ import { describe, expect, it } from 'vitest'
 import {
   board,
   brand,
-  danger,
   fallbackFaces,
   fallbackFontFaces,
   fonts,
   newsprint,
   newsreaderMetrics,
-  previousBoard,
   typeScale,
 } from '@/lib/design-tokens'
 import { MODES } from '@/features/home/modes'
@@ -34,23 +32,7 @@ function contrast(first: string, second: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
-/**
- * These values used to be written out inside the board components. Moving them
- * here must not change a single pixel, so the expectations below are the exact
- * strings those components carried — if a refactor shifts one, this fails
- * rather than the change reaching a player's screen.
- */
 describe('design tokens', () => {
-  it('keeps the Piece Hunt’s board as it was until it moves', () => {
-    expect(previousBoard.lightSquare).toBe('#EDE6D8')
-    expect(previousBoard.darkSquare).toBe('#4A4A5A')
-    expect(previousBoard.selected).toBe('rgba(201, 168, 76, 0.55)')
-    expect(previousBoard.threat).toBe('rgba(220, 38, 38, 0.55)')
-    expect(previousBoard.legalTarget).toBe(
-      'radial-gradient(circle, rgba(26, 26, 46, 0.3) 22%, transparent 26%)',
-    )
-  })
-
   it('draws the board from the newsprint palette', () => {
     // The board's colours are the page's: its light squares the bright paper,
     // its hatch the ink, and what it marks — the last move, a check, the
@@ -64,16 +46,6 @@ describe('design tokens', () => {
     expect(board.check).toMatch(new RegExp(`^rgba\\(${rgb(newsprint.rubric)}, `))
     expect(board.destination).toMatch(new RegExp(`^rgba\\(${rgb(newsprint.ink.DEFAULT)}, `))
     expect(board.arrow.colour).toBe(newsprint.rubric)
-  })
-
-  it('keeps danger out of the newsprint palette', () => {
-    // It means "wrong" on the board, not a colour of the page, so a change of
-    // palette must not sweep it up.
-    expect(danger).toBe('#DC2626')
-    const colours = Object.values(newsprint).flatMap((value) =>
-      typeof value === 'string' ? [value] : Object.values(value),
-    )
-    expect(colours).not.toContain(danger)
   })
 
   it('gives the browser the paper as its theme colour', () => {
