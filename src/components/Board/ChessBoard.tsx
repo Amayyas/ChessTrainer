@@ -82,12 +82,19 @@ export default function ChessBoard({
     return map
   }, [fen, turn, interactive, diagram, getLegalTargets])
 
+  // The last move and the arrows by value: a page may build them anew at each
+  // render, and a config rebuilt for nothing is the whole position handed to
+  // chessground again, in the middle of a drag as like as not.
+  const lastFrom = lastMove?.from
+  const lastTo = lastMove?.to
+  const arrowKey = (arrows ?? []).map(([orig, dest]) => `${orig}${dest}`).join(' ')
+
   const config = useMemo<Config>(
     () => ({
       fen,
       orientation,
       turnColor: color,
-      lastMove: lastMove ? [lastMove.from, lastMove.to] : undefined,
+      lastMove: lastFrom && lastTo ? [lastFrom, lastTo] : undefined,
       check: Boolean(checkSquare),
       movable: {
         free: false,
@@ -99,20 +106,26 @@ export default function ChessBoard({
       selectable: { enabled: interactive && !diagram },
       animation: { enabled: !reduceMotion, duration: durations.piece },
       drawable: {
-        autoShapes: (arrows ?? []).map(([orig, dest]) => ({ orig, dest, brush: 'coach' })),
+        // Each arrow is its two squares run together: "g1f3".
+        autoShapes: (arrowKey ? arrowKey.split(' ') : []).map((pair) => ({
+          orig: pair.slice(0, 2) as Key,
+          dest: pair.slice(2) as Key,
+          brush: 'coach',
+        })),
       },
     }),
     [
       fen,
       orientation,
       color,
-      lastMove,
+      lastFrom,
+      lastTo,
       checkSquare,
       interactive,
       diagram,
       dests,
       reduceMotion,
-      arrows,
+      arrowKey,
     ],
   )
 

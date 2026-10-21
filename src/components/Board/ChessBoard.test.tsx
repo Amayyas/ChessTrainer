@@ -246,6 +246,29 @@ describe('ChessBoard', () => {
     expect(squaresOf(diagram.container)).toBe(drawn('hatched'))
   })
 
+  it('hands chessground nothing new when a render brings the same position', () => {
+    // A page may build the last move and the arrows anew at each render, as
+    // the coach's replay does: equal values are the same board.
+    const props = {
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+      turn: 'b' as const,
+      onMove: () => false,
+      getLegalTargets: () => [],
+      isPromotion: () => false,
+    }
+    const { rerender } = render(
+      <ChessBoard {...props} lastMove={{ from: 'e2', to: 'e4' }} arrows={[['g8', 'f6']]} />,
+    )
+    const before = ground.sets.length
+    rerender(<ChessBoard {...props} lastMove={{ from: 'e2', to: 'e4' }} arrows={[['g8', 'f6']]} />)
+    expect(ground.sets).toHaveLength(before)
+
+    // The control: another arrow is another board.
+    rerender(<ChessBoard {...props} lastMove={{ from: 'e2', to: 'e4' }} arrows={[['b8', 'c6']]} />)
+    expect(ground.sets).toHaveLength(before + 1)
+    expect(latest().drawable?.autoShapes).toEqual([{ orig: 'b8', dest: 'c6', brush: 'coach' }])
+  })
+
   it('sets the coordinates outside the frame, turned with the board', () => {
     const { container, rerender } = render(
       <ChessBoard
