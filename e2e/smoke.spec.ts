@@ -156,10 +156,59 @@ test('the squares turn plain on the button under the board, and stay so', async 
   expect(await squares()).toContain('pattern id="hatch"')
 })
 
-test('the Piece Hunt renders its own board, no engine', async ({ page }) => {
+test('the Piece Hunt sends its champion where it is clicked, or typed', async ({ page }) => {
   await page.goto('/hunt')
   await expect(page.getByRole('heading', { level: 1, name: 'Chasse aux Pièces' })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Choisissez votre championne/i })).toBeVisible()
+  await page.getByRole('button', { name: /^Dame/ }).click()
+
+  const board = page.locator('.cg-wrap')
+  /**
+   * The first square carrying a mark, by name and by the middle of its place
+   * on the board turned to White. Read in one go in the page, and among the
+   * squares shown only: chessground hides a mark it no longer needs rather
+   * than removing it, to reuse the element at the next move.
+   */
+  const marked = (selector: string) =>
+    board.evaluate((wrap, selector) => {
+      const square = [...wrap.querySelectorAll(selector)]
+        .map((element) => element.getBoundingClientRect())
+        .find((rect) => rect.width > 0)
+      if (!square) return null
+      const frame = wrap.getBoundingClientRect()
+      const file = Math.round((square.x - frame.x) / (frame.width / 8))
+      const rank = 8 - Math.round((square.y - frame.y) / (frame.height / 8))
+      return {
+        name: `${'abcdefgh'[file]}${rank}`,
+        x: square.x + square.width / 2,
+        y: square.y + square.height / 2,
+      }
+    }, selector)
+  const championSquare = async () => (await marked('square.hunt-champion'))?.name
+  await expect.poll(championSquare).toBe('d4')
+
+  // The whole board in the window: at 720 px its bottom rank sits below the
+  // fold, and a click there would land on nothing. chessground measures the
+  // board again on the scroll event, which the browser sends at the next
+  // frame; a click before it is read against where the board used to be.
+  await board.scrollIntoViewIfNeeded()
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
+
+  // A click on a dotted square sends the champion there, at one click.
+  const dotted = (await marked('square.hunt-reach'))!
+  await page.mouse.click(dotted.x, dotted.y)
+  await expect.poll(championSquare).toBe(dotted.name)
+
+  // And so does a square typed into the field under the board: one next to
+  // the queen, which she always reaches, empty or held by an enemy to take.
+  const [file, rank] = [dotted.name[0]!, Number(dotted.name[1])]
+  const typed = `${file}${rank < 8 ? rank + 1 : rank - 1}`
+  const field = page.getByRole('textbox', { name: 'Jouer au clavier' })
+  await field.fill(typed)
+  await field.press('Enter')
+  await expect.poll(championSquare).toBe(typed)
 })
 
 test('the puzzle page switches to free practice and serves a board', async ({ page }) => {

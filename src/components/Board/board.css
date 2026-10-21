@@ -24,8 +24,12 @@
  * Where it may go: an ink dot a fifth of the square across, or, round a piece
  * it would take, a ring nearly the square's width. Sizes are fractions of the
  * half square, which closest-side makes the gradient's unit.
+ *
+ * The Piece Hunt dots the empty squares its champion can reach with the same
+ * dot, and never rings an enemy: that would give the next capture away.
  */
-.cg-wrap cg-board square.move-dest {
+.cg-wrap cg-board square.move-dest,
+.cg-wrap cg-board square.hunt-reach {
   background: radial-gradient(
     circle closest-side,
     var(--board-destination) 0 22%,
@@ -42,10 +46,24 @@
   );
 }
 
-/* A king in check: a rubric tint under a rubric rule. */
-.cg-wrap cg-board square.check {
+/*
+ * A king in check: a rubric tint under a rubric rule. The Hunt's champion,
+ * when an enemy can take it, is marked the same way, and so is each enemy
+ * that can, in the tint alone.
+ */
+.cg-wrap cg-board square.check,
+.cg-wrap cg-board square.hunt-champion.hunt-danger {
   background-color: var(--board-check);
   box-shadow: inset 0 0 0 3px var(--board-rubric);
+}
+
+.cg-wrap cg-board square.hunt-threat {
+  background-color: var(--board-check);
+}
+
+/* The Hunt's champion at rest: ringed in ink, as the piece picked up is. */
+.cg-wrap cg-board square.hunt-champion {
+  box-shadow: inset 0 0 0 3px var(--board-ink);
 }
 
 /*

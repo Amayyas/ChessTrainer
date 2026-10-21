@@ -1,10 +1,16 @@
-import { useMemo, useRef } from 'react'
-import { Chessboard } from 'react-chessboard'
-import type { BoardPosition, Piece, Square } from 'react-chessboard/dist/chessboard/types'
-import { useMeasuredWidth } from '@/hooks/useMeasuredWidth'
+import { useEffect, useMemo, useRef } from 'react'
+import { Chessground } from '@lichess-org/chessground'
+import type { Api } from '@lichess-org/chessground/api'
+import type { Config } from '@lichess-org/chessground/config'
+import type { Key } from '@lichess-org/chessground/types'
+import '@lichess-org/chessground/assets/chessground.base.css'
+import '@/components/Board/board.css'
+import BoardFrame from '@/components/Board/BoardFrame'
+import { boardStyle } from '@/components/Board/boardTheme'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { previousBoard } from '@/lib/design-tokens'
-import type { ChampionType, EnemyType } from '@/features/hunt/board'
+import { durations } from '@/lib/design-tokens'
+import { useBoardStore } from '@/store/useBoardStore'
+import { huntPlacement, type ChampionType, type EnemyType } from '@/features/hunt/board'
 
 export interface HuntBoardProps {
   champion: ChampionType
@@ -17,13 +23,18 @@ export interface HuntBoardProps {
   threats: string[]
   onMove: (square: string) => void
   interactive?: boolean
-  boardWidth?: number
 }
 
 /**
- * The arcade board. It holds a champion and loose enemies
- * rather than a legal chess position, so react-chessboard is driven with a
- * position object instead of a FEN.
+ * The arcade board, drawn by chessground as the other boards are. chessground
+ * moves nothing itself here: a click on a square the champion can reach sends
+ * it there, one click, as a piece that is always picked up, and the hunt's
+ * engine answers with the new position.
+ *
+ * Only the empty squares the champion can reach are dotted: ringing an enemy
+ * it could take would hand the player the next move, which is not the point of
+ * the exercise. The enemies that can take the champion are tinted in the
+ * rubric, and so is the champion while it is in danger.
  */
 export default function HuntBoard({
   champion,
@@ -33,62 +44,73 @@ export default function HuntBoard({
   threats,
   onMove,
   interactive = true,
-  boardWidth,
 }: HuntBoardProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const width = useMeasuredWidth(containerRef, boardWidth)
   const reduceMotion = usePrefersReducedMotion()
+  const squares = useBoardStore((state) => state.squares)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const apiRef = useRef<Api | null>(null)
 
-  const position = useMemo<BoardPosition>(() => {
-    // Squares come from the arcade engine as plain strings; the board types them
-    // as the algebraic union, which they always are.
-    const board: Partial<Record<Square, Piece>> = {}
-    for (const [square, piece] of enemies) {
-      board[square as Square] = `b${piece.toUpperCase()}` as Piece
-    }
-    // While the champion is eaten it is off the board entirely.
-    if (championSquare) board[championSquare as Square] = `w${champion.toUpperCase()}` as Piece
-    return board as BoardPosition
-  }, [champion, championSquare, enemies])
+  // The click handler is bound once, when chessground is made, so it reads the
+  // latest props through a ref.
+  const latest = useRef({ moves, onMove, interactive })
+  latest.current = { moves, onMove, interactive }
 
-  const squareStyles = useMemo(() => {
-    const styles: Record<string, Record<string, string>> = {}
-
-    // Only empty reachable squares are dotted. Marking capturable enemies would
-    // hand the player the next move, which is not the point of the exercise.
+  const config = useMemo<Config>(() => {
+    const marks = new Map<Key, string>()
     for (const square of moves) {
-      if (!enemies.has(square)) styles[square] = { backgroundImage: previousBoard.legalTarget }
+      if (!enemies.has(square)) marks.set(square as Key, 'hunt-reach')
     }
-    for (const square of threats) {
-      styles[square] = { ...styles[square], backgroundColor: previousBoard.threat }
-    }
+    for (const square of threats) marks.set(square as Key, 'hunt-threat')
     if (championSquare) {
-      styles[championSquare] = {
-        ...styles[championSquare],
-        backgroundColor: threats.length > 0 ? previousBoard.threat : previousBoard.selected,
-      }
+      marks.set(
+        championSquare as Key,
+        threats.length > 0 ? 'hunt-champion hunt-danger' : 'hunt-champion',
+      )
     }
-    return styles
-  }, [moves, threats, enemies, championSquare])
+    return {
+      fen: huntPlacement(champion, championSquare, enemies),
+      animation: { enabled: !reduceMotion, duration: durations.piece },
+      highlight: { lastMove: false, check: false, custom: marks },
+    }
+  }, [champion, championSquare, enemies, moves, threats, reduceMotion])
+
+  const initial = useRef(config)
+
+  useEffect(() => {
+    if (!wrapRef.current) return
+    const api = Chessground(wrapRef.current, {
+      ...initial.current,
+      coordinates: false,
+      disableContextMenu: true,
+      // A swipe on the board is a move being aimed, not the page scrolling.
+      blockTouchScroll: true,
+      movable: { free: false, color: undefined },
+      draggable: { enabled: false },
+      selectable: { enabled: false },
+      premovable: { enabled: false },
+      predroppable: { enabled: false },
+      drawable: { enabled: false, visible: false },
+      events: {
+        select: (key) => {
+          const { moves: reachable, onMove: move, interactive: live } = latest.current
+          if (live && reachable.includes(key)) move(key)
+        },
+      },
+    })
+    apiRef.current = api
+    return () => {
+      api.destroy()
+      apiRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    apiRef.current?.set(config)
+  }, [config])
 
   return (
-    <div ref={containerRef} className="aspect-square w-full">
-      {width ? (
-        <Chessboard
-          position={position}
-          boardWidth={width}
-          arePiecesDraggable={false}
-          onSquareClick={(square) => {
-            if (interactive) onMove(square)
-          }}
-          customLightSquareStyle={{ backgroundColor: previousBoard.lightSquare }}
-          customDarkSquareStyle={{ backgroundColor: previousBoard.darkSquare }}
-          customSquareStyles={squareStyles}
-          customBoardStyle={{ borderRadius: '0' }}
-          animationDuration={reduceMotion ? 0 : 120}
-          id="hunt-board"
-        />
-      ) : null}
-    </div>
+    <BoardFrame style={boardStyle(squares, reduceMotion)}>
+      <div ref={wrapRef} role="img" aria-label="Échiquier" className="cg-wrap" />
+    </BoardFrame>
   )
 }

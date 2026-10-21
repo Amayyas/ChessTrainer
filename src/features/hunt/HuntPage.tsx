@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import BoardControls from '@/components/Board/BoardControls'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import Alert from '@/components/UI/Alert'
 import BoxScore from '@/components/UI/BoxScore'
 import { INLINE_LINK } from '@/components/UI/link'
 import HuntBoard from '@/features/hunt/HuntBoard'
+import SquareInput from '@/features/hunt/SquareInput'
 import { CHAMPION_DESCRIPTIONS, CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import { STARTING_LIVES, addScore, encouragement, personalBest } from '@/features/hunt/scoring'
 import { useHuntGame } from '@/features/hunt/useHuntGame'
@@ -267,6 +269,13 @@ export default function HuntPage() {
             threats={game.threats}
             onMove={game.moveTo}
           />
+          <BoardControls>
+            <SquareInput
+              moves={game.moves}
+              championSquare={game.championSquare}
+              onMove={game.moveTo}
+            />
+          </BoardControls>
         </div>
 
         <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
@@ -290,7 +299,8 @@ export default function HuntPage() {
           </div>
 
           <p className="text-caption italic text-ink-soft">
-            Cliquez une case atteignable pour vous déplacer. Une pièce en rouge peut vous capturer.
+            Cliquez une case atteignable pour vous y rendre, ou tapez-la sous le plateau. Une pièce
+            sur une case rougie peut vous capturer.
           </p>
 
           <div>
