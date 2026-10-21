@@ -77,9 +77,22 @@ Keyboard focus is a two-pixel `rubric` ring around a two-pixel `paper` band. On
 the page the ring carries the contrast; on a dark surface, where the rubric
 alone would not, the band does.
 
-## Migration
+## The board
 
-The interface has moved to these rules one pull request at a time, and one
-piece has not moved yet: the board. It keeps the previous identity's colours —
-ebony, gold and slate, written out in `board` — and animates its pieces at its
-own speed until it moves to chessground, in the pull request that rebuilds it.
+Every board is drawn by chessground and set as the column prints its diagram,
+from the `board` tokens:
+
+- The light squares are `paper-bright`; the dark ones are hatched in ink. A
+  "Cases unies" toggle under each board the player plays on fills them with a
+  plain grey instead, kept on the device. The landing's diagram is the page's
+  figure and stays hatched.
+- A double ink rule frames the squares; the coordinates stand outside it, in
+  small italic.
+- The pieces are the mpchess set, drawn in ink.
+- What the board marks is in the rubric: the move just played, a king in check
+  (with a rule), the coach's arrow, and in the Piece Hunt the enemies that can
+  take the champion, and the champion while they can. The piece picked up is
+  ringed in ink, and where it may go is an ink dot, or a ring round a piece it
+  would take.
+- Under each board the player plays on, a field takes a move from the keyboard:
+  chessground answers the pointer alone.

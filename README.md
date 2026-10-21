@@ -63,7 +63,7 @@ every mode, kept locally for guests and synced to your account once you sign in.
 | Styling      | Tailwind CSS 3                   |
 | Routing      | React Router 7                   |
 | Game logic   | chess.js                         |
-| Board        | react-chessboard                 |
+| Board        | chessground                      |
 | Engine       | Stockfish (WASM) in a Web Worker |
 | Global state | Zustand                          |
 | Backend      | Supabase — Auth + PostgreSQL     |
@@ -164,9 +164,10 @@ The `@/` alias points to `src/`.
 
 Colours, typefaces and the brand live in
 [`src/lib/design-tokens.ts`](src/lib/design-tokens.ts), which the Tailwind
-config imports. The boards read from it too, since react-chessboard styles
-squares with CSS values rather than class names — so a change of palette is a
-change to one file.
+config imports. The boards read from it too: chessground draws into a node of
+its own, out of Tailwind's reach, so the squares, the marks and the coach's
+arrow take their colours from custom properties set from the tokens — and a
+change of palette is still a change to one file.
 
 ## Backend setup (optional)
 
@@ -448,6 +449,12 @@ accepted, so you can tell a finding from a design decision.
 licence ships alongside the binary in
 [`public/stockfish/`](public/stockfish/LICENSE.txt).
 
+The boards are drawn by Lichess's
+[chessground](https://github.com/lichess-org/chessground), licensed under the
+GPL v3 or later. The pieces are Maxime Chupin's mpchess set, as Lichess ships
+it, under the same licence; where they come from and their licence are in
+[`src/assets/pieces/mpchess/`](src/assets/pieces/mpchess/README.md).
+
 The puzzles are imported from the
 [Lichess Open Database](https://database.lichess.org) (CC0) and re-screened with
 Stockfish — see [`scripts/import-lichess-puzzles.mjs`](scripts/import-lichess-puzzles.mjs).
@@ -469,4 +476,6 @@ triggers on distributing a binary, would never fire at all.
 
 Stockfish keeps its own GPL v3 licence, unchanged, and the npm dependencies
 keep theirs. The engine is a separate program the app talks to over UCI in a
-Web Worker, not a library it links against.
+Web Worker, not a library it links against. chessground and the mpchess pieces
+are built into the app; section 13 of the GPL v3 is what lets GPL code be
+combined with AGPL code, each part keeping its licence.
