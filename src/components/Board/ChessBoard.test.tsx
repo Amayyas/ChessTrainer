@@ -246,6 +246,12 @@ describe('ChessBoard', () => {
     expect(squaresOf(diagram.container)).toBe(drawn('hatched'))
   })
 
+  it('makes chessground with the config of the moment, and hands it no copy', () => {
+    render(<Harness />)
+    expect(ground.init?.fen).toBe('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+    expect(ground.sets).toEqual([])
+  })
+
   it('hands chessground nothing new when a render brings the same position', () => {
     // A page may build the last move and the arrows anew at each render, as
     // the coach's replay does: equal values are the same board.

@@ -32,11 +32,16 @@ export function useChessground(
   latest.current = config
   const latestSetup = useRef(setup)
   latestSetup.current = setup
+  // The config chessground was made with, which it need not be handed again.
+  // The making effect is declared first, so in the same commit it runs first
+  // and records this before the config effect compares against it.
+  const madeWith = useRef<Config | null>(null)
 
   useEffect(() => {
     if (!wrapRef.current) return
     const api = Chessground(wrapRef.current, latestSetup.current(latest.current))
     apiRef.current = api
+    madeWith.current = latest.current
     return () => {
       api.destroy()
       apiRef.current = null
@@ -44,7 +49,7 @@ export function useChessground(
   }, [wrapRef, remakeOn])
 
   useEffect(() => {
-    apiRef.current?.set(config)
+    if (config !== madeWith.current) apiRef.current?.set(config)
   }, [config])
 
   return {
