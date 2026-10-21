@@ -1,12 +1,9 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { Chessground } from '@lichess-org/chessground'
-import type { Api } from '@lichess-org/chessground/api'
+import { useMemo, useRef } from 'react'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
-import '@lichess-org/chessground/assets/chessground.base.css'
-import '@/components/Board/board.css'
 import BoardFrame from '@/components/Board/BoardFrame'
 import { boardStyle } from '@/components/Board/boardTheme'
+import { useChessground } from '@/components/Board/useChessground'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
@@ -48,7 +45,6 @@ export default function HuntBoard({
   const reduceMotion = usePrefersReducedMotion()
   const squares = useBoardStore((state) => state.squares)
   const wrapRef = useRef<HTMLDivElement>(null)
-  const apiRef = useRef<Api | null>(null)
 
   // The click handler is bound once, when chessground is made, so it reads the
   // latest props through a ref.
@@ -74,39 +70,25 @@ export default function HuntBoard({
     }
   }, [champion, championSquare, enemies, moves, threats, reduceMotion])
 
-  const initial = useRef(config)
-
-  useEffect(() => {
-    if (!wrapRef.current) return
-    const api = Chessground(wrapRef.current, {
-      ...initial.current,
-      coordinates: false,
-      disableContextMenu: true,
-      // A swipe on the board is a move being aimed, not the page scrolling.
-      blockTouchScroll: true,
-      movable: { free: false, color: undefined },
-      draggable: { enabled: false },
-      selectable: { enabled: false },
-      premovable: { enabled: false },
-      predroppable: { enabled: false },
-      drawable: { enabled: false, visible: false },
-      events: {
-        select: (key) => {
-          const { moves: reachable, onMove: move, interactive: live } = latest.current
-          if (live && reachable.includes(key)) move(key)
-        },
+  useChessground(wrapRef, config, (current) => ({
+    ...current,
+    coordinates: false,
+    disableContextMenu: true,
+    // A swipe on the board is a move being aimed, not the page scrolling.
+    blockTouchScroll: true,
+    movable: { free: false, color: undefined },
+    draggable: { enabled: false },
+    selectable: { enabled: false },
+    premovable: { enabled: false },
+    predroppable: { enabled: false },
+    drawable: { enabled: false, visible: false },
+    events: {
+      select: (key) => {
+        const { moves: reachable, onMove: move, interactive: live } = latest.current
+        if (live && reachable.includes(key)) move(key)
       },
-    })
-    apiRef.current = api
-    return () => {
-      api.destroy()
-      apiRef.current = null
-    }
-  }, [])
-
-  useEffect(() => {
-    apiRef.current?.set(config)
-  }, [config])
+    },
+  }))
 
   return (
     <BoardFrame style={boardStyle(squares, reduceMotion)}>

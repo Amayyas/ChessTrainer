@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Chessground } from '@lichess-org/chessground'
-import type { Api } from '@lichess-org/chessground/api'
 import type { Config } from '@lichess-org/chessground/config'
 import type { DrawBrushes } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
-import '@lichess-org/chessground/assets/chessground.base.css'
-import './board.css'
 import BoardFrame from '@/components/Board/BoardFrame'
 import PromotionPicker from '@/components/Board/PromotionPicker'
 import { boardStyle } from '@/components/Board/boardTheme'
+import { useChessground } from '@/components/Board/useChessground'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board, durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
@@ -45,10 +42,8 @@ export interface ChessBoardProps {
  * arrow. A piece is moved by dragging it or by clicking it and then its
  * square; a pawn reaching the last rank asks for its piece.
  *
- * chessground draws into a DOM node it owns, so it is made once, when the
- * board mounts, and every change of position or of state reaches it through
- * `set`. Its move handler is bound at that moment too, which is why it reads
- * the latest props through a ref.
+ * chessground is made once (useChessground), and its move handler with it,
+ * which is why the handler reads the latest props through a ref.
  */
 export default function ChessBoard({
   fen,
@@ -69,7 +64,6 @@ export default function ChessBoard({
   // plays on follow the player's choice.
   const squares = useBoardStore((state) => state.squares)
   const wrapRef = useRef<HTMLDivElement>(null)
-  const apiRef = useRef<Api | null>(null)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square } | null>(null)
 
   const latest = useRef({ onMove, isPromotion })
@@ -122,20 +116,11 @@ export default function ChessBoard({
     ],
   )
 
-  const initial = useRef(config)
-
-  // Once a piece is down, chessground has already handed the turn over and
-  // dropped the moves it allowed, before the board hears of the move. A move
-  // the board does not play — refused, or a promotion taken back — has to undo
-  // all of that, not the pieces alone, or nothing can be picked up again.
-  const latestConfig = useRef(config)
-  latestConfig.current = config
-  const putBack = () => apiRef.current?.set(latestConfig.current)
-
-  useEffect(() => {
-    if (!wrapRef.current) return
-    const api = Chessground(wrapRef.current, {
-      ...initial.current,
+  const { apiRef, putBack } = useChessground(
+    wrapRef,
+    config,
+    (current) => ({
+      ...current,
       coordinates: false,
       viewOnly: diagram,
       disableContextMenu: true,
@@ -143,7 +128,7 @@ export default function ChessBoard({
       premovable: { enabled: false },
       predroppable: { enabled: false },
       movable: {
-        ...initial.current.movable,
+        ...current.movable,
         events: {
           after: (orig, dest) => {
             const { onMove: move, isPromotion: promotes } = latest.current
@@ -154,7 +139,7 @@ export default function ChessBoard({
               return
             }
             // A move the game refuses goes back where it came from.
-            if (!move(from, to)) api.set(latestConfig.current)
+            if (!move(from, to)) putBack()
           },
         },
       },
@@ -171,26 +156,19 @@ export default function ChessBoard({
             lineWidth: 10,
           },
         } as Partial<DrawBrushes> as DrawBrushes,
-        autoShapes: initial.current.drawable?.autoShapes,
+        autoShapes: current.drawable?.autoShapes,
       },
-    })
-    apiRef.current = api
-    return () => {
-      api.destroy()
-      apiRef.current = null
-    }
-  }, [diagram])
-
-  useEffect(() => {
-    apiRef.current?.set(config)
-  }, [config])
+    }),
+    // A diagram binds no pointer events, which chessground fixes at its making.
+    diagram,
+  )
 
   // A new position from outside — the engine's reply, an undo — drops whatever
   // was half done on the old one.
   useEffect(() => {
     apiRef.current?.selectSquare(null)
     setPromotion(null)
-  }, [fen])
+  }, [fen, apiRef])
 
   const choosePromotion = (piece: PieceSymbol) => {
     const pending = promotion
