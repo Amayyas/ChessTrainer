@@ -322,7 +322,7 @@ export function useHuntGame(): HuntGame {
     () =>
       isPlaying ? championMoves(current.champion, current.championSquare, current.enemies) : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current, current.enemiesVersion, current.championSquare, isPlaying],
+    [current, current.enemiesVersion, current.champion, current.championSquare, isPlaying],
   )
 
   return {
