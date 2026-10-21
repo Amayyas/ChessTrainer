@@ -139,6 +139,10 @@ describe('readMove, written in other ways', () => {
 })
 
 describe('the examples the field shows', () => {
+  it('make the line under the field, as the player reads it', () => {
+    expect(MOVE_EXAMPLES_LINE).toBe('Par exemple e4, Cf3, O-O, e8=D ou e2e4.')
+  })
+
   it('are moves the reader reads, each in a position that allows it', () => {
     const positions = [START, POSITIONS.italian, '8/4P3/8/8/8/8/k7/4K3 w - - 0 1'].map(positionOf)
     for (const example of MOVE_EXAMPLES) {
@@ -147,10 +151,6 @@ describe('the examples the field shows', () => {
         example,
       ).toBe(true)
     }
-  })
-
-  it('are all in the line under the field', () => {
-    for (const example of MOVE_EXAMPLES) expect(MOVE_EXAMPLES_LINE).toContain(example)
   })
 })
 

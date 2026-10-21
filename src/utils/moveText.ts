@@ -64,7 +64,7 @@ const EXAMPLE = {
 /** The examples the field shows under it. */
 export const MOVE_EXAMPLES: readonly string[] = Object.values(EXAMPLE)
 
-/** The line under the field: "Par exemple e4, Cf3, O-O, e8=D ou e2e4." */
+/** The line under the field: the examples, run together as a sentence. */
 export const MOVE_EXAMPLES_LINE = `Par exemple ${orList([...MOVE_EXAMPLES])}.`
 
 /** O-O or O-O-O, written with the letter or the zero, the dashes optional. */
@@ -191,12 +191,11 @@ function readExactly(text: string, position: MovePosition, moves: Candidate[]): 
   const algebraic = ALGEBRAIC.exec(plain)
   if (!algebraic) {
     return {
-      error: `${quoted(text)} ne se lit pas comme un coup${NBSP}: essayez ${orList([
-        EXAMPLE.pawn,
-        EXAMPLE.piece,
-        EXAMPLE.castling,
-        EXAMPLE.squares,
-      ])}.`,
+      // Every example but the promotion's, which reads as a move only where a
+      // pawn stands ready.
+      error: `${quoted(text)} ne se lit pas comme un coup${NBSP}: essayez ${orList(
+        MOVE_EXAMPLES.filter((example) => example !== EXAMPLE.promotion),
+      )}.`,
       respell: true,
     }
   }

@@ -39,11 +39,18 @@ function Harness({
 
 const field = () => screen.getByRole('textbox', { name: 'Jouer au clavier' })
 
-// The line the reader's own examples make: a line written here by hand would
-// stay put if the letters it reads changed.
-const EXAMPLE = MOVE_EXAMPLES_LINE
+const EXAMPLE = 'Par exemple e4, Cf3, O-O, e8=D ou e2e4.'
 
 describe('MoveInput', () => {
+  it('shows under the field the line made from the reader’s examples', () => {
+    // The sentence the player reads, pinned. The reader's test pins the line it
+    // makes to the same words, so a line written into the field by hand would
+    // part from it the day the letters changed.
+    render(<Harness />)
+    expect(field()).toHaveAccessibleDescription(EXAMPLE)
+    expect(field()).toHaveAccessibleDescription(MOVE_EXAMPLES_LINE)
+  })
+
   it('plays the move typed on Enter, empties the field and keeps the focus in it', async () => {
     const user = userEvent.setup()
     render(<Harness />)
