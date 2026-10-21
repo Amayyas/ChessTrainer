@@ -40,6 +40,25 @@ describe('useHuntGame', () => {
     }
   })
 
+  it('hands over the same squares from one tick to the next while nothing moves', () => {
+    // The clock renders the hook ten times a second; the board must not be
+    // handed a new position each time.
+    const { result } = renderHook(() => useHuntGame())
+    act(() => result.current.start('q'))
+    const { moves, threats, enemies } = result.current
+    act(() => vi.advanceTimersByTime(300))
+    expect(result.current.timeLeftMs).toBeLessThan(ROUND_MS)
+    expect(result.current.moves).toBe(moves)
+    expect(result.current.threats).toBe(threats)
+    expect(result.current.enemies).toBe(enemies)
+
+    // The control: a move hands over new ones.
+    act(() => {
+      result.current.moveTo(moves.find((square) => !enemies.has(square))!)
+    })
+    expect(result.current.moves).not.toBe(moves)
+  })
+
   it('counts down the clock', () => {
     const { result } = renderHook(() => useHuntGame())
     act(() => result.current.start('r'))
