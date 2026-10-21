@@ -32,6 +32,12 @@ test('the landing renders, then hydrates into a working SPA', async ({ page }) =
  * board is taken to be turned to White.
  */
 async function clickSquare(page: Page, square: string) {
+  // The whole board in the window, measured again by chessground: it does so
+  // on the scroll event, which the browser sends at the next frame.
+  await page.locator('.cg-wrap').scrollIntoViewIfNeeded()
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
   const board = await page.locator('.cg-wrap').boundingBox()
   if (!board) throw new Error('No board on the page')
   const file = square.charCodeAt(0) - 'a'.charCodeAt(0)
@@ -96,6 +102,28 @@ test('the coach boots the engine and shows the board', async ({ page }) => {
   // Every piece of the starting position; chessground also keeps a hidden ghost
   // piece for dragging, which is not one.
   await expect(page.locator('.cg-wrap piece:not(.ghost)')).toHaveCount(32)
+})
+
+test('a promotion taken back leaves the board playable', async ({ page }) => {
+  // chessground hands the turn over as soon as a piece is down. A move the
+  // board then takes back has to give the turn and the moves back too, or no
+  // piece can be picked up again — after a puzzle's wrong answer as well.
+  await page.goto('/coach')
+  await page.getByText('Analyse libre', { exact: true }).click()
+  await page.getByLabel('Position de départ (FEN)').fill('8/4P3/8/8/8/8/k7/4K3 w - - 0 1')
+  await page.getByRole('button', { name: 'Charger' }).click()
+  await expect(page.locator('.cg-wrap piece.white.pawn').first()).toBeVisible({ timeout: 30_000 })
+
+  await clickSquare(page, 'e7')
+  await clickSquare(page, 'e8')
+  const choice = page.getByRole('group', { name: 'Promotion : choisissez une pièce' })
+  await expect(choice).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(choice).toHaveCount(0)
+
+  // The king can be picked up again: its five squares are dotted.
+  await clickSquare(page, 'e1')
+  await expect(page.locator('.cg-wrap square.move-dest:visible')).toHaveCount(5)
 })
 
 test('a move typed into the field under the board is played on it', async ({ page }) => {

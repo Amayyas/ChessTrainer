@@ -16,13 +16,21 @@ import type { PieceSymbol, Square } from '@/utils/chess'
 const ground = vi.hoisted(() => ({
   init: null as Config | null,
   sets: [] as Config[],
+  /** What chessground holds: what it was made with, each set merged in. */
+  state: {} as { fen?: string; turnColor?: string; dests?: Map<Key, Key[]> },
 }))
 
 vi.mock('@lichess-org/chessground', () => ({
   Chessground: (_element: HTMLElement, config: Config) => {
     ground.init = config
+    ground.state = { fen: config.fen, turnColor: config.turnColor, dests: config.movable?.dests }
     return {
-      set: (config: Config) => ground.sets.push(config),
+      set: (config: Config) => {
+        ground.sets.push(config)
+        if (config.fen !== undefined) ground.state.fen = config.fen
+        if (config.turnColor !== undefined) ground.state.turnColor = config.turnColor
+        if (config.movable && 'dests' in config.movable) ground.state.dests = config.movable.dests
+      },
       selectSquare: () => {},
       destroy: () => {},
     }
@@ -34,9 +42,21 @@ function latest(): Config {
   return { ...ground.init, ...Object.assign({}, ...ground.sets) } as Config
 }
 
-/** A move made on the board, as chessground reports it once the piece is down. */
+/**
+ * A move made on the board, as chessground makes it: the turn passes and the
+ * moves it allowed are dropped, and only then is the board told.
+ */
 function moveOnBoard(from: string, to: string) {
+  ground.state.turnColor = ground.state.turnColor === 'white' ? 'black' : 'white'
+  ground.state.dests = undefined
   act(() => ground.init!.movable!.events!.after!(from as Key, to as Key, {} as MoveMetadata))
+}
+
+/** chessground holds the position, and a piece of the side to move can be picked up. */
+function playable(fen: string, side: 'white' | 'black', square: string, targets: string[]) {
+  expect(ground.state.fen).toBe(fen)
+  expect(ground.state.turnColor).toBe(side)
+  expect(ground.state.dests?.get(square as Key)).toEqual(targets)
 }
 
 function Harness({
@@ -115,12 +135,12 @@ describe('ChessBoard', () => {
     expect(after.movable?.dests?.get('e7')).toEqual(['e6', 'e5'])
   })
 
-  it('puts back a move the game refuses', () => {
+  it('puts back a move the game refuses, the turn and the moves with it', () => {
     render(<Harness refuse />)
-    const before = ground.sets.length
+    const start = latest().fen!
     moveOnBoard('e2', 'e4')
     expect(screen.getByTestId('history')).toHaveTextContent('')
-    expect(ground.sets.slice(before)).toContainEqual({ fen: latest().fen })
+    playable(start, 'white', 'e2', ['e3', 'e4'])
   })
 
   it('moves nothing when it is not interactive', () => {
@@ -157,13 +177,21 @@ describe('ChessBoard', () => {
     expect(screen.queryByRole('group', { name: /Promotion/ })).not.toBeInTheDocument()
   })
 
-  it('takes the pawn back when the choice is dismissed', () => {
+  it('takes the pawn back when the choice is dismissed, and leaves the board playable', () => {
     render(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" />)
     moveOnBoard('e7', 'e8')
     fireEvent.keyDown(screen.getByRole('button', { name: 'Dame' }), { key: 'Escape' })
     expect(screen.queryByRole('group', { name: /Promotion/ })).not.toBeInTheDocument()
     expect(screen.getByTestId('history')).toHaveTextContent('')
-    expect(ground.sets.at(-1)).toEqual({ fen: '8/4P3/8/8/8/8/k7/4K3 w - - 0 1' })
+    playable('8/4P3/8/8/8/8/k7/4K3 w - - 0 1', 'white', 'e7', ['e8'])
+  })
+
+  it('takes the pawn back when the game refuses the piece chosen', () => {
+    render(<Harness refuse fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" />)
+    moveOnBoard('e7', 'e8')
+    fireEvent.click(screen.getByRole('button', { name: 'Cavalier' }))
+    expect(screen.getByTestId('history')).toHaveTextContent('')
+    playable('8/4P3/8/8/8/8/k7/4K3 w - - 0 1', 'white', 'e7', ['e8'])
   })
 
   it('glides a piece for the time the tokens give it, and not at all under reduced motion', () => {

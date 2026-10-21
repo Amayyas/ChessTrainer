@@ -72,8 +72,8 @@ export default function ChessBoard({
   const apiRef = useRef<Api | null>(null)
   const [promotion, setPromotion] = useState<{ from: Square; to: Square } | null>(null)
 
-  const latest = useRef({ fen, onMove, isPromotion })
-  latest.current = { fen, onMove, isPromotion }
+  const latest = useRef({ onMove, isPromotion })
+  latest.current = { onMove, isPromotion }
 
   const color = turn === 'w' ? 'white' : 'black'
 
@@ -124,6 +124,14 @@ export default function ChessBoard({
 
   const initial = useRef(config)
 
+  // Once a piece is down, chessground has already handed the turn over and
+  // dropped the moves it allowed, before the board hears of the move. A move
+  // the board does not play — refused, or a promotion taken back — has to undo
+  // all of that, not the pieces alone, or nothing can be picked up again.
+  const latestConfig = useRef(config)
+  latestConfig.current = config
+  const putBack = () => apiRef.current?.set(latestConfig.current)
+
   useEffect(() => {
     if (!wrapRef.current) return
     const api = Chessground(wrapRef.current, {
@@ -138,7 +146,7 @@ export default function ChessBoard({
         ...initial.current.movable,
         events: {
           after: (orig, dest) => {
-            const { onMove: move, isPromotion: promotes, fen: position } = latest.current
+            const { onMove: move, isPromotion: promotes } = latest.current
             const from = orig as Square
             const to = dest as Square
             if (promotes(from, to)) {
@@ -146,7 +154,7 @@ export default function ChessBoard({
               return
             }
             // A move the game refuses goes back where it came from.
-            if (!move(from, to)) api.set({ fen: position })
+            if (!move(from, to)) api.set(latestConfig.current)
           },
         },
       },
@@ -187,14 +195,12 @@ export default function ChessBoard({
   const choosePromotion = (piece: PieceSymbol) => {
     const pending = promotion
     setPromotion(null)
-    if (pending && !latest.current.onMove(pending.from, pending.to, piece)) {
-      apiRef.current?.set({ fen: latest.current.fen })
-    }
+    if (pending && !latest.current.onMove(pending.from, pending.to, piece)) putBack()
   }
 
   const cancelPromotion = () => {
     setPromotion(null)
-    apiRef.current?.set({ fen: latest.current.fen })
+    putBack()
   }
 
   return (
