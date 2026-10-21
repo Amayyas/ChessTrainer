@@ -78,6 +78,30 @@ test('a move in Affrontement gets a reply from the engine', async ({ page }) => 
   })
 })
 
+test('the landing fetches the board’s code once the page has loaded', async ({ page }) => {
+  // The frame draws the squares, so chessground is not needed for the first
+  // paint; fetched beside the fonts, Lighthouse counted it in that paint.
+  // The page is held from loading by its preloaded font, a second late: on a
+  // server this close, a board fetched while the page renders would otherwise
+  // still arrive after the load, and the test could not tell.
+  await page.route(/\/assets\/newsreader-latin-opsz-normal[^/]*\.woff2$/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+    await route.continue()
+  })
+  await page.goto('/')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  const { loaded, fetched } = await page.evaluate(() => {
+    const [navigation] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
+    const chunk = performance
+      .getEntriesByType('resource')
+      .find((entry) => /\/assets\/ChessBoard-[^/]*\.js$/.test(entry.name))
+    return { loaded: navigation!.loadEventEnd, fetched: chunk?.startTime ?? -1 }
+  })
+  // The control: the board's code was fetched, and found among the requests.
+  expect(fetched).toBeGreaterThan(0)
+  expect(fetched).toBeGreaterThanOrEqual(loaded)
+})
+
 test('the landing’s diagram holds its squares before chessground arrives', async ({ page }) => {
   // The diagram is the page's largest paint. Its frame draws the squares from
   // the first paint, so the page does not wait for the board's script to show

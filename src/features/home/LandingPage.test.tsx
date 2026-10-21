@@ -1,12 +1,17 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import LandingPage from '@/features/home/LandingPage'
 import { MODES } from '@/features/home/modes'
 import { COACH_PROPOSAL, SAMPLE_GAME, moveNumber } from '@/features/home/sampleGame'
 import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
 import { FIGURINES } from '@/utils/notation'
+
+// The diagram's board is fetched once the page has loaded. Not here: these
+// tests read the page's words, and a board arriving mid-test would load
+// chessground into jsdom outside any act().
+vi.mock('@/hooks/useAfterLoad', () => ({ useAfterLoad: () => false }))
 
 function renderLanding() {
   return render(

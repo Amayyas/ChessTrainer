@@ -2,6 +2,7 @@ import { Fragment, lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import BoardFrame from '@/components/Board/BoardFrame'
 import { boardStyle } from '@/components/Board/boardTheme'
+import { useAfterLoad } from '@/hooks/useAfterLoad'
 import { Box, Button } from '@/components/UI'
 import DoubleRule from '@/components/UI/DoubleRule'
 import GradeKey from '@/components/UI/GradeKey'
@@ -50,9 +51,9 @@ const noTargets = (): Square[] => []
 
 // The board pulls in chessground and the pieces. It illustrates one section of a
 // page that is otherwise eager for the first paint, so it loads on its own, and
-// until it does its empty frame holds the same room, coordinates included.
-// Imported by its own path, not the Board barrel, which would also pull in
-// EvalBar and MoveHistory.
+// until it does its frame holds the same room with the squares in it,
+// coordinates included. Imported by its own path, not the Board barrel, which
+// would also pull in EvalBar and MoveHistory.
 const ChessBoard = lazy(() => import('@/components/Board/ChessBoard'))
 
 /** The opening of a section: the double rule, then its heading. */
@@ -93,6 +94,11 @@ function GameText() {
 }
 
 export default function LandingPage() {
+  // chessground is fetched once the page has loaded: the frame already shows
+  // the squares, so the page's first paint, its largest, needs none of it.
+  const boardWanted = useAfterLoad()
+  const frame = <BoardFrame style={boardStyle('hatched', false)} />
+
   return (
     <div>
       <section
@@ -128,19 +134,23 @@ export default function LandingPage() {
             {/* The frame waits for chessground with the squares already in it:
                 the diagram is the page's largest paint, and the pieces can
                 arrive after it. */}
-            <Suspense fallback={<BoardFrame style={boardStyle('hatched', false)} />}>
-              <ChessBoard
-                diagram
-                label="Diagramme 1"
-                fen={DIAGRAM.fen}
-                turn="w"
-                interactive={false}
-                onMove={noop}
-                getLegalTargets={noTargets}
-                isPromotion={noop}
-                lastMove={DIAGRAM_LAST_MOVE}
-                arrows={[COACH_ARROW]}
-              />
+            <Suspense fallback={frame}>
+              {boardWanted ? (
+                <ChessBoard
+                  diagram
+                  label="Diagramme 1"
+                  fen={DIAGRAM.fen}
+                  turn="w"
+                  interactive={false}
+                  onMove={noop}
+                  getLegalTargets={noTargets}
+                  isPromotion={noop}
+                  lastMove={DIAGRAM_LAST_MOVE}
+                  arrows={[COACH_ARROW]}
+                />
+              ) : (
+                frame
+              )}
             </Suspense>
           </div>
           <figcaption className="mx-auto mt-5 max-w-[30rem] text-pretty text-caption italic text-ink-soft">

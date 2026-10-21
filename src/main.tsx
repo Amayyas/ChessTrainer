@@ -32,10 +32,10 @@ const tree = (
 // hydrating an empty root just falls back to a plain client render.
 if (rootElement.hasChildNodes()) {
   ReactDOM.hydrateRoot(rootElement, tree, {
-    // A lazy chunk below the fold (the coach's ChessBoard) can resolve while
-    // this boundary is still hydrating, which React treats as recoverable: it
-    // re-renders that one boundary client-side and reports the mismatch here
-    // instead of throwing. Left at its default, that report is a console.error,
+    // A lazy chunk under a Suspense boundary can resolve while the boundary is
+    // still hydrating, which React treats as recoverable: it re-renders that
+    // one boundary client-side and reports the mismatch here instead of
+    // throwing. Left at its default, that report is a console.error,
     // which reads as a broken page to anything grading the console rather than
     // the once-per-boundary hiccup it actually is.
     onRecoverableError: (error) => void reportError(error),
