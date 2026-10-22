@@ -1,5 +1,99 @@
 # Changelog
 
+## [2.5.0](https://github.com/Amayyas/ChessTrainer/compare/v2.4.0...v2.5.0) (2026-10-22)
+
+
+### Features
+
+* **auth:** set the account screens in the newsprint style ([629fc95](https://github.com/Amayyas/ChessTrainer/commit/629fc959177ad6e89aa1f1f85e375259c307ea28))
+* **battle:** set the battle as a column beside the board ([6ceecf0](https://github.com/Amayyas/ChessTrainer/commit/6ceecf02924b2074951bdbdf7ca401622c28f717))
+* **board:** draw every board with chessground, as a printed diagram ([8259853](https://github.com/Amayyas/ChessTrainer/commit/825985355dff4ad7399fff8ebfada40301cffd36))
+* **board:** draw the game boards with chessground, as a printed diagram ([e7ac562](https://github.com/Amayyas/ChessTrainer/commit/e7ac562d4f367835adf05b1826f89c559a6bdfe4))
+* **board:** let the player turn the squares plain ([8e73c10](https://github.com/Amayyas/ChessTrainer/commit/8e73c10f8f17d21c3044f6043049ae1fea86a8b6))
+* **board:** play the boards from the keyboard ([dcd1c84](https://github.com/Amayyas/ChessTrainer/commit/dcd1c84b689310eeba453d888f4022dd0acc68c1))
+* **board:** read a move typed in French notation, or square to square ([7bb9a70](https://github.com/Amayyas/ChessTrainer/commit/7bb9a7057ba92332e6b2bb31c7c314844b3e8187))
+* **brand:** draw the favicon and the social image in ink on paper ([b12f4a0](https://github.com/Amayyas/ChessTrainer/commit/b12f4a0143f4f6229057bd644c9d53d2eba10380))
+* **coach:** mark the best move with a star, and faults in the rubric ([4ca97fc](https://github.com/Amayyas/ChessTrainer/commit/4ca97fce073f9886d21ecedaadcbdc648cfd147c))
+* **coach:** set the coach as a column beside its diagram ([3c2e246](https://github.com/Amayyas/ChessTrainer/commit/3c2e24600d9b1a102511668364b5ae79d7fdeebe))
+* **design:** add the newsprint palette, type scale and durations ([3550730](https://github.com/Amayyas/ChessTrainer/commit/35507306af9c4e67aa676c5b887a4b17953fc4a7))
+* **design:** set the interface in Newsreader ([48502a6](https://github.com/Amayyas/ChessTrainer/commit/48502a69c3a33112a526ffe7f481078ee9a726b1))
+* **fonts:** bring the italic back for captions ([74ad002](https://github.com/Amayyas/ChessTrainer/commit/74ad0026fa0ef1deb1db05d5a8ae78d85794fb53))
+* **fonts:** self-host the chess figurines and grade signs ([45ce0f9](https://github.com/Amayyas/ChessTrainer/commit/45ce0f950cc648f2a97e3405eb400b6e39ec8089))
+* **home:** set the dashboard as a results page ([9b3c670](https://github.com/Amayyas/ChessTrainer/commit/9b3c67045dcafe0b7d3009ceb5f6734132400366))
+* **home:** set the landing as a front page ([206a1be](https://github.com/Amayyas/ChessTrainer/commit/206a1be9c36fcf5eb419e5f7b068f887f94638fa))
+* **hunt:** set the piece hunt as a column beside the board ([3b38a9f](https://github.com/Amayyas/ChessTrainer/commit/3b38a9f32fff53e3cb9c533cb5efa6bf7adb2021))
+* **hunt:** set the Piece Hunt on chessground, as the other boards ([3242ed8](https://github.com/Amayyas/ChessTrainer/commit/3242ed85f4d65bf1e631d617ac0df042692592a3))
+* **i18n:** write numbers the French way ([3ef8a54](https://github.com/Amayyas/ChessTrainer/commit/3ef8a5493095229d2fd4113347f01797f8100258))
+* **layout:** set the head of every page as a newspaper's masthead ([cb24951](https://github.com/Amayyas/ChessTrainer/commit/cb249518fd01424e6e9975510dc8893723ce6bd3))
+* **leaderboard:** set the leaderboard as a results table ([d7da6ce](https://github.com/Amayyas/ChessTrainer/commit/d7da6ceb60d87b9a16318a91189e1d248482ba23))
+* **notation:** write moves in figurines ([0adc6a7](https://github.com/Amayyas/ChessTrainer/commit/0adc6a768644bd4160986ae51b624903b0cf72fa))
+* **pages:** set the legal pages, the not-found page and the error screens ([c41789f](https://github.com/Amayyas/ChessTrainer/commit/c41789f7254f2f82abc509ddec3c8ff88f01487a))
+* **profile:** set the profile as two ruled columns ([cc6fdb3](https://github.com/Amayyas/ChessTrainer/commit/cc6fdb3dfd8a7176970e91ba470de417fcd24db0))
+* **puzzle:** set the puzzles as a column beside the board ([0ee59d2](https://github.com/Amayyas/ChessTrainer/commit/0ee59d225544912df3315230e1a947812b62236f))
+
+
+### Bug Fixes
+
+* **a11y:** draw the focus ring in the rubric ([b2abb62](https://github.com/Amayyas/ChessTrainer/commit/b2abb626c2f08ed03a1744c0843d0270ff8bb5a9))
+* **battle:** say in the status line when the engine stops answering ([43aa639](https://github.com/Amayyas/ChessTrainer/commit/43aa6397a1003b1141e8c286a848a4210b535dcd))
+* **board:** close the promotion choice when the board stops taking moves ([8bb1eb1](https://github.com/Amayyas/ChessTrainer/commit/8bb1eb18b588725adb3cc583daad4f265120fd26))
+* **board:** compare the last move and the arrows by value ([afbd237](https://github.com/Amayyas/ChessTrainer/commit/afbd2377dbc81bb367880662abbf89cc909c5644))
+* **board:** give a move the board does not play back its whole state ([b7e765d](https://github.com/Amayyas/ChessTrainer/commit/b7e765daf2275144afbf2cb90e68e1220b270bd5))
+* **board:** keep a square's marks under the ones a selection adds ([c556dd3](https://github.com/Amayyas/ChessTrainer/commit/c556dd33b96388cd9c72a007886a1d081d72ca4f))
+* **coach:** centre the evaluation gauge's bar over its figures ([5cd0ac8](https://github.com/Amayyas/ChessTrainer/commit/5cd0ac834121778024ee95e6fae839a118a2234d))
+* **coach:** keep a grade sign's own size whatever size it is given ([0b295e4](https://github.com/Amayyas/ChessTrainer/commit/0b295e4bb3dcbe636addf4b435bb983e83f79582))
+* **coach:** keep the key's star and ticks a size smaller than its marks ([0aa1a79](https://github.com/Amayyas/ChessTrainer/commit/0aa1a79c672f488affd30aa6160d1e5e046d5d3b))
+* **coach:** say a check in the coach's live state line ([7eff6ae](https://github.com/Amayyas/ChessTrainer/commit/7eff6ae04c6dab91f197da882383e726ed05d98f))
+* **design:** set the text that names no size on the type scale ([148265c](https://github.com/Amayyas/ChessTrainer/commit/148265c394141082a4aa4c8a166e7e5ef50cd576))
+* **hunt:** hand the board a new position only when it changes ([17743cf](https://github.com/Amayyas/ChessTrainer/commit/17743cf14fa151f4bb3675f2ea8a92ef64b37936))
+* **hunt:** stop the hunt board's glide when the reader asks for less motion ([f7dfcc0](https://github.com/Amayyas/ChessTrainer/commit/f7dfcc0a274e80f524925b11eb21035c770d3395))
+* **i18n:** round an evaluation's size before giving it its sign ([85ce770](https://github.com/Amayyas/ChessTrainer/commit/85ce7705e975ecb68f0cc26c01cb9f9c077f18fd))
+* **layout:** keep the footer out of sight while a page loads ([cea0b91](https://github.com/Amayyas/ChessTrainer/commit/cea0b91637ae6701486a1b9937414c8d50a34713))
+* **notation:** draw figurines as their face cuts them, in bold or italic text ([6b95915](https://github.com/Amayyas/ChessTrainer/commit/6b959154785d11de623c1d9e5bbf60e0f907faad))
+* **profile:** write a falling accuracy trend with a true minus ([68cad0b](https://github.com/Amayyas/ChessTrainer/commit/68cad0b540ad6b87baebf41e7374f294f9398c74))
+* **ui:** keep a link in an alert readable, and set alerts and links in one place ([01c885c](https://github.com/Amayyas/ChessTrainer/commit/01c885c848148a446a52e75101beb2fb4a46f612))
+* **ui:** merge classes with the tailwind-merge made for Tailwind 3 ([f1c5b2d](https://github.com/Amayyas/ChessTrainer/commit/f1c5b2d71bbb7a13987f6c35e10d7a22fa35e4dd))
+
+
+### Performance
+
+* **app:** drop framer-motion and the route transitions ([708987f](https://github.com/Amayyas/ChessTrainer/commit/708987f6042b602549878ba3cc7bc976e7a72879))
+* **board:** do not hand chessground the config it was just made with ([dd5f13b](https://github.com/Amayyas/ChessTrainer/commit/dd5f13b3424408b5cb4358fd73d6dbb3daff4c7c))
+* **fonts:** measure the fallbacks at the pages' sizes, with italics and a medium ([c819137](https://github.com/Amayyas/ChessTrainer/commit/c819137d0a5c6c2d1de483df84dc9ab067c5ffbf))
+* **fonts:** preload Newsreader and give its fallbacks matching metrics ([7c507d3](https://github.com/Amayyas/ChessTrainer/commit/7c507d39b3dd3109fd3c187975488370b5c437d9))
+* **fonts:** set the italic from its static regular, a third of the weight ([d1b53ed](https://github.com/Amayyas/ChessTrainer/commit/d1b53edb70a9b2d491f741ea4f668895cbdd9fc4))
+* **home:** fetch the diagram's board once the page has loaded ([d2d9d36](https://github.com/Amayyas/ChessTrainer/commit/d2d9d36dcd823ba58e70e6312bf7a376593fbd5c))
+
+
+### Refactoring
+
+* **board:** drop react-chessboard and what only it needed ([16dfda7](https://github.com/Amayyas/ChessTrainer/commit/16dfda7534ebbb3b672f46677bc87b13fa2d53d7))
+* **board:** keep chessground's lifecycle in one hook ([7c89bb6](https://github.com/Amayyas/ChessTrainer/commit/7c89bb613e229a61e0f44a8132add59ff8af2317))
+* **board:** keep one list of examples, and pin the line the player reads ([3401962](https://github.com/Amayyas/ChessTrainer/commit/3401962a9fac1d9ae5e18e676c0a4912fbec8800))
+* **board:** lift the keyboard field out of the move input ([472bc15](https://github.com/Amayyas/ChessTrainer/commit/472bc15b1c8e534a3b1ec01a0e2c2f52c7fb16cb))
+* **board:** read the pieces off a FEN in one place ([2c9da08](https://github.com/Amayyas/ChessTrainer/commit/2c9da0860588aee9ab09a1ccf18492288ee04ed5))
+* **board:** write the field's examples from the letters it reads ([2a5c45a](https://github.com/Amayyas/ChessTrainer/commit/2a5c45af08be48707b06e2e8fe8d923bb77f0ee2))
+* **brand:** draw the social image from the site's own words ([a75cad3](https://github.com/Amayyas/ChessTrainer/commit/a75cad3f8921ffd0df196f9c92cecfac55efb9e5))
+* **design:** offer the type scale and no other size ([2ff34cb](https://github.com/Amayyas/ChessTrainer/commit/2ff34cbaac05051862772ef6d25cd02c9626725a))
+* **design:** remove the shadcn colour bridge ([1257e8d](https://github.com/Amayyas/ChessTrainer/commit/1257e8d730e42b3003595315378c6d0391e532c8))
+* **design:** retire the previous palette ([1841cd0](https://github.com/Amayyas/ChessTrainer/commit/1841cd0adc09a8abb21aefadcb317e2b3aca29cc))
+* **fonts:** leave the italic out until something is set in it ([6563c5b](https://github.com/Amayyas/ChessTrainer/commit/6563c5b770f28b0762e4197ac54e942dde31ac03))
+* **home:** hold the landing's diagram and caption to its sample game ([332fc1d](https://github.com/Amayyas/ChessTrainer/commit/332fc1d8a52e3abe1820063b4c1fef6be777ab9e))
+* **hunt:** keep the champion's squares against the champion too ([e23f4c4](https://github.com/Amayyas/ChessTrainer/commit/e23f4c43044098e28fa36202c04fdea2823217c3))
+* **landing:** remove the Aurora gradient background ([59468ca](https://github.com/Amayyas/ChessTrainer/commit/59468ca1938d4c2bd29ebaca5d0820b71e956fd6))
+* **notation:** drop frenchSan, which nothing calls ([42975d1](https://github.com/Amayyas/ChessTrainer/commit/42975d14b339f8470ef6cfae66e0c03477372963))
+* **pages:** name the section ids in English ([1e9a186](https://github.com/Amayyas/ChessTrainer/commit/1e9a186c9b2320e93d539d88e75ae90fde0f51cc))
+* **ui:** draw dialogs and sheets without lucide or entrance animations ([696f758](https://github.com/Amayyas/ChessTrainer/commit/696f75836430603e2953d4d6a932dec7c4a40385))
+* **ui:** remove the card shadows ([46fd4fc](https://github.com/Amayyas/ChessTrainer/commit/46fd4fc041ae49300b56865ff86ce7f0347097a2))
+* **ui:** replace the shadcn badge with a newsprint tag ([1bedb4b](https://github.com/Amayyas/ChessTrainer/commit/1bedb4b5bfd80d23f93bcee2c17fbc81936fb778))
+* **ui:** replace the shadcn button with a newsprint one ([a748a57](https://github.com/Amayyas/ChessTrainer/commit/a748a5751cb4aed54364f2fec4c3181fb754ac09))
+* **ui:** replace the shadcn card with a ruled box ([3afa9d9](https://github.com/Amayyas/ChessTrainer/commit/3afa9d9861e483cf8e35f4e252f8451acf77e71e))
+* **ui:** restyle tabs, toggle groups and the page header ([e14e0d3](https://github.com/Amayyas/ChessTrainer/commit/e14e0d3b4dcffa07b60fac202c38a78eb0a6e1d4))
+* **ui:** set a box score's row from its figures unless told otherwise ([34e5c62](https://github.com/Amayyas/ChessTrainer/commit/34e5c62b33893ee50c884fad0c95d097abc7b117))
+* **ui:** set every box score with one component ([eff8fb2](https://github.com/Amayyas/ChessTrainer/commit/eff8fb2d4363dc4cebb770e7144a2d62555f19a7))
+* **ui:** set the remaining button-shaped links as buttons ([d35843e](https://github.com/Amayyas/ChessTrainer/commit/d35843e18879280d4b11d1944bd55e0a5de24261))
+* **ui:** set the rubric block in one place ([b3dd0e7](https://github.com/Amayyas/ChessTrainer/commit/b3dd0e75fd74729f6fcf8e3c1a0f1ab27cc32d41))
+
 ## [2.4.0](https://github.com/Amayyas/ChessTrainer/compare/v2.3.2...v2.4.0) (2026-10-07)
 
 
