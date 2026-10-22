@@ -251,6 +251,36 @@ export function respawnSquare(enemies: EnemyBoard, rng: Rng = Math.random): stri
   return pick(safe, rng)
 }
 
+/**
+ * The arcade position as the placement field of a FEN, the enemies black and
+ * the champion white — all chessground needs to set the pieces down, though
+ * the position is no game of chess: no kings, and rules of its own.
+ */
+export function huntPlacement(
+  champion: ChampionType,
+  championSquare: string | null,
+  enemies: EnemyBoard,
+): string {
+  const rows: string[] = []
+  for (let rank = 8; rank >= 1; rank--) {
+    let row = ''
+    let empty = 0
+    for (const file of FILES) {
+      const square = `${file}${rank}`
+      // While the champion is eaten it is off the board entirely.
+      const piece = square === championSquare ? champion.toUpperCase() : enemies.get(square)
+      if (!piece) {
+        empty += 1
+        continue
+      }
+      row += `${empty || ''}${piece}`
+      empty = 0
+    }
+    rows.push(`${row}${empty || ''}`)
+  }
+  return rows.join('/')
+}
+
 /** Points a captured enemy is worth, before the combo multiplier. */
 export const CAPTURE_VALUE: Record<EnemyType, number> = { p: 10, n: 30, b: 30, r: 50, q: 90 }
 

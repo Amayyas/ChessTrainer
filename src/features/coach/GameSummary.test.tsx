@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import GameSummary from '@/features/coach/GameSummary'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY } from '@/utils/evaluation'
+import { FIGURINES, FRENCH_LETTERS } from '@/utils/notation'
 
 /**
  * The counts were prose: "imprécisions", "erreurs" and "gaffes" written by hand
@@ -63,7 +64,8 @@ describe('GameSummary counts', () => {
       />,
     )
 
-    expect(screen.getByText('91%')).toBeInTheDocument()
+    // French sets a no-break space before the sign; the matcher collapses it.
+    expect(screen.getByText(/^91\s%$/)).toBeInTheDocument()
     expect(screen.getByText('—')).toBeInTheDocument()
   })
 
@@ -75,6 +77,8 @@ describe('GameSummary counts', () => {
       />,
     )
 
-    expect(screen.getByText(/Qh5 \(noirs\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Meilleur coup de la partie/)).toHaveTextContent(
+      `${FIGURINES.Q}${FRENCH_LETTERS.Q}h5 (noirs)`,
+    )
   })
 })

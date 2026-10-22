@@ -29,6 +29,19 @@ function Harness() {
 }
 
 describe('Tabs', () => {
+  it('underlines the chosen word itself rather than drawing on the rule', () => {
+    // A border at the foot of a tab sits on the list's rule only while the
+    // list holds one line; on a phone a row of these wraps, and the border was
+    // left hanging above the rule. An underline stays under its word.
+    render(<Harness />)
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(tab.className.split(/\s+/)).not.toContainEqual(expect.stringMatching(/border-b/))
+    }
+    expect(screen.getByRole('tab', { name: 'Série du jour' }).className).toContain(
+      'data-[state=active]:underline',
+    )
+  })
+
   it('exposes a named tablist with the panel each tab controls', () => {
     render(<Harness />)
 

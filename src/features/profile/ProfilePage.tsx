@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Badge, Button, Card, PageHeader } from '@/components/UI'
+import { Button, PageHeader, Tag } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
+import Input from '@/components/UI/Input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
 import LevelBar from '@/features/progression/LevelBar'
@@ -16,12 +18,15 @@ import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { cn } from '@/utils/cn'
+import { formatPercent } from '@/utils/format'
 
 /**
  * Profile: level, global statistics and the badge
  * collection. The account details — pseudonym, avatar, sign-up
  * date — arrive with authentication.
  */
+const COLUMN_HEAD = 'text-kicker font-semibold uppercase'
+
 export default function ProfilePage() {
   const xp = useProgressionStore((state) => state.xp)
   const stats = useProgressionStore((state) => state.stats)
@@ -48,10 +53,13 @@ export default function ProfilePage() {
 
   const figures = [
     { label: 'Parties jouées', value: String(stats.gamesPlayed) },
-    { label: 'Victoires', value: winRate === null ? '—' : `${stats.gamesWon} (${winRate}%)` },
+    {
+      label: 'Victoires',
+      value: winRate === null ? '—' : `${stats.gamesWon} (${formatPercent(winRate)})`,
+    },
     {
       label: 'Précision moyenne',
-      value: stats.battleAccuracy === null ? '—' : `${stats.battleAccuracy}%`,
+      value: stats.battleAccuracy === null ? '—' : formatPercent(stats.battleAccuracy),
     },
     { label: 'Puzzles résolus', value: String(stats.puzzlesSolved) },
     { label: 'Meilleure série', value: `${stats.bestPuzzleStreak} j` },
@@ -63,15 +71,17 @@ export default function ProfilePage() {
       <PageHeader
         title="Profil"
         subtitle="Votre progression, vos statistiques et vos badges."
-        actions={<Badge variant="gold">Niveau {progress.level}</Badge>}
+        actions={<Tag tone="ink">Niveau {progress.level}</Tag>}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex flex-col gap-4">
-          <Card className="flex flex-col gap-3">
-            <h2 className="font-display text-lg font-bold text-ebene">Compte</h2>
+      <div className="grid gap-y-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <div className="flex flex-col gap-12 lg:pr-14">
+          <section aria-labelledby="t-account" className="flex flex-col gap-4">
+            <h2 id="t-account" className={COLUMN_HEAD}>
+              Compte
+            </h2>
             {!isSupabaseConfigured ? (
-              <p className="text-sm text-ardoise">
+              <p className="text-caption italic text-ink-soft">
                 Aucun serveur n'est configuré : vous jouez en invité et votre progression reste sur
                 cet appareil.
               </p>
@@ -79,26 +89,23 @@ export default function ProfilePage() {
               // The stored session, then the profile, are both fetched on
               // start-up. Falling through to the guest block meanwhile would
               // invite a signed-in player to create a second account.
-              <p className="text-sm text-ardoise">Chargement de votre compte…</p>
+              <p className="text-caption italic text-ink-soft">Chargement de votre compte…</p>
             ) : session && authProfile ? (
               <>
-                <div className="flex items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-ebene text-2xl text-or"
-                  >
+                <div className="flex items-center gap-4">
+                  <span aria-hidden="true" className="font-figurine text-[2.75rem] leading-none">
                     {AVATAR_GLYPHS[authProfile.avatar_piece]}
                   </span>
                   <span>
-                    <span className="block font-semibold text-ebene">{authProfile.username}</span>
-                    <span className="block text-xs text-ardoise">
+                    <span className="block text-heading font-semibold">{authProfile.username}</span>
+                    <span className="block text-caption italic text-ink-soft">
                       Inscrit le {new Date(authProfile.created_at).toLocaleDateString('fr-FR')}
                     </span>
                   </span>
                 </div>
 
                 <div>
-                  <p className="mb-1 text-xs font-medium text-ardoise">Avatar</p>
+                  <p className="mb-1.5 text-caption font-semibold">Avatar</p>
                   <ToggleGroup
                     type="single"
                     variant="tiles"
@@ -118,47 +125,52 @@ export default function ProfilePage() {
                   </ToggleGroup>
                 </div>
 
-                <Button variant="outline" size="sm" onClick={() => void signOut()}>
-                  Se déconnecter
-                </Button>
+                <div>
+                  <Button variant="secondary" size="sm" onClick={() => void signOut()}>
+                    Se déconnecter
+                  </Button>
+                </div>
 
-                <div className="mt-2 border-t border-ebene/10 pt-4">
+                <div className="border-t border-ink/30 pt-3">
                   {!confirmingDelete ? (
-                    <button
-                      type="button"
+                    <Button
+                      variant="quiet"
+                      size="sm"
                       onClick={() => {
                         clearDeleteError()
                         setConfirmingDelete(true)
                       }}
-                      className="text-sm text-red-700 underline underline-offset-2 hover:text-red-800"
+                      className="text-rubric hover:text-ink"
                     >
                       Supprimer mon compte
-                    </button>
+                    </Button>
                   ) : (
-                    <div className="flex flex-col gap-3 rounded-xl bg-red-50 p-3">
-                      <p className="text-sm text-red-800">
+                    // The one destructive act on the site, so it is set apart
+                    // in the rubric, which marks what needs acting on.
+                    <div className="flex flex-col gap-3 border border-rubric bg-paper-bright p-4">
+                      <p className="text-caption">
                         Cette action est <strong>définitive</strong>. Votre compte, vos scores du
                         classement, votre progression et vos badges seront effacés. Il n'y a pas de
                         retour en arrière.
                       </p>
-                      <label className="text-sm text-red-800">
+                      <label className="text-caption">
                         Saisissez <strong>{authProfile.username}</strong> pour confirmer :
-                        <input
+                        <Input
                           type="text"
                           value={typedUsername}
                           onChange={(event) => setTypedUsername(event.target.value)}
                           autoComplete="off"
-                          className="mt-1 h-10 w-full rounded-lg border border-red-300 bg-white px-3 text-ebene outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                          className="mt-1.5"
                         />
                       </label>
                       {deleteError && (
-                        <p role="alert" className="text-sm font-medium text-red-800">
+                        <p role="alert" className="text-caption font-semibold text-rubric">
                           {deleteError}
                         </p>
                       )}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2.5">
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
                           onClick={() => {
                             setConfirmingDelete(false)
@@ -168,17 +180,18 @@ export default function ProfilePage() {
                         >
                           Annuler
                         </Button>
-                        <button
-                          type="button"
+                        <Button
+                          size="sm"
                           disabled={typedUsername !== authProfile.username || isDeleting}
+                          isLoading={isDeleting}
                           onClick={() => {
                             setIsDeleting(true)
                             void deleteAccount().finally(() => setIsDeleting(false))
                           }}
-                          className="inline-flex h-9 items-center rounded-xl bg-red-700 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="bg-rubric text-paper-bright hover:bg-ink"
                         >
                           {isDeleting ? 'Suppression…' : 'Supprimer définitivement'}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -186,87 +199,69 @@ export default function ProfilePage() {
               </>
             ) : (
               <>
-                <p className="text-sm text-ardoise">
+                <p className="text-caption italic text-ink-soft">
                   Vous jouez en invité. Un compte vous ouvre le classement mondial et retrouve vos
                   progrès sur tous vos appareils.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    to={ROUTES.register}
-                    className="inline-flex h-10 items-center rounded-xl bg-or px-4 text-sm font-semibold text-ebene"
-                  >
-                    Créer un compte
-                  </Link>
-                  <Link
-                    to={ROUTES.login}
-                    className="inline-flex h-10 items-center rounded-xl border border-ebene/20 px-4 text-sm font-semibold text-ebene"
-                  >
-                    Se connecter
-                  </Link>
+                <div className="flex flex-wrap gap-2.5">
+                  <Button asChild>
+                    <Link to={ROUTES.register}>Créer un compte</Link>
+                  </Button>
+                  <Button asChild variant="secondary">
+                    <Link to={ROUTES.login}>Se connecter</Link>
+                  </Button>
                 </div>
               </>
             )}
-          </Card>
+          </section>
+
+          <section aria-labelledby="t-progression">
+            <h2 id="t-progression" className={cn(COLUMN_HEAD, 'mb-3')}>
+              Progression
+            </h2>
+            <LevelBar progress={progress} />
+            <p className="mt-2 text-caption italic text-ink-soft">{xp} XP au total</p>
+
+            <BoxScore figures={figures} columns={3} rule="ink" className="mt-8" />
+          </section>
 
           <AccuracyHistoryPanel entries={accuracyHistory} />
-
-          <Card>
-            <LevelBar progress={progress} />
-            <p className="mt-2 text-sm text-ardoise">{xp} XP au total</p>
-          </Card>
-
-          <Card>
-            <h2 className="mb-3 font-display text-lg font-bold text-ebene">Statistiques</h2>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {figures.map((figure) => (
-                <div key={figure.label} className="rounded-xl bg-ebene/5 px-3 py-2 text-center">
-                  <dd className="font-display text-xl font-bold text-ebene">{figure.value}</dd>
-                  <dt className="text-xs text-ardoise">{figure.label}</dt>
-                </div>
-              ))}
-            </dl>
-          </Card>
         </div>
 
-        <Card className="h-fit">
-          <h2 className="mb-1 font-display text-lg font-bold text-ebene">Badges</h2>
-          <p className="mb-3 text-xs text-ardoise">
+        <section aria-labelledby="t-badges" className="lg:border-l lg:border-ink/30 lg:pl-11">
+          <h2 id="t-badges" className={COLUMN_HEAD}>
+            Badges
+          </h2>
+          <p className="mb-3 mt-1 text-caption italic text-ink-soft">
             {unlocked.length} sur {BADGES.length} débloqués
           </p>
-          <ul className="space-y-2">
+          <ul className="border-t border-ink/30">
             {BADGES.map((badge) => {
               const isUnlocked = unlocked.includes(badge.id)
               return (
                 <li
                   key={badge.id}
                   className={cn(
-                    'flex items-start gap-3 rounded-xl px-3 py-2',
-                    isUnlocked ? 'bg-or/15' : 'bg-ebene/5',
+                    'flex items-start gap-3.5 border-b border-ink/30 py-3',
+                    !isUnlocked && 'text-ink-faint',
                   )}
                 >
                   <span
                     aria-hidden="true"
-                    className={cn('text-xl leading-none', !isUnlocked && 'opacity-30 grayscale')}
+                    className="w-7 shrink-0 text-center font-figurine text-[1.5rem] leading-none"
                   >
                     {badge.glyph}
                   </span>
                   <span className="min-w-0">
-                    <span
-                      className={cn(
-                        'block text-sm font-semibold',
-                        isUnlocked ? 'text-ebene' : 'text-ardoise',
-                      )}
-                    >
-                      {badge.label}
-                    </span>
-                    <span className="block text-xs text-ardoise">{badge.description}</span>
+                    <span className="block font-semibold">{badge.label}</span>
+                    <span className="block text-caption">{badge.description}</span>
                   </span>
                   <span className="sr-only">{isUnlocked ? 'Débloqué' : 'Verrouillé'}</span>
                 </li>
               )
             })}
           </ul>
-        </Card>
+        </section>
       </div>
     </div>
   )

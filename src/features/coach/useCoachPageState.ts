@@ -4,9 +4,9 @@ import { useLocation } from 'react-router-dom'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useChessGame } from '@/hooks/useChessGame'
-import { board } from '@/lib/design-tokens'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
+import type { Hint } from '@/components/HintList'
 
 const PIECE_NAMES: Record<string, string> = {
   p: 'pion',
@@ -180,15 +180,15 @@ export function useCoachPageState() {
   }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
 
   const statusLabel = describeStatus(game.status, game.turn)
-  const statusVariant: 'gold' | 'danger' | 'neutral' = game.status.isOver
-    ? 'gold'
+  const statusTone: 'ink' | 'alert' | 'muted' = game.status.isOver
+    ? 'ink'
     : game.status.isCheck
-      ? 'danger'
-      : 'neutral'
+      ? 'alert'
+      : 'muted'
 
   const showBestArrow = showArrow && insight.bestMove !== null && (inReplay || !game.status.isOver)
   const arrows = showBestArrow
-    ? ([[insight.bestMove!.from, insight.bestMove!.to, board.arrow]] as [Square, Square, string][])
+    ? ([[insight.bestMove!.from, insight.bestMove!.to]] as [Square, Square][])
     : undefined
 
   const hint = useMemo(() => {
@@ -208,11 +208,11 @@ export function useCoachPageState() {
     return { piece: piece ? PIECE_NAMES[piece.type] : 'pièce', from: analysis.bestMove.from, san }
   }, [analysis.bestMove, game.fen])
 
-  const hintMessages = hint
+  const hintMessages: Hint[] = hint
     ? [
         `Cherchez le meilleur coup pour votre ${hint.piece}.`,
         `Déplacez votre ${hint.piece} depuis ${hint.from}.`,
-        hint.san ? `Le meilleur coup est ${hint.san}.` : 'Analyse en cours…',
+        hint.san ? { lead: 'Le meilleur coup est', san: hint.san } : 'Analyse en cours…',
       ]
     : []
 
@@ -278,6 +278,6 @@ export function useCoachPageState() {
     insight,
     arrows,
     statusLabel,
-    statusVariant,
+    statusTone,
   }
 }

@@ -1,14 +1,25 @@
-import { ChessBoard, EvalBar, MoveHistory } from '@/components/Board'
-import QualityLegend from '@/features/coach/QualityLegend'
-import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import { BoardControls, ChessBoard, EvalBar, MoveHistory, MoveInput } from '@/components/Board'
+import HintList from '@/components/HintList'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import Input from '@/components/UI/Input'
+import StatusLine from '@/components/UI/StatusLine'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
+import QualityLegend from '@/features/coach/QualityLegend'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
+import { cn } from '@/utils/cn'
+
+/** The head of each block in the panel: capitals, as a paper heads a column. */
+const PANEL_HEAD = 'text-kicker font-semibold uppercase'
 
 /**
  * Coach mode: a playable board with live Stockfish analysis —
  * evaluation bar, best-move arrow, per-move classification, progressive hints,
  * an end-of-game summary and a move-by-move replay.
+ *
+ * Laid out as the newsprint column: the diagram and its gauge, and beside them
+ * the panel, ruled off, its blocks headed in capitals and the hints boxed as
+ * an aside.
  *
  * All of the orchestration lives in useCoachPageState; this file is the view.
  */
@@ -26,46 +37,62 @@ export default function CoachPage() {
         subtitle="Jouez les deux camps ; l'IA évalue la position, classe chaque coup et suggère le meilleur."
         actions={
           analysis.isAnalyzing ? (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> Analyse…
-            </span>
+            <StatusLine busy>Analyse…</StatusLine>
           ) : analysis.isReady ? (
-            <Badge variant="neutral">IA prête</Badge>
+            <StatusLine>IA prête</StatusLine>
           ) : (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> Chargement de l'IA…
-            </span>
+            <StatusLine busy>Chargement de l&apos;IA…</StatusLine>
           )
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        {/* self-start keeps the eval bar tied to the board height instead of
-            stretching to the (taller) side panel as the move list grows. */}
-        <div className="mx-auto flex w-full max-w-[560px] gap-3 self-start">
-          <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
-          <div className="min-w-0 flex-1">
-            <ChessBoard
-              fen={coach.viewFen}
+      <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+        {/* self-start keeps the gauge tied to the board height instead of
+            stretching to the (taller) side panel as the move list grows; the
+            controls sit below the two, so the gauge does not stretch down
+            beside them either. On a phone the gauge lies across the top of
+            the board. */}
+        <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:gap-3.5">
+            <EvalBar evaluation={coach.insight.eval} orientation={coach.orientation} />
+            <div className="min-w-0 flex-1">
+              <ChessBoard
+                fen={coach.viewFen}
+                turn={game.turn}
+                orientation={coach.orientation}
+                interactive={!inReplay}
+                onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
+                getLegalTargets={game.getLegalTargets}
+                isPromotion={game.isPromotion}
+                lastMove={coach.viewLastMove}
+                checkSquare={inReplay ? null : game.checkSquare}
+                arrows={coach.arrows}
+              />
+            </div>
+          </div>
+          <BoardControls>
+            <MoveInput
+              fen={game.fen}
               turn={game.turn}
-              orientation={coach.orientation}
-              interactive={!inReplay}
+              enabled={!inReplay && !game.status.isOver}
               onMove={(from, to, promotion) => game.move(from, to, promotion) !== null}
               getLegalTargets={game.getLegalTargets}
               isPromotion={game.isPromotion}
-              lastMove={coach.viewLastMove}
-              checkSquare={inReplay ? null : game.checkSquare}
-              arrows={coach.arrows}
+              idleMessage={
+                inReplay
+                  ? 'Vous revoyez la partie\u00a0: quittez la revue pour jouer.'
+                  : 'La partie est terminée.'
+              }
             />
-          </div>
+          </BoardControls>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
           {game.status.isOver && !inReplay && (
             <GameSummary summary={analysis.summary} statusLabel={statusLabel} />
           )}
 
-          <Card className="flex h-fit flex-col gap-5">
+          <div className="flex flex-col gap-[22px]">
             {!inReplay && (
               <div>
                 <ToggleGroup
@@ -87,25 +114,27 @@ export default function CoachPage() {
                 </ToggleGroup>
 
                 {coach.mode === 'analysis' && (
-                  <div className="mt-3">
-                    <label htmlFor="fen-input" className="text-xs font-medium text-ardoise">
+                  <div className="mt-4">
+                    <label htmlFor="fen-input" className="text-caption font-semibold">
                       Position de départ (FEN)
                     </label>
-                    <div className="mt-1 flex gap-2">
-                      <input
+                    <div className="mt-1.5 flex gap-2">
+                      <Input
                         id="fen-input"
                         value={coach.fenInput}
                         onChange={(event) => coach.setFenInput(event.target.value)}
                         onKeyDown={(event) => event.key === 'Enter' && coach.loadFen()}
                         placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                        className="min-w-0 flex-1 rounded-lg border border-ebene/20 px-2 py-1.5 text-sm"
+                        aria-invalid={coach.fenError ? true : undefined}
+                        aria-describedby={coach.fenError ? 'fen-error' : undefined}
+                        className="min-w-0 flex-1 text-caption"
                       />
-                      <Button size="sm" onClick={coach.loadFen}>
-                        Charger
-                      </Button>
+                      <Button onClick={coach.loadFen}>Charger</Button>
                     </div>
                     {coach.fenError && (
-                      <p className="mt-1 text-xs text-red-600">{coach.fenError}</p>
+                      <p id="fen-error" className="mt-1.5 text-caption text-rubric">
+                        {coach.fenError}
+                      </p>
                     )}
                   </div>
                 )}
@@ -113,42 +142,57 @@ export default function CoachPage() {
             )}
 
             {!game.status.isOver && (
-              <div>
-                <h2 className="mb-2 font-display text-lg font-bold text-ebene">
+              <section aria-labelledby="t-state">
+                <h2 id="t-state" className={PANEL_HEAD}>
                   État de la partie
                 </h2>
-                <Badge variant={coach.statusVariant}>{statusLabel}</Badge>
-              </div>
+                {/* A check needs answering, so it is set as an alert; the
+                    rest of the time the state is a line of italic. Both sit in
+                    one live region that stays put, so a screen reader hears a
+                    check arrive as it hears the turn change: a line swapped for
+                    a tag outside one was never said. */}
+                <div role="status" className={coach.statusTone === 'alert' ? 'mt-2' : 'mt-1'}>
+                  {coach.statusTone === 'alert' ? (
+                    <Tag tone="alert">{statusLabel}</Tag>
+                  ) : (
+                    <p className="text-body italic">{statusLabel}</p>
+                  )}
+                </div>
+              </section>
             )}
 
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold text-ebene">Coups joués</h2>
-                <button
-                  type="button"
+            <section aria-labelledby="t-moves">
+              <div className="mb-1 flex items-center justify-between gap-4">
+                <h2 id="t-moves" className={PANEL_HEAD}>
+                  Coups joués
+                </h2>
+                <Button
+                  variant="quiet"
+                  size="sm"
                   onClick={coach.toggleArrow}
-                  className="text-xs font-semibold text-ardoise underline-offset-2 hover:text-ebene hover:underline"
                   aria-pressed={coach.showArrow}
                 >
                   {coach.showArrow ? 'Masquer la flèche' : 'Afficher la flèche'}
-                </button>
+                </Button>
               </div>
               <MoveHistory
                 moves={game.sanHistory}
                 qualities={analysis.qualities}
                 activeIndex={inReplay ? coach.replayPly - 1 : undefined}
               />
-              <div className="mt-2">
+              <div className="mt-3">
                 <QualityLegend />
               </div>
-            </div>
+            </section>
 
             {inReplay ? (
-              <div>
-                <h2 className="mb-2 font-display text-lg font-bold text-ebene">Rejouer</h2>
+              <section aria-labelledby="t-replay">
+                <h2 id="t-replay" className={cn(PANEL_HEAD, 'mb-2')}>
+                  Rejouer
+                </h2>
                 <div className="flex items-center gap-1">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Début"
                     disabled={coach.replayPly === 0}
@@ -157,7 +201,7 @@ export default function CoachPage() {
                     «
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Coup précédent"
                     disabled={coach.replayPly === 0}
@@ -166,7 +210,7 @@ export default function CoachPage() {
                     ‹
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Coup suivant"
                     disabled={coach.replayPly >= coach.lastPly}
@@ -175,7 +219,7 @@ export default function CoachPage() {
                     ›
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     aria-label="Fin"
                     disabled={coach.replayPly >= coach.lastPly}
@@ -183,37 +227,30 @@ export default function CoachPage() {
                   >
                     »
                   </Button>
-                  <Button variant="ghost" size="sm" className="ml-auto" onClick={coach.exitReplay}>
+                  <Button variant="quiet" size="sm" className="ml-auto" onClick={coach.exitReplay}>
                     Quitter
                   </Button>
                 </div>
-                <p className="mt-2 text-xs text-ardoise">
+                <p className="mt-2 text-caption italic text-ink-soft">
                   Coup {coach.replayPly} / {coach.lastPly}
                 </p>
-              </div>
+              </section>
             ) : (
               <>
                 {!game.status.isOver && (
-                  <div>
-                    <h2 className="mb-2 font-display text-lg font-bold text-ebene">Indices</h2>
+                  <Box className="px-[22px] pb-4 pt-5">
+                    <h2 className={cn(PANEL_HEAD, 'mb-2.5')}>Indices</h2>
                     {coach.hintLevel === 0 ? (
-                      <p className="text-sm text-ardoise">
+                      <p className="text-caption italic text-ink-soft">
                         Bloqué ? Révélez un indice à la fois, sans dévoiler tout le coup.
                       </p>
                     ) : (
-                      <ul className="space-y-1 text-sm text-ebene">
-                        {coach.hintMessages.slice(0, coach.hintLevel).map((message, index) => (
-                          <li key={index} className="flex gap-2">
-                            <span className="font-semibold text-or">{index + 1}.</span>
-                            {message}
-                          </li>
-                        ))}
-                      </ul>
+                      <HintList hints={coach.hintMessages.slice(0, coach.hintLevel)} />
                     )}
                     <Button
-                      variant="ghost"
+                      variant="quiet"
                       size="sm"
-                      className="mt-2"
+                      className="mt-1.5"
                       disabled={!coach.canRevealHint}
                       onClick={coach.revealHint}
                     >
@@ -223,26 +260,26 @@ export default function CoachPage() {
                           ? 'Indice complet'
                           : 'Indice suivant'}
                     </Button>
-                  </div>
+                  </Box>
                 )}
 
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2.5">
                   <Button
-                    variant="secondary"
+                    variant="primary"
                     size="sm"
                     onClick={game.undo}
                     disabled={game.sanHistory.length === 0}
                   >
                     Annuler
                   </Button>
-                  <Button variant="outline" size="sm" onClick={coach.newGame}>
+                  <Button variant="secondary" size="sm" onClick={coach.newGame}>
                     Nouvelle partie
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={coach.flipBoard}>
+                  <Button variant="quiet" size="sm" onClick={coach.flipBoard}>
                     Retourner le plateau
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="quiet"
                     size="sm"
                     disabled={game.sanHistory.length === 0}
                     onClick={coach.enterReplay}
@@ -252,7 +289,7 @@ export default function CoachPage() {
                 </div>
               </>
             )}
-          </Card>
+          </div>
         </div>
       </div>
     </div>

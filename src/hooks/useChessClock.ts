@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Color } from '@/utils/chess'
+import { formatDecimal } from '@/utils/format'
 
 export type TimeControlId = 'bullet' | 'blitz' | 'rapid' | 'unlimited'
 
@@ -27,8 +28,8 @@ export function getTimeControl(id: TimeControlId): TimeControl {
 /** mm:ss, switching to tenths of a second under ten seconds. */
 export function formatClock(ms: number): string {
   const safe = Math.max(0, ms)
-  // Truncate rather than round, so 9 999 ms reads 9.9 and never 10.0.
-  if (safe < 10_000) return (Math.floor(safe / 100) / 10).toFixed(1)
+  // Truncate rather than round, so 9 999 ms reads 9,9 and never 10,0.
+  if (safe < 10_000) return formatDecimal(Math.floor(safe / 100) / 10)
   const totalSeconds = Math.ceil(safe / 1000)
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60

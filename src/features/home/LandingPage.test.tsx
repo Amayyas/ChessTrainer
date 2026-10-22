@@ -1,10 +1,17 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import LandingPage from '@/features/home/LandingPage'
 import { MODES } from '@/features/home/modes'
+import { COACH_PROPOSAL, SAMPLE_GAME, moveNumber } from '@/features/home/sampleGame'
 import { MOVE_QUALITY, MOVE_QUALITY_ORDER } from '@/utils/evaluation'
+import { FIGURINES } from '@/utils/notation'
+
+// The diagram's board is fetched once the page has loaded. Not here: these
+// tests read the page's words, and a board arriving mid-test would load
+// chessground into jsdom outside any act().
+vi.mock('@/hooks/useAfterLoad', () => ({ useAfterLoad: () => false }))
 
 function renderLanding() {
   return render(
@@ -80,7 +87,7 @@ describe('LandingPage', () => {
     )
   })
 
-  it('styles those two with the button, on a section that inverts the palette', () => {
+  it('styles those two with the button', () => {
     renderLanding()
 
     const primary = screen.getByRole('link', { name: 'Essayer le coach' })
@@ -89,15 +96,35 @@ describe('LandingPage', () => {
     // They were two hand-written class strings carrying a comment that admitted
     // as much: "styled to match the primary Button without being one". They are
     // the Button now, lent to the links through asChild.
-    expect(primary).toHaveClass('bg-primary', 'text-primary-foreground')
+    expect(primary).toHaveAttribute('data-variant', 'primary')
     expect(primary.closest('button')).toBeNull()
-    expect(secondary).toHaveClass('border-foreground/20')
+    expect(secondary).toHaveAttribute('data-variant', 'secondary')
+  })
 
-    // And the mechanism that makes the outline one legible on the ebony band.
-    // Without theme-inverse, border-foreground/20 is ebony on ebony: the button
-    // is still there, and nobody can see it.
-    expect(primary.closest('.theme-inverse')).not.toBeNull()
-    expect(secondary.closest('.theme-inverse')).not.toBeNull()
+  it('prints its sample game in figurines, with the grades said in words', () => {
+    renderLanding()
+
+    const game = screen.getByText(/^1\./, { selector: 'p' })
+    // No English piece letter reaches the page, and the knight is drawn.
+    expect(game).not.toHaveTextContent(/[KQRBN][a-h1-8x]/)
+    expect(game).toHaveTextContent(FIGURINES.N)
+    // The signs are hidden from assistive tech, so each grade is also written.
+    for (const quality of ['excellent', 'mistake'] as const) {
+      expect(game).toHaveTextContent(MOVE_QUALITY[quality].label.toLowerCase())
+    }
+  })
+
+  it('captions its diagram from the sample game', () => {
+    // The caption quoted "5…♞xd5" and "6.♞xf7" by hand, beside a game held as
+    // data: a different game would have kept the old caption.
+    const { container } = renderLanding()
+    const caption = container.querySelector('figcaption')!
+    const last = SAMPLE_GAME.length - 1
+    expect(caption).toHaveTextContent(last % 2 === 0 ? 'Les Noirs jouent' : 'Les Blancs jouent')
+    expect(caption).toHaveTextContent(`noté ${moveNumber(last)}`)
+    expect(caption).toHaveTextContent(MOVE_QUALITY[SAMPLE_GAME[last]!.grade!].label.toLowerCase())
+    expect(caption).toHaveTextContent(`propose ${moveNumber(last + 1)}`)
+    expect(caption).toHaveTextContent(COACH_PROPOSAL.san.slice(1))
   })
 
   it('counts modes and tiers nowhere in its static prose', () => {

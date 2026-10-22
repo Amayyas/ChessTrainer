@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import CoachPage from '@/features/coach/CoachPage'
@@ -37,6 +37,25 @@ describe('CoachPage free analysis', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Charger' }))
 
     expect(screen.getByText('Trait aux noirs')).toBeInTheDocument()
+  })
+
+  it('says a check in the same live line as the turn', () => {
+    // The state line was swapped for an alert tag when a check came, outside
+    // any live region, so a screen reader user was never told of the check.
+    renderCoach()
+    const state = within(screen.getByRole('region', { name: 'État de la partie' }))
+    const line = state.getByRole('status')
+    expect(line).toHaveTextContent('Trait aux blancs')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Analyse libre' }))
+    // After 1.e4 e5 2.Bc4 d6 3.Bxf7+: Black is in check, and not mated.
+    fireEvent.change(screen.getByLabelText(/Position de départ/), {
+      target: { value: 'rnbqkbnr/ppp2Bpp/3p4/4p3/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 0 3' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Charger' }))
+
+    expect(state.getByRole('status')).toBe(line)
+    expect(line).toHaveTextContent(/Échec/)
   })
 
   it('will not let both modes be off at once', () => {

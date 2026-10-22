@@ -6,6 +6,7 @@ import {
   chooseEnemyMove,
   moveTargets,
   fromSquare,
+  huntPlacement,
   isInDanger,
   respawnSquare,
   safeSquares,
@@ -14,6 +15,7 @@ import {
   toSquare,
   type EnemyType,
 } from '@/features/hunt/board'
+import { piecesOf } from '@/utils/fen'
 
 const board = (entries: Record<string, EnemyType>) => new Map(Object.entries(entries))
 
@@ -177,5 +179,27 @@ describe('spawnSquareFor', () => {
       const square = spawnSquareFor('n', enemies, 'd4')!
       expect(['a1', 'h8', 'd4']).not.toContain(square)
     }
+  })
+})
+
+describe('huntPlacement', () => {
+  it('sets every enemy down in black and the champion in white, square for square', () => {
+    // Read back by the board's own FEN reader, itself held to chess.js.
+    const enemies = board({ a8: 'q', h1: 'p', e5: 'n', e4: 'r', b7: 'b' })
+    const pieces = piecesOf(huntPlacement('b', 'd4', enemies))
+    expect(pieces.size).toBe(enemies.size + 1)
+    expect(pieces.get('d4')).toEqual({ type: 'b', color: 'w' })
+    for (const [square, type] of enemies) {
+      expect(pieces.get(square as never), square).toEqual({ type, color: 'b' })
+    }
+  })
+
+  it('leaves the champion out while it is eaten', () => {
+    const enemies = board({ c3: 'p' })
+    expect(huntPlacement('q', null, enemies)).toBe('8/8/8/8/8/2p5/8/8')
+  })
+
+  it('writes an empty rank, and runs of empty squares, as a FEN does', () => {
+    expect(huntPlacement('r', 'h8', board({ a8: 'p' }))).toBe('p6R/8/8/8/8/8/8/8')
   })
 })

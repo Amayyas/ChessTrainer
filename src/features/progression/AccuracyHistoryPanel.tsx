@@ -1,5 +1,6 @@
-import { Badge, Card } from '@/components/UI'
+import { Tag } from '@/components/UI'
 import { recentTrend, type AccuracyEntry } from '@/features/progression/accuracyHistory'
+import { formatPercent, formatSignedWhole } from '@/utils/format'
 
 const OUTCOME_LABEL: Record<AccuracyEntry['outcome'], string> = {
   win: 'Victoire',
@@ -46,11 +47,11 @@ function Sparkline({ entries }: { entries: readonly AccuracyEntry[] }) {
       role="img"
       aria-label={`Évolution de la précision sur les ${points.length} dernières parties analysées`}
     >
-      <line x1="0" y1={height / 2} x2={width} y2={height / 2} className="stroke-ebene/10" />
+      <line x1="0" y1={height / 2} x2={width} y2={height / 2} className="stroke-ink/20" />
       <path
         d={path}
         fill="none"
-        className="stroke-or"
+        className="stroke-ink"
         strokeWidth="1.5"
         vectorEffect="non-scaling-stroke"
       />
@@ -61,56 +62,61 @@ function Sparkline({ entries }: { entries: readonly AccuracyEntry[] }) {
 export default function AccuracyHistoryPanel({ entries }: { entries: readonly AccuracyEntry[] }) {
   if (entries.length === 0) {
     return (
-      <Card>
-        <h2 className="mb-2 font-display text-lg font-bold text-ebene">Précision par partie</h2>
-        <p className="text-sm text-ardoise">
+      <section aria-labelledby="t-accuracy">
+        <h2 id="t-accuracy" className="mb-2 text-kicker font-semibold uppercase">
+          Précision par partie
+        </h2>
+        <p className="text-caption italic text-ink-soft">
           Jouez une partie en Affrontement, puis analysez-la dans le Coach : sa précision
           s'affichera ici, et vous pourrez suivre vos progrès d'une partie à l'autre.
         </p>
-      </Card>
+      </section>
     )
   }
 
   const trend = recentTrend(entries)
 
   return (
-    <Card>
+    <section aria-labelledby="t-accuracy">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-display text-lg font-bold text-ebene">Précision par partie</h2>
+        <h2 id="t-accuracy" className="text-kicker font-semibold uppercase">
+          Précision par partie
+        </h2>
         {trend !== null && (
-          <Badge variant={trend.delta > 0 ? 'gold' : 'neutral'}>
-            {trend.delta > 0 ? '+' : ''}
-            {trend.delta} pts sur vos 5 dernières
-          </Badge>
+          <Tag tone={trend.delta > 0 ? 'ink' : trend.delta < 0 ? 'accent' : 'muted'}>
+            {formatSignedWhole(trend.delta)} pts sur vos 5 dernières
+          </Tag>
         )}
       </div>
 
       <Sparkline entries={entries} />
 
-      <ul className="mt-3 divide-y divide-ebene/10">
+      <ul className="mt-3 border-t border-ink/30">
         {entries.slice(0, 10).map((entry, index) => (
           // The timestamp alone is not unique: two games can land in the same
           // millisecond, and a hydrated row can carry a duplicate.
           <li
             key={`${entry.playedAt}-${index}`}
-            className="flex items-center justify-between gap-3 py-2 text-sm"
+            className="flex items-baseline justify-between gap-3 border-b border-ink/30 py-2 text-caption"
           >
-            <span className="text-ardoise">{dateFormat.format(new Date(entry.playedAt))}</span>
-            <span className="min-w-0 flex-1 truncate text-ardoise">
+            <span className="tabular-nums lining-nums text-ink-soft">
+              {dateFormat.format(new Date(entry.playedAt))}
+            </span>
+            <span className="min-w-0 flex-1 truncate">
               {entry.level} — {OUTCOME_LABEL[entry.outcome]}
             </span>
-            <span className="shrink-0 font-semibold tabular-nums text-ebene">
-              {entry.accuracy}%
+            <span className="shrink-0 font-semibold tabular-nums lining-nums">
+              {formatPercent(entry.accuracy)}
             </span>
           </li>
         ))}
       </ul>
 
       {entries.length > 10 && (
-        <p className="mt-2 text-xs text-ardoise">
+        <p className="mt-2 text-caption italic text-ink-soft">
           Les 10 dernières parties sur {entries.length} enregistrées.
         </p>
       )}
-    </Card>
+    </section>
   )
 }

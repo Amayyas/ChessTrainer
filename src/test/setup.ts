@@ -6,7 +6,7 @@ afterEach(() => {
   cleanup()
 })
 
-// jsdom lacks ResizeObserver, which react-chessboard relies on to size the board.
+// jsdom lacks ResizeObserver, which chessground uses to redraw a board resized.
 class ResizeObserverStub {
   observe() {}
   unobserve() {}
@@ -14,7 +14,8 @@ class ResizeObserverStub {
 }
 vi.stubGlobal('ResizeObserver', ResizeObserverStub)
 
-// framer-motion's useReducedMotion reads matchMedia; jsdom does not implement it.
+// usePrefersReducedMotion and the bottom bar read matchMedia; jsdom does not
+// implement it.
 if (!window.matchMedia) {
   vi.stubGlobal(
     'matchMedia',

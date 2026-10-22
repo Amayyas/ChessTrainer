@@ -6,10 +6,10 @@ import App from '@/App'
 import { ROUTES } from '@/routes'
 
 /**
- * The bottom bar is the only chrome a phone gets: the sidebar is hidden at
- * every width below md, and there is no header. So whatever is not in this bar
- * and not behind its menu is reachable from nowhere on mobile — which is what
- * happened to the leaderboard while the bar's last column went to the profile.
+ * The bottom bar is the only navigation a phone gets: the masthead's section
+ * bar is hidden at every width below lg. So whatever is not in this bar and not
+ * behind its menu is reachable from nowhere on mobile — which is what happened
+ * to the leaderboard while the bar's last column went to the profile.
  */
 function renderApp() {
   return render(
@@ -20,10 +20,11 @@ function renderApp() {
 }
 
 function bottomBar() {
-  // Two navigations carry this label, the sidebar's and the bar's; the bar is
-  // the one that is not an <aside> child.
+  // Two navigations carry this label, the masthead's section bar and the
+  // bottom bar, and only one is shown at any width; the bottom bar is the one
+  // outside the <header>.
   const bars = screen.getAllByRole('navigation', { name: 'Navigation principale' })
-  const bar = bars.find((element) => element.closest('aside') === null)
+  const bar = bars.find((element) => element.closest('header') === null)
   if (!bar) throw new Error('bottom bar not found')
   return bar
 }

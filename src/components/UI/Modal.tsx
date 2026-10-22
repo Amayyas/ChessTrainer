@@ -46,7 +46,7 @@ export default function Modal({ open, onClose, title, children, footer, classNam
           <DialogCloseButton />
         </DialogHeader>
 
-        <div className="text-muted-foreground">{children}</div>
+        <div className="text-ink-soft">{children}</div>
 
         {footer && <DialogFooter>{footer}</DialogFooter>}
       </DialogContent>

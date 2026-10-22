@@ -1,5 +1,4 @@
 import { ENGINE_LEVELS } from '@/engine/levels'
-import type { BadgeVariant } from '@/components/UI'
 import { ROUTES, type RoutePath } from '@/routes'
 
 /**
@@ -14,7 +13,6 @@ export interface ModeCard {
   title: string
   description: string
   badge: string
-  badgeVariant: BadgeVariant
 }
 
 /**
@@ -32,7 +30,6 @@ export const MODES: ModeCard[] = [
     title: 'Coach IA',
     description: 'Analysez chaque coup avec Stockfish et progressez à votre rythme.',
     badge: 'Apprentissage',
-    badgeVariant: 'gold',
   },
   {
     to: ROUTES.battle,
@@ -40,7 +37,6 @@ export const MODES: ModeCard[] = [
     title: 'Affrontement',
     description: `Défiez l'IA sur ${ENGINE_LEVELS.length} niveaux, de ${BATTLE_FLOOR} à ${BATTLE_CEILING} Elo.`,
     badge: `${ENGINE_LEVELS.length} niveaux`,
-    badgeVariant: 'neutral',
   },
   {
     to: ROUTES.puzzle,
@@ -48,7 +44,6 @@ export const MODES: ModeCard[] = [
     title: 'Puzzles',
     description: 'Résolvez des positions tactiques classées par thème.',
     badge: 'Tactique',
-    badgeVariant: 'neutral',
   },
   {
     to: ROUTES.hunt,
@@ -56,6 +51,5 @@ export const MODES: ModeCard[] = [
     title: 'Chasse aux Pièces',
     description: 'Capturez un maximum de pièces en 60 secondes.',
     badge: 'Arcade',
-    badgeVariant: 'gold',
   },
 ]

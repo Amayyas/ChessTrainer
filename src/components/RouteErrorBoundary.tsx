@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { reportError } from '@/lib/monitoring'
 import { ROUTES } from '@/routes'
 
@@ -20,7 +20,7 @@ interface State {
  * The root ErrorBoundary answers a render error by offering a full reload,
  * which is right when the whole tree may be in a bad state. A chunk that
  * failed to load, or one page that threw, is narrower than that: this sits
- * inside the layout, so the sidebar and navigation stay, and "Réessayer"
+ * inside the layout, so the masthead and navigation stay, and "Réessayer"
  * remounts just the page — which re-runs the dynamic import behind a lazy
  * route rather than reloading everything.
  */
@@ -47,24 +47,19 @@ export default class RouteErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <Card className="mx-auto max-w-md text-center">
-        <h1 className="font-display text-2xl font-bold text-ebene">
-          Cette page n'a pas pu s'ouvrir
-        </h1>
-        <p className="mt-2 text-sm text-ardoise">
+      <Box className="mx-auto max-w-md text-center">
+        <h1 className="text-title font-semibold">Cette page n'a pas pu s'ouvrir</h1>
+        <p className="mt-2 text-caption italic text-ink-soft">
           Le chargement a échoué, souvent une simple coupure réseau. Votre progression est
           conservée.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button onClick={this.retry}>Réessayer</Button>
-          <Link
-            to={ROUTES.home}
-            className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold text-ebene underline underline-offset-2"
-          >
-            Retour à l'accueil
-          </Link>
+          <Button asChild variant="quiet">
+            <Link to={ROUTES.home}>Retour à l'accueil</Link>
+          </Button>
         </div>
-      </Card>
+      </Box>
     )
   }
 }

@@ -61,6 +61,51 @@ function discoveryFiles(mode: string): Plugin {
   }
 }
 
+/**
+ * Preloads the roman of the interface font.
+ *
+ * A browser asks for a web font only once it has the CSS and has laid out text
+ * that needs it, so a first visit painted in the fallback and reflowed when
+ * Newsreader arrived. A preload starts the download with the HTML instead. Only
+ * the latin roman: it is the one file every page sets text in, while the italic
+ * and the other subsets stay on demand. The build fails if the file goes
+ * missing, rather than shipping a preload that points at nothing.
+ */
+function preloadFonts(): Plugin {
+  // The same prefix the CSS asks for the file under, or the preload fetches a
+  // different URL and the font is downloaded late a second time.
+  let base = '/'
+  return {
+    name: 'preload-fonts',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const font = Object.keys(ctx.bundle ?? {}).find((file) =>
+          /newsreader-latin-opsz-normal-[\w-]+\.woff2$/.test(file),
+        )
+        if (!font) throw new Error('preload-fonts: the Newsreader roman is not in the bundle')
+        return [
+          {
+            tag: 'link',
+            attrs: {
+              rel: 'preload',
+              href: `${base}${font}`,
+              as: 'font',
+              type: 'font/woff2',
+              crossorigin: '',
+            },
+            injectTo: 'head',
+          },
+        ]
+      },
+    },
+  }
+}
+
 export default defineConfig(({ mode, isSsrBuild }) => {
   // Read through loadEnv rather than process.env: Vite does not populate
   // process.env from .env files while it is evaluating this config, so a token
@@ -81,6 +126,7 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       react(),
       siteUrl(mode),
       discoveryFiles(mode),
+      preloadFonts(),
       /**
        * Source maps for the error reports.
        *
@@ -142,6 +188,11 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       // matches them by debug id instead. Off entirely without a token, since a
       // map that is generated and never deleted is a map that gets deployed.
       sourcemap: authToken ? ('hidden' as const) : false,
+      // Vite inlines any asset under 4 KB as a data: URI, and the figurine
+      // subset weighs 3 KB. The Content-Security-Policy allows fonts from 'self'
+      // only, so an inlined font is a blocked one. Fonts are always emitted as
+      // files; everything else keeps the default.
+      assetsInlineLimit: (file: string) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined),
     },
     server: {
       port: 5173,

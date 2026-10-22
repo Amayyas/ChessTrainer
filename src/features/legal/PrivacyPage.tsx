@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/UI'
+import { INLINE_LINK } from '@/components/UI/link'
 import { Section } from '@/features/legal/shared'
 import { isMonitoringEnabled } from '@/lib/monitoring'
 import { ROUTES } from '@/routes'
@@ -117,7 +118,7 @@ export default function PrivacyPage() {
       <Section title="Vos droits">
         <p>
           Vous pouvez <strong>supprimer votre compte à tout moment</strong> depuis votre{' '}
-          <Link to={ROUTES.profile} className="font-semibold text-ebene underline">
+          <Link to={ROUTES.profile} className={INLINE_LINK}>
             page de profil
           </Link>
           . La suppression est immédiate et définitive : elle efface le compte, les scores, la
@@ -126,7 +127,7 @@ export default function PrivacyPage() {
         <p>
           Vous disposez également des droits d'accès, de rectification, de portabilité et
           d'opposition prévus par le RGPD. Pour les exercer, écrivez à{' '}
-          <a className="font-semibold text-ebene underline" href="mailto:contact@chesstrainer.fr">
+          <a className={INLINE_LINK} href="mailto:contact@chesstrainer.fr">
             contact@chesstrainer.fr
           </a>
           .

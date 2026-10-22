@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react'
 import { ENGINE_LEVELS, type LevelId } from '@/engine/levels'
 import { TIME_CONTROLS, type TimeControlId } from '@/hooks/useChessClock'
-import { Button, Card } from '@/components/UI'
+import { Box, Button } from '@/components/UI'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import type { BattleConfig, ColorChoice } from '@/features/battle/useBattleGame'
 
@@ -11,10 +11,14 @@ interface BattleSetupProps {
   disabled?: boolean
 }
 
-const COLOR_CHOICES: { value: ColorChoice; label: string; glyph: string }[] = [
+/**
+ * The kings stand for the two colours. Random has no figure: the die it used
+ * to carry is no chess sign, and the figurine face does not hold one.
+ */
+const COLOR_CHOICES: { value: ColorChoice; label: string; glyph?: string }[] = [
   { value: 'white', label: 'Blancs', glyph: '♔' },
   { value: 'black', label: 'Noirs', glyph: '♚' },
-  { value: 'random', label: 'Aléatoire', glyph: '⚄' },
+  { value: 'random', label: 'Aléatoire' },
 ]
 
 /**
@@ -41,7 +45,7 @@ function Setting<T extends string>({
 
   return (
     <div>
-      <h2 id={headingId} className="mb-3 font-display text-lg font-bold text-foreground">
+      <h2 id={headingId} className="mb-3 text-kicker font-semibold uppercase">
         {title}
       </h2>
       <ToggleGroup
@@ -70,7 +74,7 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
   const [timeControlId, setTimeControlId] = useState<TimeControlId>('unlimited')
 
   return (
-    <Card className="mx-auto flex max-w-xl flex-col gap-6">
+    <Box className="mx-auto flex max-w-xl flex-col gap-6">
       <Setting
         title="Niveau de l'IA"
         value={String(levelId)}
@@ -78,12 +82,18 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
         className="sm:grid-cols-2"
       >
         {ENGINE_LEVELS.map((level) => (
-          <ToggleGroupItem key={level.id} value={String(level.id)}>
+          // Set from the top, so the level names line up across a row whose
+          // descriptions run to different lengths.
+          <ToggleGroupItem
+            key={level.id}
+            value={String(level.id)}
+            className="flex flex-col items-start justify-start"
+          >
             <span className="block">
               Niveau {level.id} — {level.label}
             </span>
-            <span className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">~{level.elo} Elo</span> ·{' '}
+            <span className="text-caption opacity-80">
+              <span className="font-semibold tabular-nums lining-nums">~{level.elo} Elo</span> ·{' '}
               {level.description}
             </span>
           </ToggleGroupItem>
@@ -98,9 +108,14 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
       >
         {COLOR_CHOICES.map((choice) => (
           <ToggleGroupItem key={choice.value} value={choice.value}>
-            <span aria-hidden="true" className="mr-1 text-lg">
-              {choice.glyph}
-            </span>
+            {choice.glyph && (
+              <span
+                aria-hidden="true"
+                className="mr-1.5 font-figurine text-[1.125rem] leading-none"
+              >
+                {choice.glyph}
+              </span>
+            )}
             {choice.label}
           </ToggleGroupItem>
         ))}
@@ -127,6 +142,6 @@ export default function BattleSetup({ onStart, disabled = false }: BattleSetupPr
       >
         {disabled ? "Chargement de l'IA…" : 'Commencer la partie'}
       </Button>
-    </Card>
+    </Box>
   )
 }

@@ -1,11 +1,11 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
 import {
   forwardRef,
   type ComponentPropsWithoutRef,
   type ElementRef,
   type HTMLAttributes,
 } from 'react'
+import CloseGlyph from '@/components/UI/CloseGlyph'
 import { cn } from '@/utils/cn'
 
 /**
@@ -18,8 +18,10 @@ import { cn } from '@/utils/cn'
  * version missed — pointer-down outside, aria-hidden on the rest of the page,
  * and the focus guards that keep a screen reader inside the dialog.
  *
- * The surface keeps the app's own clothes: the ebony wash behind it, the 2xl
- * corner and the card shadow, rather than shadcn's border and grey overlay.
+ * The surface is drawn like a boxed aside: a two-pixel ink frame on bright
+ * paper, square, with no shadow, over the page dimmed by an ink wash. It
+ * appears and leaves without an animation, and closes on a typographic cross
+ * rather than an icon from a library.
  */
 
 const Dialog = DialogPrimitive.Root
@@ -34,12 +36,7 @@ const DialogOverlay = forwardRef<
   return (
     <DialogPrimitive.Overlay
       ref={ref}
-      className={cn(
-        'fixed inset-0 z-50 bg-secondary/60 backdrop-blur-sm',
-        'data-[state=open]:animate-in data-[state=open]:fade-in-0',
-        'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
-        className,
-      )}
+      className={cn('fixed inset-0 z-50 bg-ink/50', className)}
       {...props}
     />
   )
@@ -56,9 +53,7 @@ const DialogContent = forwardRef<
         ref={ref}
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2',
-          'rounded-2xl bg-card p-6 text-card-foreground shadow-card-hover',
-          'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
-          'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+          'border-2 border-ink bg-paper-bright p-6 text-ink',
           className,
         )}
         {...props}
@@ -84,7 +79,7 @@ const DialogTitle = forwardRef<
   return (
     <DialogPrimitive.Title
       ref={ref}
-      className={cn('font-display text-2xl font-bold text-foreground', className)}
+      className={cn('text-heading font-semibold text-ink', className)}
       {...props}
     />
   )
@@ -97,7 +92,7 @@ const DialogDescription = forwardRef<
   return (
     <DialogPrimitive.Description
       ref={ref}
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-caption text-ink-soft', className)}
       {...props}
     />
   )
@@ -113,13 +108,13 @@ const DialogCloseButton = forwardRef<
       ref={ref}
       aria-label="Fermer"
       className={cn(
-        '-mr-1 -mt-1 rounded-lg p-1.5 text-muted-foreground transition-colors',
-        'hover:bg-foreground/5 hover:text-foreground',
+        '-mr-3 -mt-3 inline-flex h-11 w-11 shrink-0 items-center justify-center',
+        'text-ink-soft transition-colors hover:text-rubric',
         className,
       )}
       {...props}
     >
-      <X className="h-5 w-5" aria-hidden="true" />
+      <CloseGlyph />
     </DialogPrimitive.Close>
   )
 })
