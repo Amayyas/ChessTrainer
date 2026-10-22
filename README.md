@@ -3,11 +3,11 @@
 **[chesstrainer.fr](https://chesstrainer.fr)** — live, free, and playable without
 an account.
 
-[![Live](https://img.shields.io/badge/chesstrainer.fr-live-C9A84C)](https://chesstrainer.fr)
+[![Live](https://img.shields.io/badge/chesstrainer.fr-live-1C1A16)](https://chesstrainer.fr)
 [![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.12-5FA04E)](.nvmrc)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
-[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-C9A84C)](LICENSE)
+[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-1C1A16)](LICENSE)
 
 A chess trainer that analyses your games with Stockfish, explains what each move
 was worth, and turns practice into something you actually come back to.
