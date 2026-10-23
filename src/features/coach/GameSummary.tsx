@@ -1,6 +1,9 @@
-import { Badge, Card } from '@/components/UI'
+import { Box, Tag } from '@/components/UI'
+import BoxScore from '@/components/UI/BoxScore'
+import Notation from '@/components/UI/Notation'
 import type { GameSummary as GameSummaryData } from '@/features/coach/useCoachAnalysis'
 import { MOVE_QUALITY, type MoveQuality } from '@/utils/evaluation'
+import { formatPercent } from '@/utils/format'
 
 interface GameSummaryProps {
   summary: GameSummaryData
@@ -8,15 +11,9 @@ interface GameSummaryProps {
   statusLabel: string
 }
 
-function AccuracyStat({ label, value }: { label: string; value: number | null }) {
-  return (
-    <div className="rounded-xl bg-ebene/5 px-3 py-2 text-center">
-      <p className="font-display text-2xl font-bold text-ebene">
-        {value === null ? '—' : `${value}%`}
-      </p>
-      <p className="text-xs text-ardoise">{label}</p>
-    </div>
-  )
+/** One side's accuracy, or a dash while there is none. */
+function accuracy(value: number | null): string {
+  return value === null ? '—' : formatPercent(value)
 }
 
 /**
@@ -41,39 +38,40 @@ export default function GameSummary({ summary, statusLabel }: GameSummaryProps) 
   ]
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Box className="flex flex-col gap-4">
       <div>
-        <h2 className="font-display text-lg font-bold text-ebene">Résumé de la partie</h2>
-        <p className="mt-1 text-sm text-ardoise">{statusLabel}</p>
+        <h2 className="text-kicker font-semibold uppercase">Résumé de la partie</h2>
+        <p className="mt-1 text-body italic">{statusLabel}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <AccuracyStat label="Précision blancs" value={summary.accuracyWhite} />
-        <AccuracyStat label="Précision noirs" value={summary.accuracyBlack} />
-      </div>
+      <BoxScore
+        size="title"
+        figures={[
+          { label: 'Précision blancs', value: accuracy(summary.accuracyWhite) },
+          { label: 'Précision noirs', value: accuracy(summary.accuracyBlack) },
+        ]}
+      />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {counted.map(({ quality, count }) => {
           const meta = MOVE_QUALITY[quality]
           return (
-            <Badge
-              key={quality}
-              variant={quality !== 'inaccuracy' && count > 0 ? 'danger' : 'neutral'}
-            >
+            <Tag key={quality} tone={quality !== 'inaccuracy' && count > 0 ? 'accent' : 'muted'}>
               {count} {countedNoun(meta, count)}
-            </Badge>
+            </Tag>
           )
         })}
       </div>
 
       {summary.bestMove && (
-        <p className="text-sm text-ardoise">
+        <p className="text-caption text-ink-soft">
           Meilleur coup de la partie :{' '}
-          <span className="font-semibold text-ebene">
-            {summary.bestMove.san} ({summary.bestMove.color === 'w' ? 'blancs' : 'noirs'})
+          <span className="font-semibold text-ink">
+            <Notation san={summary.bestMove.san} /> (
+            {summary.bestMove.color === 'w' ? 'blancs' : 'noirs'})
           </span>
         </p>
       )}
-    </Card>
+    </Box>
   )
 }

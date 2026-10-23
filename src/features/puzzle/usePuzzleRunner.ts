@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { parseUciMove } from '@/engine/uci'
 import type { Puzzle } from '@/features/puzzle/types'
 import type { PieceSymbol, Square } from '@/utils/chess'
+import type { Hint } from '@/components/HintList'
 
 /** Points a flawless puzzle is worth. */
 export const BASE_POINTS = 100
@@ -53,7 +54,7 @@ export interface PuzzleRunner {
   feedback: MoveFeedback
   errors: number
   hintLevel: number
-  hintMessages: string[]
+  hintMessages: Hint[]
   isSolved: boolean
   elapsedMs: number
   /** Attempts a solver move; returns true when it was accepted. */
@@ -226,8 +227,8 @@ export function usePuzzleRunner(
     return [
       `Cherchez un coup de votre ${name}.`,
       `La pièce à jouer est en ${parsed.from}.`,
-      san ? `Le coup à jouer est ${san}.` : `Jouez ${parsed.from}–${parsed.to}.`,
-    ]
+      san ? { lead: 'Le coup à jouer est', san } : `Jouez ${parsed.from}–${parsed.to}.`,
+    ] satisfies Hint[]
   }, [puzzle, board, ply])
 
   const revealHint = useCallback(() => {

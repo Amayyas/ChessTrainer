@@ -1,0 +1,169 @@
+/*
+ * The board as a chess column prints its diagram, laid over chessground's own
+ * base stylesheet. The colours and the arrow's timing are custom properties
+ * set on the frame from the design tokens (boardTheme.ts); this file holds the
+ * shapes they fill.
+ */
+
+.cg-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+/* The move just played, tinted in the rubric. */
+.cg-wrap cg-board square.last-move {
+  background-color: var(--board-last-move);
+}
+
+/* The piece picked up, ringed in ink. */
+.cg-wrap cg-board square.selected {
+  box-shadow: inset 0 0 0 3px var(--board-ink);
+}
+
+/*
+ * Where it may go: an ink dot a fifth of the square across, or, round a piece
+ * it would take, a ring nearly the square's width. Sizes are fractions of the
+ * half square, which closest-side makes the gradient's unit.
+ *
+ * The Piece Hunt dots the empty squares its champion can reach with the same
+ * dot, and never rings an enemy: that would give the next capture away.
+ *
+ * Images only, never the background shorthand: a square can be a destination
+ * and the last move's at once, and the shorthand would clear its tint.
+ */
+.cg-wrap cg-board square.move-dest,
+.cg-wrap cg-board square.hunt-reach {
+  background-image: radial-gradient(
+    circle closest-side,
+    var(--board-destination) 0 22%,
+    transparent calc(22% + 0.5px)
+  );
+}
+
+.cg-wrap cg-board square.move-dest.oc {
+  background-image: radial-gradient(
+    circle closest-side,
+    transparent 0 calc(86% - 3px),
+    var(--board-ink) calc(86% - 3px) 86%,
+    transparent calc(86% + 0.5px)
+  );
+}
+
+/*
+ * A king in check: a rubric tint under a rubric rule. The Hunt's champion,
+ * when an enemy can take it, is marked the same way, and so is each enemy
+ * that can, in the tint alone.
+ */
+.cg-wrap cg-board square.check,
+.cg-wrap cg-board square.hunt-champion.hunt-danger {
+  background-color: var(--board-check);
+  box-shadow: inset 0 0 0 3px var(--board-rubric);
+}
+
+.cg-wrap cg-board square.hunt-threat {
+  background-color: var(--board-check);
+}
+
+/* A king in check and picked up: the check's rule, and the ink ring inside it. */
+.cg-wrap cg-board square.check.selected {
+  box-shadow:
+    inset 0 0 0 3px var(--board-rubric),
+    inset 0 0 0 6px var(--board-ink);
+}
+
+/* The Hunt's champion at rest: ringed in ink, as the piece picked up is. */
+.cg-wrap cg-board square.hunt-champion {
+  box-shadow: inset 0 0 0 3px var(--board-ink);
+}
+
+/*
+ * The coach's arrow. chessground sets its layer at 60 % opacity; the brush
+ * carries the arrow's own, so the layer is opaque. A new arrow fades in, for
+ * the time the tokens give it, which is none under reduced motion.
+ */
+.cg-wrap .cg-shapes {
+  opacity: 1;
+}
+
+.cg-wrap .cg-shapes g {
+  animation: board-arrow-in var(--board-arrow-in) ease-out;
+}
+
+@keyframes board-arrow-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * The pieces: Maxime Chupin's mpchess set (GPL-3.0-or-later, see
+ * src/assets/pieces/mpchess). They are drawn small inside their box, so they
+ * are set a little larger than the square and centred, filling about four
+ * fifths of it. The promotion choice draws the same pieces.
+ */
+.cg-wrap piece,
+.board-piece {
+  background-size: 118%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.cg-wrap piece.king.white,
+.board-piece.king.white {
+  background-image: url('../../assets/pieces/mpchess/wK.svg');
+}
+
+.cg-wrap piece.queen.white,
+.board-piece.queen.white {
+  background-image: url('../../assets/pieces/mpchess/wQ.svg');
+}
+
+.cg-wrap piece.rook.white,
+.board-piece.rook.white {
+  background-image: url('../../assets/pieces/mpchess/wR.svg');
+}
+
+.cg-wrap piece.bishop.white,
+.board-piece.bishop.white {
+  background-image: url('../../assets/pieces/mpchess/wB.svg');
+}
+
+.cg-wrap piece.knight.white,
+.board-piece.knight.white {
+  background-image: url('../../assets/pieces/mpchess/wN.svg');
+}
+
+.cg-wrap piece.pawn.white,
+.board-piece.pawn.white {
+  background-image: url('../../assets/pieces/mpchess/wP.svg');
+}
+
+.cg-wrap piece.king.black,
+.board-piece.king.black {
+  background-image: url('../../assets/pieces/mpchess/bK.svg');
+}
+
+.cg-wrap piece.queen.black,
+.board-piece.queen.black {
+  background-image: url('../../assets/pieces/mpchess/bQ.svg');
+}
+
+.cg-wrap piece.rook.black,
+.board-piece.rook.black {
+  background-image: url('../../assets/pieces/mpchess/bR.svg');
+}
+
+.cg-wrap piece.bishop.black,
+.board-piece.bishop.black {
+  background-image: url('../../assets/pieces/mpchess/bB.svg');
+}
+
+.cg-wrap piece.knight.black,
+.board-piece.knight.black {
+  background-image: url('../../assets/pieces/mpchess/bN.svg');
+}
+
+.cg-wrap piece.pawn.black,
+.board-piece.pawn.black {
+  background-image: url('../../assets/pieces/mpchess/bP.svg');
+}

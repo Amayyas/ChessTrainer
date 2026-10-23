@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Badge, Card, PageHeader, Spinner } from '@/components/UI'
+import { PageHeader, Spinner, Tag } from '@/components/UI'
+import Alert from '@/components/UI/Alert'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
 import {
@@ -61,6 +62,10 @@ function Segmented<T extends string>({
  * Worldwide Piece Hunt leaderboard: top ten per piece or
  * overall, filtered by period, refreshed live, with the signed-in player
  * highlighted.
+ *
+ * Set as a paper's results table: ruled rows, the rank and the score in
+ * figures, the player's own row on the deep paper tint, the one place a rule
+ * alone would not set it apart.
  */
 export default function LeaderboardPage() {
   const [piece, setPiece] = useState<LeaderboardPiece>('all')
@@ -73,11 +78,11 @@ export default function LeaderboardPage() {
       <PageHeader
         title="Classement mondial"
         subtitle="Les meilleurs scores de la Chasse aux Pièces, mis à jour en direct."
-        actions={<Badge variant="gold">Temps réel</Badge>}
+        actions={<Tag>Temps réel</Tag>}
       />
 
-      <Card className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           <Segmented options={PIECES} value={piece} onChange={setPiece} label="Filtrer par pièce" />
           <Segmented
             options={PERIODS}
@@ -87,54 +92,48 @@ export default function LeaderboardPage() {
           />
         </div>
 
-        {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-        )}
+        {error && <Alert>{error}</Alert>}
 
         {isLoading ? (
           <div className="flex justify-center py-10">
             <Spinner size="lg" label="Chargement du classement" />
           </div>
         ) : rows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-ardoise">
+          <p className="py-8 text-center italic text-ink-soft">
             Aucun score sur cette période. Lancez une manche de Chasse pour ouvrir le classement.
           </p>
         ) : (
-          <ol className="divide-y divide-ebene/10">
+          <ol className="border-y border-ink">
             {rows.map((row, index) => {
               const isMe = session?.user.id === row.userId
               return (
                 <li
                   key={row.id}
                   className={cn(
-                    'flex items-center gap-3 py-2.5',
-                    isMe && 'rounded-lg bg-or/15 px-2',
+                    'flex items-center gap-3.5 border-t border-ink/30 px-1 py-2.5 first:border-t-0',
+                    isMe && 'bg-paper-deep',
                   )}
                 >
-                  <span
-                    className={cn(
-                      'w-7 shrink-0 text-center font-display text-lg font-bold',
-                      index === 0 ? 'text-or' : 'text-ardoise',
-                    )}
-                  >
-                    {index + 1}
+                  <span className="w-8 shrink-0 text-right text-heading font-bold tabular-nums lining-nums">
+                    {index + 1}.
                   </span>
-                  <span aria-hidden="true" className="text-xl text-ebene">
+                  <span
+                    aria-hidden="true"
+                    className="w-7 text-center font-figurine text-[1.25rem] leading-7"
+                  >
                     {AVATAR_GLYPHS[row.avatarPiece as AvatarPiece] ?? '♟'}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-ebene">
-                      {row.username}
-                      {isMe && <span className="ml-2 text-xs font-normal text-or">vous</span>}
+                    <span className="flex items-baseline gap-2.5">
+                      <span className="truncate font-semibold">{row.username}</span>
+                      {isMe && <Tag tone="ink">vous</Tag>}
                     </span>
-                    <span className="block text-xs text-ardoise">
+                    <span className="block text-caption italic text-ink-soft">
                       {CHAMPION_LABELS[row.piece as ChampionType] ?? row.piece} · {row.captures}{' '}
                       captures · {new Date(row.playedAt).toLocaleDateString('fr-FR')}
                     </span>
                   </span>
-                  <span className="shrink-0 font-display text-xl font-bold tabular-nums text-ebene">
+                  <span className="shrink-0 text-title font-semibold tabular-nums lining-nums">
                     {row.score}
                   </span>
                 </li>
@@ -142,7 +141,7 @@ export default function LeaderboardPage() {
             })}
           </ol>
         )}
-      </Card>
+      </div>
     </div>
   )
 }

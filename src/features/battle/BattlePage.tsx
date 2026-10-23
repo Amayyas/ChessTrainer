@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChessBoard, MoveHistory } from '@/components/Board'
-import { Badge, Button, Card, PageHeader, Spinner } from '@/components/UI'
+import { BoardControls, ChessBoard, MoveHistory, MoveInput } from '@/components/Board'
+import { Box, Button, PageHeader, Tag } from '@/components/UI'
+import StatusLine from '@/components/UI/StatusLine'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
 import { useBattleGame } from '@/features/battle/useBattleGame'
@@ -42,6 +43,7 @@ export default function BattlePage() {
     })
   }, [phase, result, game.status.reason, level.label, recordBattle])
 
+  const stalled = !battle.isThinking && battle.isEngineStalled && phase === 'playing'
   const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
   const engineLabel = playerColor === 'w' ? `IA (noirs)` : `IA (blancs)`
   const playerMs = playerColor === 'w' ? clock.whiteMs : clock.blackMs
@@ -65,20 +67,20 @@ export default function BattlePage() {
         title="Affrontement"
         subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
         actions={
-          battle.isThinking ? (
-            <span className="flex items-center gap-2 text-sm text-ardoise">
-              <Spinner size="sm" /> L'IA réfléchit…
-            </span>
-          ) : battle.isEngineStalled && phase === 'playing' ? (
-            <Badge variant="danger">L'IA ne répond plus</Badge>
-          ) : (
-            <Badge variant="neutral">{describeStatus(game.status, game.turn)}</Badge>
-          )
+          // One status line whatever it says, so a screen reader hears each
+          // change, the stall included.
+          <StatusLine busy={battle.isThinking} alert={stalled}>
+            {battle.isThinking
+              ? "L'IA réfléchit…"
+              : stalled
+                ? "L'IA ne répond plus"
+                : describeStatus(game.status, game.turn)}
+          </StatusLine>
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="mx-auto w-full max-w-[560px] self-start">
+      <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
+        <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
           <ChessBoard
             fen={game.fen}
             turn={game.turn}
@@ -90,31 +92,36 @@ export default function BattlePage() {
             lastMove={game.lastMove}
             checkSquare={game.checkSquare}
           />
+          <BoardControls>
+            <MoveInput
+              fen={game.fen}
+              turn={game.turn}
+              enabled={phase === 'playing' && game.turn === playerColor}
+              onMove={battle.playerMove}
+              getLegalTargets={game.getLegalTargets}
+              isPromotion={game.isPromotion}
+              idleMessage={
+                phase === 'playing' ? 'Ce n’est pas à vous de jouer.' : 'La partie est terminée.'
+              }
+            />
+          </BoardControls>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
           {result && (
-            <Card className="flex flex-col gap-3">
+            <Box className="flex flex-col gap-3">
               <div>
-                <h2 className="font-display text-lg font-bold text-ebene">Partie terminée</h2>
-                <p className="mt-1 text-sm text-ardoise">{result.label}</p>
+                <h2 className="text-kicker font-semibold uppercase">Partie terminée</h2>
+                <p className="mt-1 text-body italic">{result.label}</p>
               </div>
-              <Badge
-                variant={
-                  result.outcome === 'win'
-                    ? 'success'
-                    : result.outcome === 'loss'
-                      ? 'danger'
-                      : 'gold'
-                }
-              >
+              <Tag tone="ink">
                 {result.outcome === 'win'
                   ? 'Victoire'
                   : result.outcome === 'loss'
                     ? 'Défaite'
                     : 'Nulle'}
-              </Badge>
-              <div className="flex flex-wrap gap-2">
+              </Tag>
+              <div className="flex flex-wrap gap-2.5">
                 <Button
                   size="sm"
                   disabled={game.sanHistory.length === 0}
@@ -135,14 +142,14 @@ export default function BattlePage() {
                 >
                   Analyser dans le Coach
                 </Button>
-                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                <Button variant="secondary" size="sm" onClick={battle.backToSetup}>
                   Nouvelle partie
                 </Button>
               </div>
-            </Card>
+            </Box>
           )}
 
-          <Card className="flex h-fit flex-col gap-4">
+          <div className="flex flex-col gap-[22px]">
             {clock.enabled && (
               <div className="flex flex-col gap-2">
                 <ClockDisplay
@@ -158,32 +165,36 @@ export default function BattlePage() {
               </div>
             )}
 
-            <div>
-              <h2 className="mb-2 font-display text-lg font-bold text-ebene">Coups joués</h2>
+            <section aria-labelledby="t-moves">
+              <h2 id="t-moves" className="mb-1 text-kicker font-semibold uppercase">
+                Coups joués
+              </h2>
               <MoveHistory moves={game.sanHistory} />
-            </div>
+            </section>
 
             {/* Only while a game is still on: once it has a verdict, the card
                 above says so, and two panels offering a new game is one too
                 many. */}
             {battle.isEngineStalled && phase === 'playing' && (
               <div className="flex flex-col gap-2">
-                <p className="text-sm text-ardoise">
+                <p className="text-caption italic text-ink-soft">
                   L&apos;IA n&apos;a pas répondu malgré plusieurs tentatives. La partie ne peut pas
                   se poursuivre.
                 </p>
-                <Button variant="outline" size="sm" onClick={battle.backToSetup}>
+                <Button variant="secondary" size="sm" onClick={battle.backToSetup}>
                   Nouvelle partie
                 </Button>
               </div>
             )}
 
             {phase === 'playing' && (
-              <Button variant="secondary" size="sm" onClick={battle.resign}>
-                Abandonner
-              </Button>
+              <div>
+                <Button variant="secondary" size="sm" onClick={battle.resign}>
+                  Abandonner
+                </Button>
+              </div>
             )}
-          </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Card, Spinner } from '@/components/UI'
+import { Box, Spinner } from '@/components/UI'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -22,18 +22,20 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   /**
    * The page that was actually asked for, captured when this guard mounts.
    *
-   * It cannot be read at redirect time: the layout animates route changes, so
-   * this component stays mounted through the exit transition and by then the
-   * location already says `/login`. Reading it later recorded the login page as
-   * its own origin, and signing in sent the player back to the form they had
-   * just completed.
+   * It used to be read at redirect time. While the layout animated route
+   * changes, this component stayed mounted through the exit transition, and by
+   * then the location already said `/login`: the login page was recorded as its
+   * own origin, and signing in sent the player back to the form they had just
+   * completed. Captured at mount, it is right however long the subtree
+   * outlives its route.
    */
   const requestedPath = useRef(location.pathname)
 
   // Redirecting from an effect rather than rendering <Navigate>: that element
-  // navigates on every render, and while the exit animation keeps this subtree
+  // navigates on every render, and while an exit animation kept this subtree
   // alive it fired in a loop — over a thousand times, until React gave up with
-  // "maximum update depth exceeded". This runs once, when access is refused.
+  // "maximum update depth exceeded". The animation is gone; the effect stays,
+  // since it runs once, when access is refused, whatever keeps the subtree up.
   useEffect(() => {
     if (!blocked) return
     navigate(ROUTES.login, { replace: true, state: { from: requestedPath.current } })
@@ -41,13 +43,13 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!isSupabaseConfigured) {
     return (
-      <Card className="mx-auto max-w-md text-center">
-        <h1 className="font-display text-2xl font-bold text-ebene">Classement indisponible</h1>
-        <p className="mt-2 text-sm text-ardoise">
+      <Box className="mx-auto max-w-md text-center">
+        <h1 className="text-title font-semibold">Classement indisponible</h1>
+        <p className="mt-2 text-caption italic text-ink-soft">
           Le classement mondial a besoin d'un serveur, qui n'est pas configuré ici. Vos scores
           restent enregistrés localement dans le mode Chasse.
         </p>
-      </Card>
+      </Box>
     )
   }
 

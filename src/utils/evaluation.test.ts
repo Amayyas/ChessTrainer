@@ -57,6 +57,17 @@ describe('winningChances', () => {
 })
 
 describe('MOVE_QUALITY_ORDER', () => {
+  it('inks in the rubric the signs that find fault, and only those', () => {
+    // The rubric marks what went wrong. A grade's sign says whether it found
+    // fault — a question mark — and its tone has to agree, so no approving
+    // sign turns red and no fault is set in quiet ink.
+    for (const [quality, meta] of Object.entries(MOVE_QUALITY)) {
+      expect(meta.tone, `${quality} ${meta.symbol}`).toBe(
+        meta.symbol.includes('?') ? 'rubric' : 'ink',
+      )
+    }
+  })
+
   it('covers every tier exactly once', () => {
     // The legend renders from this list, so a tier added to MOVE_QUALITY and
     // forgotten here would ship with no explanation and nothing would complain.

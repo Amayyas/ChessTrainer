@@ -60,6 +60,13 @@ export function winningChances(whiteCp: number): number {
 export type MoveQuality =
   'best' | 'excellent' | 'veryGood' | 'good' | 'inaccuracy' | 'mistake' | 'blunder'
 
+/**
+ * How a grade's sign is inked. Shape comes first and colour second: the signs
+ * that find fault — the ones with a question mark — are set in the rubric,
+ * which marks what went wrong, and every other sign in ink.
+ */
+export type GradeTone = 'ink' | 'rubric'
+
 export interface MoveQualityMeta {
   /** Chess annotation symbol shown next to the move. */
   symbol: string
@@ -73,27 +80,22 @@ export interface MoveQualityMeta {
    * right most of the time is how the wrong word ships.
    */
   plural: string
-  /** Tailwind text colour token. */
-  color: string
+  tone: GradeTone
 }
 
 export const MOVE_QUALITY: Record<MoveQuality, MoveQualityMeta> = {
-  // Cyan rather than a deeper green: the top two tiers sit next to each other in
-  // the move list, and two shades of the same hue would not tell them apart.
-  best: { symbol: '!!', label: 'Meilleur coup', plural: 'Meilleurs coups', color: 'text-cyan-700' },
-  excellent: { symbol: '!', label: 'Excellent', plural: 'Excellents', color: 'text-emerald-600' },
-  // Doubling marks the stronger of a pair, as it does for ! and !!, so the two
-  // approving tiers read as one family rather than two unrelated glyphs.
-  veryGood: { symbol: '✓✓', label: 'Très bon', plural: 'Très bons', color: 'text-emerald-500' },
-  good: { symbol: '✓', label: 'Bon coup', plural: 'Bons coups', color: 'text-ardoise' },
-  inaccuracy: {
-    symbol: '?!',
-    label: 'Imprécision',
-    plural: 'Imprécisions',
-    color: 'text-amber-500',
-  },
-  mistake: { symbol: '?', label: 'Erreur', plural: 'Erreurs', color: 'text-orange-600' },
-  blunder: { symbol: '??', label: 'Gaffe', plural: 'Gaffes', color: 'text-red-600' },
+  // A star rather than !!: annotators give !! to a brilliant move, and the
+  // engine's first choice is often a quiet one; the star says "the best"
+  // without claiming brilliance.
+  best: { symbol: '★', label: 'Meilleur coup', plural: 'Meilleurs coups', tone: 'ink' },
+  excellent: { symbol: '!', label: 'Excellent', plural: 'Excellents', tone: 'ink' },
+  // Doubling marks the stronger of a pair, as ?? does for ?, so the two
+  // approving ticks read as one family rather than two unrelated glyphs.
+  veryGood: { symbol: '✓✓', label: 'Très bon', plural: 'Très bons', tone: 'ink' },
+  good: { symbol: '✓', label: 'Bon coup', plural: 'Bons coups', tone: 'ink' },
+  inaccuracy: { symbol: '?!', label: 'Imprécision', plural: 'Imprécisions', tone: 'rubric' },
+  mistake: { symbol: '?', label: 'Erreur', plural: 'Erreurs', tone: 'rubric' },
+  blunder: { symbol: '??', label: 'Gaffe', plural: 'Gaffes', tone: 'rubric' },
 }
 
 /**

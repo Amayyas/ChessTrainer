@@ -94,8 +94,8 @@
 #               none. The smoke tests fail on the first one that appears.
 #   worker-src  the engine is `new Worker('/stockfish/stockfish.js')`, same
 #               origin; `blob:` covers builds that wrap the worker.
-#   style-src   'unsafe-inline' — framer-motion and the board write inline
-#               style attributes; a nonce cannot reach them.
+#   style-src   'unsafe-inline' — the board and the gauges write inline style
+#               attributes; a nonce cannot reach them.
 #   connect-src Supabase REST + Auth (https) and Realtime (wss), and Sentry's
 #               EU ingest host. HSTS is added by Netlify when Force HTTPS is on.
 #

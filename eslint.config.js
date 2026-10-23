@@ -41,26 +41,17 @@ export default tseslint.config(
     },
   },
   {
-    // shadcn pairs a component with the cva() call that describes its variants,
-    // in one file, and other components style themselves by importing that call
-    // — a link that wants to look like a button asks for buttonVariants rather
-    // than copying its classes. allowConstantExport does not cover it, because
-    // the export is a function call and not a literal. Splitting each component
-    // in two to satisfy the rule would fork every one of them from upstream, so
-    // the named exports are allowed here instead, and only here.
+    // The Radix primitives are re-exported under the project's own names, and
+    // the rule cannot tell that `const Dialog = DialogPrimitive.Root` is a
+    // component: an alias of an import is not something it can see through.
+    // Those names are allowed here, and only here.
     files: ['src/components/UI/**/*.tsx'],
     rules: {
       'react-refresh/only-export-components': [
         'warn',
         {
           allowConstantExport: true,
-          // The cva() calls, plus the Radix primitives re-exported under the
-          // project's own name — `const Dialog = DialogPrimitive.Root` is a
-          // component, but an alias of an import is not something the rule can
-          // see through.
           allowExportNames: [
-            'buttonVariants',
-            'badgeVariants',
             'Dialog',
             'DialogClose',
             'DialogPortal',

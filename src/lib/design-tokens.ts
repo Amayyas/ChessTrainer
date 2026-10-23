@@ -2,28 +2,79 @@
  * Every colour and typeface the app uses, in one place.
  *
  * Tailwind reads this file for its theme, and the few components that need a
- * colour as a plain string — the boards hand theirs to react-chessboard, which
- * takes CSS values rather than class names — import from here too. So a change
- * of palette is a change to this file, and nothing else.
+ * colour as a plain string — the boards, whose colours reach chessground and
+ * their stylesheet as values rather than class names — import from here too.
+ * So a change of palette is a change to this file, and nothing else.
  *
  * Values were previously repeated as literals inside those components, which
  * meant a new palette would have moved the interface while leaving the board
  * squares and the coach arrow on the old one.
  */
 
-/** The four colours of the visual identity. */
-export const palette = {
-  ebene: { DEFAULT: '#1A1A2E', light: '#25253F' },
-  or: { DEFAULT: '#C9A84C', light: '#D9BD6B' },
-  ivoire: { DEFAULT: '#F5F0E8', dark: '#ECE4D6' },
-  ardoise: '#4A4A5A',
+/**
+ * The newsprint palette: the chess column of a daily paper.
+ *
+ * Paper, ink, and one red — the rubric, the colour a corrector writes in. It
+ * marks what needs attention and nothing else: a wrong move, the coach's
+ * suggestion, the section you are in, keyboard focus. Every text pair the
+ * interface sets is checked against WCAG AA in design-tokens.test.ts, so a
+ * lighter ink or a brighter red fails there before it reaches a player.
+ */
+export const newsprint = {
+  paper: {
+    /** The page. */
+    DEFAULT: '#F4F0E6',
+    /** Light squares, fields, boxed asides: a sheet laid on the page. */
+    bright: '#FBF9F3',
+    /** A flat tint, for the rare place a rule alone does not separate. */
+    deep: '#E9E3D4',
+  },
+  ink: {
+    /** Text, rules and the primary button. */
+    DEFAULT: '#1C1A16',
+    /** Captions and secondary text. */
+    soft: '#5C564B',
+    /** Metadata on the page only: on deep paper it falls below AA. */
+    faint: '#6E675B',
+  },
+  rubric: '#A8311F',
 } as const
 
-/** Danger, kept apart from the identity: it means "wrong", not "brand". */
-export const danger = '#DC2626'
+/**
+ * The type scale, each size with its leading.
+ *
+ * Newsreader carries an optical-size axis that the browser follows from the
+ * font size, so a headline gets the high-contrast display cut and body text the
+ * sturdier text cut without a class asking for either. The names are also
+ * registered with tailwind-merge (src/utils/cn.ts), which would otherwise read
+ * `text-body` as a colour and drop it.
+ */
+export const typeScale = {
+  /** The label above a headline, set in capitals: the newspaper's kicker. */
+  kicker: ['0.8125rem', { lineHeight: '1.3', letterSpacing: '0.08em' }],
+  caption: ['0.9375rem', { lineHeight: '1.45' }],
+  body: ['1.125rem', { lineHeight: '1.55' }],
+  /** The standfirst under a headline. */
+  lead: ['1.375rem', { lineHeight: '1.45' }],
+  heading: ['1.3125rem', { lineHeight: '1.25' }],
+  title: ['2rem', { lineHeight: '1.15', letterSpacing: '-0.005em' }],
+  /** The title a page opens with, from 640 px up; below that it is `title`. */
+  headline: ['3rem', { lineHeight: '1.05', letterSpacing: '-0.012em' }],
+  display: ['4rem', { lineHeight: '1.02', letterSpacing: '-0.012em' }],
+} satisfies Record<string, [string, { lineHeight: string; letterSpacing?: string }]>
 
-/** The one colour that is not in the palette: the surface a card sits on. */
-export const surface = '#FFFFFF'
+/**
+ * How long things move, in milliseconds. A piece glides to its square and the
+ * coach's arrow fades in; nothing else animates, nothing enters on arrival and
+ * nothing lifts under the pointer. Under prefers-reduced-motion both are zero.
+ *
+ * The boards read them: chessground animates the pieces, and board.css fades a
+ * new arrow in.
+ */
+export const durations = {
+  piece: 140,
+  arrow: 120,
+} as const
 
 /** `#RRGGBB` to its three channels, 0–255. */
 function channels(hex: string): [number, number, number] {
@@ -38,179 +89,215 @@ function alpha(hex: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-/** `ratio` of `top` laid over `bottom`, as an opaque `#RRGGBB`. */
-function mix(top: string, bottom: string, ratio: number): string {
-  const [tr, tg, tb] = channels(top)
-  const [br, bg, bb] = channels(bottom)
-  const blend = (t: number, b: number) => Math.round(t * ratio + b * (1 - ratio))
-  return `#${[blend(tr, br), blend(tg, bg), blend(tb, bb)]
-    .map((c) => c.toString(16).padStart(2, '0').toUpperCase())
-    .join('')}`
-}
-
 /**
- * `#RRGGBB` as the bare `H S% L%` triple, with no `hsl()` around it.
- *
- * That shape is what lets a Tailwind colour be written `hsl(var(--x) /
- * <alpha-value>)`, so `bg-primary/50` keeps working on a variable the same way
- * it does on a hex literal. Two decimals, because rounding the lightness to a
- * whole percent moves `ivoire` by a step of red and the page background would
- * no longer match the `bg-ivoire` used beside it.
- */
-function hslTriple(hex: string): string {
-  const [r, g, b] = channels(hex).map((c) => c / 255) as [number, number, number]
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const delta = max - min
-  const lightness = (max + min) / 2
-
-  let hue = 0
-  if (delta !== 0) {
-    if (max === r) hue = ((g - b) / delta) % 6
-    else if (max === g) hue = (b - r) / delta + 2
-    else hue = (r - g) / delta + 4
-    hue = (hue * 60 + 360) % 360
-  }
-
-  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1))
-  const trim = (n: number) => Number(n.toFixed(2))
-  return `${trim(hue)} ${trim(saturation * 100)}% ${trim(lightness * 100)}%`
-}
-
-/**
- * The chessboards. react-chessboard styles squares with CSS values, so these
- * cannot be Tailwind classes.
+ * The board, set as a chess column prints its diagram: the light squares on
+ * the bright paper, the dark ones hatched in ink at 45°, and the corrector's
+ * red for the move just played, a king in check and the coach's arrow. The
+ * plain variant fills the dark squares with the diagram's grey instead, for
+ * long sessions, when a hatch tires the eye.
  */
 export const board = {
-  /** Slightly deeper than `ivoire` so the light squares read against the page. */
-  lightSquare: '#EDE6D8',
-  darkSquare: palette.ardoise,
-  /** The move just played. */
-  lastMove: alpha(palette.or.DEFAULT, 0.42),
-  /** The piece under the cursor, and the champion in the Piece Hunt. */
-  selected: alpha(palette.or.DEFAULT, 0.55),
-  /** The king in check. Slightly softer than a Piece Hunt threat, as it was. */
-  check: alpha(danger, 0.5),
-  /** An enemy that can take the champion in the Piece Hunt. */
-  threat: alpha(danger, 0.55),
-  /** Where a selected piece may legally go, drawn as a dot. */
-  legalTarget: `radial-gradient(circle, ${alpha(palette.ebene.DEFAULT, 0.3)} 22%, transparent 26%)`,
-  /** A legal capture, drawn as a ring around the piece rather than a dot. */
-  legalCapture:
-    `radial-gradient(circle, transparent 55%, ${alpha(palette.ebene.DEFAULT, 0.3)} 56%, ` +
-    `${alpha(palette.ebene.DEFAULT, 0.3)} 62%, transparent 63%)`,
-  /** The best-move arrow the coach draws. */
-  arrow: palette.or.DEFAULT,
+  light: newsprint.paper.bright,
+  /** The hatch over a dark square: an ink stripe every 7 units of a 100-unit square, 2.3 wide. */
+  hatch: { colour: newsprint.ink.DEFAULT, period: 7, stripe: 2.3 },
+  /** The dark squares of the plain variant. */
+  plain: '#CFC6B3',
+  /** The squares of the move just played. */
+  lastMove: alpha(newsprint.rubric, 0.22),
+  /** The king in check, which also takes a rubric rule. */
+  check: alpha(newsprint.rubric, 0.3),
+  /** Where a selected piece may go: an ink dot, or a ring round a piece it takes. */
+  destination: alpha(newsprint.ink.DEFAULT, 0.7),
+  /** The coach's arrow. */
+  arrow: { colour: newsprint.rubric, opacity: 0.86 },
 } as const
 
 /**
- * The hairline that separates two surfaces. shadcn components ask for a solid
- * `--border`, while the hand-written components used `ebene/20` over whatever
- * was behind them. This is that blend made opaque, so the two read alike.
+ * Newsreader's vertical metrics, as fractions of the em, from the font's own
+ * hhea and OS/2 tables: 1470 and 530 of 2000 units, no line gap. A fallback
+ * given these sets lines of the same height, on the same baseline.
  */
-const hairline = mix(palette.ebene.DEFAULT, palette.ivoire.DEFAULT, 0.18)
+export const newsreaderMetrics = { ascent: 0.735, descent: 0.265, lineGap: 0 } as const
 
 /**
- * The palette expressed under the names shadcn components use.
+ * Local serifs reshaped to Newsreader's metrics, shown while the web font loads.
  *
- * Every shadcn component is written against `bg-primary`, `text-muted-
- * foreground`, `border-border` and the rest, never against a colour. Pointing
- * those names at this palette is what makes a component pulled from
- * ui.shadcn.com arrive in gold and ivory rather than in its default zinc, with
- * no class rewritten by hand in the component file.
+ * Without them the page first lays out in Georgia, which sets wider than
+ * Newsreader and has a line box 14% taller, then reflows when Newsreader
+ * arrives: on the landing that one swap measured a cumulative layout shift of
+ * 0.16 and cost the Lighthouse performance score its pass. Each face scales a
+ * local serif to Newsreader's width (`sizeAdjust`) and gives it Newsreader's
+ * vertical metrics, so the swap moves the page by a line at most rather than
+ * by several. The preload in vite.config.ts makes the swap itself rare; these
+ * cover the visits it does not.
  *
- * Tailwind reads it through the plugin in `tailwind.config.ts`, which writes
- * these onto `:root`. So the palette above stays the only place a colour is
- * chosen, and the bridge cannot drift from it.
+ * The widths were measured in Chromium at every size and weight of the type
+ * scale that the pages set, once each. Newsreader's optical-size axis sets its
+ * roman narrowest at 18 px and wider below and above, so no one scale fits
+ * every size, and the faces split where the sizes do: the regular weights are
+ * measured on text, 15 to 22 px; medium, which only the headlines use, on the
+ * headlines, 32 to 64 px; the bold on the 13 px capitals of labels and buttons
+ * and on 15 to 64 px semibold and bold. Each value is the geometric mean over
+ * its sizes, and is off by up to five per cent at the ends of the text, three
+ * on the headlines and eight on bold text. The bold capitals stray further:
+ * Newsreader's set twelve per cent wider than the scaled Georgia's (nineteen
+ * against Noto Serif), enough for a row of buttons to wrap onto one line fewer
+ * in the fallback. The italic has no optical-size axis, so its scale holds at
+ * every size, and it has faces of its own because a slanted roman would set
+ * wider than Newsreader's italic.
+ *
+ * Georgia covers macOS, iOS and Windows; Times New Roman, Liberation Serif and
+ * Tinos share one set of metrics and cover Linux and ChromeOS; Noto Serif, and
+ * Droid Serif before it, covers Android.
  */
-export const semanticTheme = {
-  /** The page, and the ink on it. */
-  '--background': hslTriple(palette.ivoire.DEFAULT),
-  '--foreground': hslTriple(palette.ebene.DEFAULT),
-  /** Cards and popovers: white, lifted off the ivory page. */
-  '--card': hslTriple(surface),
-  '--card-foreground': hslTriple(palette.ebene.DEFAULT),
-  '--popover': hslTriple(surface),
-  '--popover-foreground': hslTriple(palette.ebene.DEFAULT),
-  /**
-   * Gold, with ebony on top. Gold text on a light surface reaches only 2.3:1
-   * and fails WCAG AA, which is why the foreground here is not ivory.
-   */
-  '--primary': hslTriple(palette.or.DEFAULT),
-  '--primary-foreground': hslTriple(palette.ebene.DEFAULT),
-  '--secondary': hslTriple(palette.ebene.DEFAULT),
-  '--secondary-foreground': hslTriple(palette.ivoire.DEFAULT),
-  /** The quiet pair: a deeper ivory, with slate on it. */
-  '--muted': hslTriple(palette.ivoire.dark),
-  '--muted-foreground': hslTriple(palette.ardoise),
-  /** What a row or a menu item turns when the pointer is over it. */
-  '--accent': hslTriple(palette.ivoire.dark),
-  '--accent-foreground': hslTriple(palette.ebene.DEFAULT),
-  '--destructive': hslTriple(danger),
-  '--destructive-foreground': hslTriple(surface),
-  '--border': hslTriple(hairline),
-  '--input': hslTriple(hairline),
-  /** The focus ring was already gold, per the accessibility rule in index.css. */
-  '--ring': hslTriple(palette.or.DEFAULT),
-} as const
+export const fallbackFaces = [
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia'],
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 0.9252,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 0.9841,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia Bold', 'Georgia-Bold'],
+    style: 'normal',
+    weight: '550 800',
+    sizeAdjust: 0.8628,
+  },
+  {
+    family: 'Newsreader Fallback Georgia',
+    local: ['Georgia Italic', 'Georgia-Italic'],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.8753,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: ['Times New Roman', 'TimesNewRomanPSMT', 'Liberation Serif', 'LiberationSerif', 'Tinos'],
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 1.0053,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: ['Times New Roman', 'TimesNewRomanPSMT', 'Liberation Serif', 'LiberationSerif', 'Tinos'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 1.0693,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: [
+      'Times New Roman Bold',
+      'TimesNewRomanPS-BoldMT',
+      'Liberation Serif Bold',
+      'LiberationSerif-Bold',
+      'Tinos Bold',
+    ],
+    style: 'normal',
+    weight: '550 800',
+    sizeAdjust: 1.0207,
+  },
+  {
+    family: 'Newsreader Fallback Times',
+    local: [
+      'Times New Roman Italic',
+      'TimesNewRomanPS-ItalicMT',
+      'Liberation Serif Italic',
+      'LiberationSerif-Italic',
+      'Tinos Italic',
+    ],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.9716,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif', 'NotoSerif-Regular', 'Droid Serif', 'DroidSerif'],
+    style: 'normal',
+    weight: '200 449',
+    sizeAdjust: 0.8493,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif', 'NotoSerif-Regular', 'Droid Serif', 'DroidSerif'],
+    style: 'normal',
+    weight: '450 549',
+    sizeAdjust: 0.9033,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif Bold', 'NotoSerif-Bold', 'Droid Serif Bold', 'DroidSerif-Bold'],
+    style: 'normal',
+    weight: '550 800',
+    sizeAdjust: 0.8751,
+  },
+  {
+    family: 'Newsreader Fallback Noto',
+    local: ['Noto Serif Italic', 'NotoSerif-Italic', 'Droid Serif Italic', 'DroidSerif-Italic'],
+    style: 'italic',
+    weight: '200 549',
+    sizeAdjust: 0.8432,
+  },
+] as const
 
 /**
- * The same names again, for the ebony surfaces: the landing's hero band, the
- * sidebar, the bottom bar, the mobile sheet.
- *
- * Without it, a shadcn component dropped on one of those reads `text-foreground`
- * as ebony and disappears into the background it is sitting on — which is why
- * the landing's two calls to action were a pair of hand-written class strings
- * with a comment saying they were "styled to match the primary Button without
- * being one". The Tailwind plugin exposes this as `.theme-inverse`, and any
- * component inside one picks the inverted pair up through the cascade, with no
- * variant of its own and no `dark:` prefix on anything.
- *
- * Gold stays gold. It is the one colour that does not flip: it is the accent on
- * both grounds, and ebony stays the readable text on top of it.
+ * The fallbacks as @font-face rules, for Tailwind's addBase. The overrides are
+ * derived from Newsreader's metrics and each face's scale here rather than
+ * written out, so they cannot disagree with the scale they depend on.
  */
-export const inverseTheme = {
-  '--background': hslTriple(palette.ebene.DEFAULT),
-  '--foreground': hslTriple(palette.ivoire.DEFAULT),
-  '--card': hslTriple(palette.ebene.light),
-  '--card-foreground': hslTriple(palette.ivoire.DEFAULT),
-  '--popover': hslTriple(palette.ebene.light),
-  '--popover-foreground': hslTriple(palette.ivoire.DEFAULT),
-  '--primary': hslTriple(palette.or.DEFAULT),
-  '--primary-foreground': hslTriple(palette.ebene.DEFAULT),
-  '--secondary': hslTriple(palette.ivoire.DEFAULT),
-  '--secondary-foreground': hslTriple(palette.ebene.DEFAULT),
-  '--muted': hslTriple(palette.ebene.light),
-  // The ivory the dark surfaces already use for secondary text, made opaque:
-  // it was written `text-ivoire/70` in every one of them.
-  '--muted-foreground': hslTriple(mix(palette.ivoire.DEFAULT, palette.ebene.DEFAULT, 0.7)),
-  '--accent': hslTriple(palette.ebene.light),
-  '--accent-foreground': hslTriple(palette.ivoire.DEFAULT),
-  '--destructive': hslTriple(danger),
-  '--destructive-foreground': hslTriple(surface),
-  // `border-white/10`, which is what all three dark surfaces draw their
-  // hairlines with today, resolved against ebony.
-  '--border': hslTriple(mix(surface, palette.ebene.DEFAULT, 0.1)),
-  '--input': hslTriple(mix(surface, palette.ebene.DEFAULT, 0.1)),
-  '--ring': hslTriple(palette.or.DEFAULT),
-} as const
+export function fallbackFontFaces() {
+  const percent = (value: number) => `${Number((value * 100).toFixed(2))}%`
+  return fallbackFaces.map((face) => ({
+    '@font-face': {
+      fontFamily: `'${face.family}'`,
+      src: face.local.map((name) => `local('${name}')`).join(', '),
+      fontStyle: face.style,
+      fontWeight: face.weight,
+      sizeAdjust: percent(face.sizeAdjust),
+      ascentOverride: percent(newsreaderMetrics.ascent / face.sizeAdjust),
+      descentOverride: percent(newsreaderMetrics.descent / face.sizeAdjust),
+      lineGapOverride: percent(newsreaderMetrics.lineGap / face.sizeAdjust),
+    },
+  }))
+}
 
 /**
- * The corner radius shadcn derives its `lg`, `md` and `sm` from.
+ * One family: Newsreader, a news serif self-hosted through @fontsource-variable
+ * (src/lib/fonts.ts). Headlines, body, buttons and numbers are all set in it.
+ * The first name is the one the package's @font-face rules declare; the tests
+ * read it back from the package, because a name that matches no @font-face does
+ * not fail — the text quietly falls back and looks almost right. The fallbacks
+ * follow, read from the faces above so the two lists cannot drift apart.
  *
- * Deliberately Tailwind's own `rounded-lg`, not the project's `rounded-xl`.
- * Pointing it at `0.875rem` to match the buttons would have moved all 29
- * `rounded-lg` corners already written across the app, silently, in a commit
- * about something else. At `0.5rem` the derived `lg` and `md` come out equal to
- * the values those classes already have, so this override changes nothing on
- * screen. Components that want the rounder corner ask for `rounded-xl`, as they
- * already do.
+ * Only the build and the tests read this, so the stack comes from a call marked
+ * pure: without the mark the bundler cannot prove that building it has no
+ * effect, and the whole table of faces ships to every visitor and runs on every
+ * page load.
  */
-export const radius = '0.5rem'
+function serifStack(): string[] {
+  return [
+    '"Newsreader Variable"',
+    ...new Set(fallbackFaces.map((face) => `"${face.family}"`)),
+    'serif',
+  ]
+}
 
 export const fonts = {
-  display: ['"Playfair Display"', 'Georgia', 'serif'],
-  sans: ['Inter', 'system-ui', 'sans-serif'],
+  serif: /* @__PURE__ */ serifStack(),
+  /**
+   * The chess figurines and the grade signs, from the subset declared in
+   * src/index.css; the system symbol fonts after it only if that file fails.
+   */
+  figurine: ['"Figurines"', '"Segoe UI Symbol"', '"Apple Symbols"', 'serif'],
 } as const
 
 /**
@@ -223,6 +310,8 @@ export const brand = {
   /** Stands in for a logo until there is one. */
   mark: '♞',
   tagline: 'Apprenez les échecs avec un coach intelligent',
+  /** What the masthead promises above the name. */
+  promise: 'Gratuit, sans compte obligatoire',
   /** The AGPL obliges the offer of source, so this link is not decorative. */
   sourceUrl: 'https://github.com/Amayyas/ChessTrainer',
 } as const

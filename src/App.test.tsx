@@ -17,7 +17,7 @@ describe('routing', () => {
     [ROUTES.home, /Apprenez les échecs/],
     // The dashboard moved off '/'; signed out (no backend in tests) '/' is the
     // landing, and '/dashboard' serves the dashboard as its own lazy chunk.
-    [ROUTES.dashboard, /Apprenez les échecs/],
+    [ROUTES.dashboard, 'Tableau de bord'],
     [ROUTES.coach, 'Coach'],
     [ROUTES.battle, /Affrontement/],
     [ROUTES.puzzle, 'Puzzles'],
@@ -34,7 +34,6 @@ describe('routing', () => {
   })
 
   it('serves the landing, not the dashboard, at / when signed out', async () => {
-    // The h1 alone does not tell them apart — both say "Apprenez les échecs".
     // The dashboard's level bar and mode picker are what distinguish it, and
     // they must not be on '/'.
     renderAt(ROUTES.home)

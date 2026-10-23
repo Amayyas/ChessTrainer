@@ -1,50 +1,43 @@
-import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Badge, Card } from '@/components/UI'
+import { Tag } from '@/components/UI'
 import { MODES } from '@/features/home/modes'
-import { staggerContainer, staggerItem } from '@/lib/motion'
 
 /**
- * The four mode cards, as a link grid.
+ * The game modes, set as a paper sets its columns: side by side between
+ * hairline rules, each one link, its figurine standing over the title. Four
+ * columns from 1024 px, two from 640, and below that a ruled list with the
+ * figurine beside the words.
  *
  * Rendered on both the dashboard and the public landing. The data lives in
  * modes.ts; this is the markup, kept in one place for the same reason — a change
- * to how a card looks should not have to be made twice.
+ * to how a mode reads should not have to be made twice.
  */
 export default function ModeGrid() {
-  const reduceMotion = useReducedMotion()
-
   return (
-    <motion.div
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-      variants={reduceMotion ? undefined : staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
+    <ul className="mt-5 grid grid-cols-1 sm:mt-9 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-4 lg:gap-y-0">
       {MODES.map((mode) => (
-        <motion.div key={mode.to} variants={reduceMotion ? undefined : staggerItem}>
+        <li
+          key={mode.to}
+          className="border-t border-ink/30 first:border-t-0 sm:border-t-0 sm:px-7 sm:odd:pl-0 sm:even:border-l lg:border-l lg:first:border-l-0 lg:last:pr-0 lg:[&:nth-child(3)]:pl-7"
+        >
           <Link
             to={mode.to}
-            className="block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-or focus-visible:ring-offset-2 focus-visible:ring-offset-ivoire"
+            className="group grid h-full grid-cols-[3.25rem_minmax(0,1fr)] gap-x-3.5 py-[18px] sm:block sm:py-0 sm:pb-1"
           >
-            <Card interactive className="flex h-full items-start gap-4">
-              <span
-                aria-hidden="true"
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-ebene text-3xl text-or"
-              >
-                {mode.glyph}
-              </span>
-              <div className="flex-1">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <h3 className="font-display text-xl font-bold text-ebene">{mode.title}</h3>
-                  <Badge variant={mode.badgeVariant}>{mode.badge}</Badge>
-                </div>
-                <p className="text-sm text-ardoise">{mode.description}</p>
-              </div>
-            </Card>
+            <span
+              aria-hidden="true"
+              className="row-span-3 mt-0.5 font-figurine text-[2.5rem] leading-none sm:mb-[18px] sm:block sm:text-[4.125rem]"
+            >
+              {mode.glyph}
+            </span>
+            <h3 className="mb-1 text-heading font-semibold underline decoration-transparent decoration-2 underline-offset-[5px] transition-colors group-hover:decoration-rubric sm:mb-2">
+              {mode.title}
+            </h3>
+            <Tag className="mb-2 sm:mb-3">{mode.badge}</Tag>
+            <p className="col-start-2 text-pretty text-caption sm:text-body">{mode.description}</p>
           </Link>
-        </motion.div>
+        </li>
       ))}
-    </motion.div>
+    </ul>
   )
 }

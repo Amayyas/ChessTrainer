@@ -301,14 +301,29 @@ export function useHuntGame(): HuntGame {
   }, [phase, loseLife, enterPhase, render])
 
   const current = state.current
-  // A fresh map whenever the enemies changed, so consumers' memos see it.
+  // New values only when the position changes, so consumers' memos see the
+  // change and nothing else: the hook renders ten times a second for the
+  // clock, and a board handed new arrays each time draws again the position
+  // it already shows. `current` is in each list because a round starts from a
+  // new record, whose version can repeat the last round's.
   const enemiesSnapshot = useMemo(
     () => new Map(current.enemies),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [current.enemiesVersion],
+    [current, current.enemiesVersion],
   )
   const isRespawning = phase === 'playing' && current.respawnAt !== null
   const isPlaying = phase === 'playing' && !isRespawning
+  const threats = useMemo(
+    () => (isPlaying ? threateningEnemies(current.championSquare, current.enemies) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, current.enemiesVersion, current.championSquare, isPlaying],
+  )
+  const moves = useMemo(
+    () =>
+      isPlaying ? championMoves(current.champion, current.championSquare, current.enemies) : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, current.enemiesVersion, current.champion, current.championSquare, isPlaying],
+  )
 
   return {
     phase,
@@ -320,11 +335,9 @@ export function useHuntGame(): HuntGame {
     score: current.score,
     captures: current.captures,
     combo: current.combo,
-    threats: isPlaying ? threateningEnemies(current.championSquare, current.enemies) : [],
+    threats,
     isRespawning,
-    moves: isPlaying
-      ? championMoves(current.champion, current.championSquare, current.enemies)
-      : [],
+    moves,
     start,
     moveTo,
     reset,

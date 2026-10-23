@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/UI'
+import { INLINE_LINK } from '@/components/UI/link'
 import { Section } from '@/features/legal/shared'
 import { brand } from '@/lib/design-tokens'
 
@@ -20,7 +21,7 @@ export default function LegalPage() {
           Statut : particulier, publiant à titre non professionnel
           <br />
           Contact :{' '}
-          <a className="font-semibold text-ebene underline" href="mailto:contact@chesstrainer.fr">
+          <a className={INLINE_LINK} href="mailto:contact@chesstrainer.fr">
             contact@chesstrainer.fr
           </a>
           <br />
@@ -40,12 +41,7 @@ export default function LegalPage() {
         <p>
           ChessTrainer AI est un logiciel libre, publié sous licence <strong>GNU AGPL v3</strong>.
           Son code source complet est disponible sur{' '}
-          <a
-            className="font-semibold text-ebene underline"
-            href={brand.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className={INLINE_LINK} href={brand.sourceUrl} target="_blank" rel="noreferrer">
             GitHub
           </a>
           . Si vous utilisez une version modifiée de cette application, son éditeur est tenu de vous

@@ -6,7 +6,7 @@ describe('navigation', () => {
   it('exposes one entry per navigable route', () => {
     // Reached from a guard, a link or an email, never from the menu: the public
     // landing on '/', the auth screens, the two recovery screens and the two
-    // legal documents. The sidebar's own logo links to '/'; the menu points at
+    // legal documents. The masthead's nameplate links to '/'; the menu points at
     // the dashboard instead.
     const offMenu: string[] = [
       ROUTES.home,
@@ -40,9 +40,9 @@ describe('navigation', () => {
     ])
   })
 
-  it('leaves nothing reachable only from the sidebar', () => {
+  it('leaves nothing reachable only from the section bar', () => {
     // What the sheet was added for. The leaderboard and the profile are not in
-    // the bottom bar, and on a phone the sidebar is hidden at every width, so
+    // the bottom bar, and on a phone the section bar is hidden at every width, so
     // before the sheet existed the leaderboard could be reached from no mobile
     // screen at all. This asserts the gap rather than the fix: every navigable
     // route must be in NAV_ITEMS, which is exactly what the sheet renders.
