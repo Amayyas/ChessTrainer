@@ -145,6 +145,18 @@ check('/robots.txt points at the sitemap', async () => {
   assert(/^Sitemap:\s*https?:\/\//m.test(body), 'no Sitemap: line')
 })
 
+check('/llms.txt is a Markdown index, not the SPA fallback', async () => {
+  // The rules Lighthouse's agentic audit reads it by: a title and links.
+  const { res, body, header } = await get('/llms.txt')
+  assert(res.status === 200, `expected 200, got ${res.status}`)
+  assert(
+    header('content-type').includes('text/plain'),
+    `content-type was ${header('content-type')}`,
+  )
+  assert(/^#\s+\S/m.test(body), 'no Markdown title')
+  assert(/\[.+\]\(https?:\/\/.+\)/.test(body), 'no absolute link')
+})
+
 check('/ carries the security headers', async () => {
   const { header } = await get('/')
   assert(

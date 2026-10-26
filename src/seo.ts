@@ -100,3 +100,22 @@ export function withRouteHead(html: string, path: RoutePath, siteUrl: string): s
   out = out.replace(ogUrl, `<meta property="og:url" content="${url}" />`)
   return out.replace('</head>', `  <link rel="canonical" href="${url}" />\n  </head>`)
 }
+
+/**
+ * llms.txt, the index of the site that language models and AI agents read
+ * (https://llmstxt.org): a Markdown title, the site's summary as a quote, and a
+ * link to every indexable page under its own title.
+ *
+ * Built from the same list as the sitemap, so the two cannot disagree, and with
+ * the summary the HTML already gives search engines rather than a second one.
+ * Without the file the SPA rewrite answered /llms.txt with the app's HTML, which
+ * an agent reads as a malformed index rather than as none. A bracket in a title
+ * is escaped, so it cannot end the link's text early.
+ */
+export function llmsTxt(siteUrl: string, summary: string): string {
+  const pages = INDEXABLE_ROUTES.map((path) => {
+    const title = PAGE_META[path].title.replace(` · ${SUFFIX}`, '').replace(/[[\]]/g, '\\$&')
+    return `- [${title}](${siteUrl}${path})`
+  })
+  return `# ${SUFFIX}\n\n> ${summary}\n\n## Pages\n\n${pages.join('\n')}\n`
+}
