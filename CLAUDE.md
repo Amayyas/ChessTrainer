@@ -198,15 +198,19 @@ an emailed auth link to the screen it was for, whatever address Supabase drops
 it at; `robots.txt` and `sitemap.xml` generated from the route table; per-route
 titles and `noindex`.
 
-**The newsprint redesign, built and not yet merged:** direction A, "Chronique",
-as four stacked pull requests, #123 (design system), #124 (components), #128
-(pages) and #130 (board), to be merged in that order and released together.
-Paper, ink and one red, the rubric; Newsreader; rules instead of boxes; moves
-in figurine notation. The boards are chessground (GPL-3.0-or-later) drawn as a
-printed diagram, the dark squares hatched or, on the player's choice, plain,
-and every board the player plays on takes a move typed in French notation. #130
-carries a fix to #128 (tailwind-merge 2, the major for Tailwind 3), so #128 does
-not ship without it. The rules are in `docs/design-system.md`.
+**The newsprint redesign, shipped in 2.5.0 (22 October 2026):** direction A,
+"Chronique", merged as one stack of four pull requests (#123, #124, #128,
+#130). Paper, ink and one red, the rubric; Newsreader; rules instead of boxes;
+moves in figurine notation. The boards are chessground (GPL-3.0-or-later)
+drawn as a printed diagram, the dark squares hatched or, on the player's
+choice, plain; every board the player plays on takes a move typed in French
+notation. The rules are in `docs/design-system.md`.
+
+**Built after 2.5.0, live with the next release:** every board is said in
+words to a screen reader — the position as its description, each move in a
+live region, and in the Piece Hunt the danger, again on each square it follows
+the champion to. No square can be visited one by one; the keyboard field is how
+a move is made.
 
 **Search Console:** the domain property is verified by DNS, the sitemap is
 submitted, and indexing has been requested for the home page. Nothing more to do
@@ -229,10 +233,6 @@ OVH name has a hyphen before the digit; only a real message's
 `DKIM-Signature` header gives the selector reliably. Mail sent through OVH's
 SMTP is covered; mail sent "as" this address from another provider, such as
 Gmail's send-as, is not, and `reject` would refuse it.
-
-**Known and left for later:** the boards are an image to assistive
-technology. A screen reader user can play from the keyboard field and follow
-the move list, but no square is described.
 
 **Known and deliberately unfixed:** per-move accuracy saturates on forced mates.
 The grade now prices a slow mate by its distance, but the win-chances curve reads
