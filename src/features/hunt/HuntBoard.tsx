@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
 import BoardFrame from '@/components/Board/BoardFrame'
@@ -8,6 +8,7 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
 import { huntPlacement, type ChampionType, type EnemyType } from '@/features/hunt/board'
+import { describeHunt, describeTaken, describeThreats } from '@/utils/describeBoard'
 
 export interface HuntBoardProps {
   champion: ChampionType
@@ -20,6 +21,22 @@ export interface HuntBoardProps {
   threats: string[]
   onMove: (square: string) => void
   interactive?: boolean
+}
+
+/**
+ * The text of the urgent live region. A screen reader speaks a region only
+ * when its text changes, so the same danger met again on another square — the
+ * same bishop, the champion moved along its diagonal — alternates a trailing
+ * no-break space, which it does not read, to change the text.
+ */
+function useAlert(urgent: string, championSquare: string | null): string {
+  const [alert, setAlert] = useState({ text: '', count: 0 })
+  useEffect(() => {
+    setAlert((last) =>
+      urgent ? { text: urgent, count: last.count + 1 } : last.text ? { ...last, text: '' } : last,
+    )
+  }, [urgent, championSquare])
+  return alert.text && `${alert.text}${alert.count % 2 ? '\u00a0' : ''}`
 }
 
 /**
@@ -90,9 +107,35 @@ export default function HuntBoard({
     },
   }))
 
+  // The board in words for a screen reader: the round as the description, and
+  // what cannot wait in a live region — the danger the moment an enemy can take
+  // the champion, and the champion taken when it was.
+  const describedBy = useId()
+  const description = useMemo(
+    () => describeHunt(champion, championSquare, enemies, threats),
+    [champion, championSquare, enemies, threats],
+  )
+  const urgent = useMemo(
+    () => (championSquare ? describeThreats(enemies, threats) : describeTaken(champion)),
+    [champion, championSquare, enemies, threats],
+  )
+  const said = useAlert(urgent, championSquare)
+
   return (
     <BoardFrame style={boardStyle(squares, reduceMotion)}>
-      <div ref={wrapRef} role="img" aria-label="Échiquier" className="cg-wrap" />
+      <div
+        ref={wrapRef}
+        role="img"
+        aria-label="Échiquier"
+        aria-describedby={describedBy}
+        className="cg-wrap"
+      />
+      <p id={describedBy} hidden>
+        {description}
+      </p>
+      <p aria-live="assertive" className="sr-only">
+        {said}
+      </p>
     </BoardFrame>
   )
 }
