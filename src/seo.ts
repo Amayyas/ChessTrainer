@@ -114,7 +114,7 @@ export function withRouteHead(html: string, path: RoutePath, siteUrl: string): s
  */
 export function llmsTxt(siteUrl: string, summary: string): string {
   const pages = INDEXABLE_ROUTES.map((path) => {
-    const title = PAGE_META[path].title.replace(` · ${SUFFIX}`, '').replace(/[[\]]/g, '\\$&')
+    const title = PAGE_META[path].title.replace(` · ${SUFFIX}`, '').replace(/[\\[\]]/g, '\\$&')
     return `- [${title}](${siteUrl}${path})`
   })
   return `# ${SUFFIX}\n\n> ${summary}\n\n## Pages\n\n${pages.join('\n')}\n`

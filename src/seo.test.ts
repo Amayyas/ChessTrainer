@@ -122,11 +122,14 @@ describe('llmsTxt', () => {
     }
   })
 
-  it('escapes a bracket in a title, which would end the link early', () => {
+  it('escapes a bracket in a title, which would end the link early, and a backslash', () => {
+    // An unescaped backslash before the closing bracket would escape the bracket.
     const title = PAGE_META[INDEXABLE_ROUTES[1]!].title
-    PAGE_META[INDEXABLE_ROUTES[1]!].title = 'Openings [beta]'
+    PAGE_META[INDEXABLE_ROUTES[1]!].title = 'Openings [beta] \\'
     try {
-      expect(llmsTxt('https://example.org', 'A summary.')).toContain('- [Openings \\[beta\\]](')
+      expect(llmsTxt('https://example.org', 'A summary.')).toContain(
+        '- [Openings \\[beta\\] \\\\](',
+      )
     } finally {
       PAGE_META[INDEXABLE_ROUTES[1]!].title = title
     }
