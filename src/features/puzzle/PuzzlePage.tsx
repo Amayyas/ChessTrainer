@@ -57,6 +57,7 @@ function PuzzleBoard({
             getLegalTargets={runner.getLegalTargets}
             isPromotion={runner.isPromotion}
             lastMove={runner.lastMove}
+            moves={runner.played}
           />
         </div>
         <BoardControls>

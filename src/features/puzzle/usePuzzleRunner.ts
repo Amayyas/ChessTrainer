@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js'
+import { Chess, type Move } from 'chess.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { parseUciMove } from '@/engine/uci'
 import type { Puzzle } from '@/features/puzzle/types'
@@ -63,6 +63,8 @@ export interface PuzzleRunner {
   getLegalTargets: (square: Square) => Square[]
   isPromotion: (from: Square, to: Square) => boolean
   lastMove: { from: Square; to: Square } | null
+  /** The moves played since the puzzle's position, the scripted replies among them. */
+  played: Move[]
 }
 
 interface RunnerState {
@@ -141,6 +143,7 @@ export function usePuzzleRunner(
   }, [puzzle, ply, playedFinal])
 
   const fen = board?.fen() ?? new Chess().fen()
+  const played = useMemo(() => board?.history({ verbose: true }) ?? [], [board])
 
   // Timer for the current puzzle.
   useEffect(() => {
@@ -267,5 +270,6 @@ export function usePuzzleRunner(
     getLegalTargets,
     isPromotion,
     lastMove: state.lastMove,
+    played,
   }
 }

@@ -104,6 +104,12 @@ describe('usePuzzleSession', () => {
     expect(result.current.errors).toBe(0)
     expect(result.current.fen).not.toBe(fenBefore)
     expect(result.current.lastMove).toEqual({ from: expected.from, to: expected.to })
+    // What a screen reader is told: the move and the scripted reply, when there is one.
+    const line = result.current.puzzle!.solution
+    const said = result.current.played.map(
+      (move) => `${move.from}${move.to}${move.promotion ?? ''}`,
+    )
+    expect(said).toEqual(line.slice(0, Math.min(2, line.length)))
   })
 
   it('solves a one-move puzzle and records the score, streak and solved id', () => {
@@ -224,5 +230,6 @@ describe('usePuzzleSession', () => {
     expect(result.current.hintLevel).toBe(0)
     expect(result.current.isSolved).toBe(false)
     expect(result.current.lastMove).toBeNull()
+    expect(result.current.played).toEqual([])
   })
 })
