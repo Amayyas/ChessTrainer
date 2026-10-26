@@ -119,6 +119,30 @@ describe('useHuntGame', () => {
     expect(result.current.captures).toBe(1)
   })
 
+  it('never refills the board onto the square the champion has just taken', () => {
+    // The refill picked its square before the champion stood on the emptied
+    // one, so about one capture in a hundred and fifty put an enemy under the
+    // champion. Many deals, so a regression shows every run rather than now
+    // and then.
+    let captures = 0
+    for (let deal = 0; deal < 1500; deal += 1) {
+      const { result, unmount } = renderHook(() => useHuntGame())
+      act(() => result.current.start('q'))
+      const target = result.current.moves.find((square) => result.current.enemies.has(square))
+      if (target) {
+        captures += 1
+        act(() => {
+          result.current.moveTo(target)
+        })
+        expect(result.current.championSquare).toBe(target)
+        expect([...result.current.enemies.keys()]).not.toContain(target)
+      }
+      unmount()
+    }
+    // The control: enough captures were played for the check to mean something.
+    expect(captures).toBeGreaterThan(500)
+  })
+
   it('leaves the enemies alone while the champion stands still', () => {
     const { result } = renderHook(() => useHuntGame())
     act(() => result.current.start('n'))

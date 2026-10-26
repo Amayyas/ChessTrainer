@@ -234,6 +234,10 @@ export function useHuntGame(): HuntGame {
 
       const now = Date.now()
       const captured = current.enemies.get(square)
+      // The champion stands on its new square before the board is refilled, or
+      // the refill avoids the square it left and may set an enemy on the one it
+      // has just emptied by taking.
+      current.championSquare = square
       if (captured) {
         current.enemies.delete(square)
         current.enemiesVersion += 1
@@ -243,8 +247,6 @@ export function useHuntGame(): HuntGame {
         current.score += capturePoints(captured, current.combo)
         ensureMinimumEnemies(current)
       }
-
-      current.championSquare = square
 
       // The enemies get exactly one reply to the champion's move.
       moveOneEnemy(current)
