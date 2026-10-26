@@ -68,7 +68,7 @@ const files = new Map()
 })(DIST)
 
 /** `path` is the request's own path: Netlify matches header rules against it. */
-function send(res, path, key, acceptsGzip) {
+function send(res, path, key, acceptsGzip, status = 200) {
   const file = files.get(key)
   const ext = extname(key)
   const useGzip = acceptsGzip && file.gzip
@@ -79,7 +79,7 @@ function send(res, path, key, acceptsGzip) {
     'content-length': body.length,
   }
   if (useGzip) headers['content-encoding'] = 'gzip'
-  res.writeHead(200, headers).end(body)
+  res.writeHead(status, headers).end(body)
 }
 
 const server = createServer((req, res) => {
@@ -92,6 +92,11 @@ const server = createServer((req, res) => {
   // Netlify answers /coach with coach.html when the file exists, ahead of the
   // rewrite: that is how each indexable route gets a head of its own.
   if (files.has(`${key}.html`)) return send(res, rel, `${key}.html`, acceptsGzip)
+  // netlify.toml answers /.well-known/ with the app shell and a 404, ahead of
+  // the rewrite.
+  if (rel.startsWith('/.well-known/') && files.has('/app.html')) {
+    return send(res, rel, '/app.html', acceptsGzip, 404)
+  }
   // The SPA rewrite: every unknown path is the app shell, HTTP 200.
   if (files.has('/app.html')) return send(res, rel, '/app.html', acceptsGzip)
   res.writeHead(404, { 'content-type': 'text/plain' }).end('not found')

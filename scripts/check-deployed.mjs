@@ -157,6 +157,11 @@ check('/llms.txt is a Markdown index, not the SPA fallback', async () => {
   assert(/\[.+\]\(https?:\/\/.+\)/.test(body), 'no absolute link')
 })
 
+check('/.well-known/ declares nothing rather than serving the app', async () => {
+  const { res } = await get('/.well-known/ai-catalog.json')
+  assert(res.status === 404, `expected 404, got ${res.status}`)
+})
+
 check('/ carries the security headers', async () => {
   const { header } = await get('/')
   assert(
