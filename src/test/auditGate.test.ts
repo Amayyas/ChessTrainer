@@ -18,9 +18,21 @@ function report(name: string): unknown {
 
 const TODAY = '2026-10-07'
 
+/**
+ * The exception the gate carried for braces while the reports were recorded.
+ * GitHub withdrew that advisory on 23 October 2026 and the exception went with
+ * it; the reports still carry it, so the tests bring their own.
+ */
+const BRACES = {
+  id: 'GHSA-vfj7-8cjw-p6xm',
+  package: 'braces',
+  reason: 'No patched release; reached only through tailwindcss 3, at build time.',
+  until: '2027-01-15',
+}
+
 describe('the audit gate', () => {
   it('blocks every high or critical advisory that has no exception', () => {
-    const { failures } = evaluate(report('npm-audit-before-fix.json'), EXCEPTIONS, TODAY)
+    const { failures } = evaluate(report('npm-audit-before-fix.json'), [BRACES], TODAY)
     expect(failures.map((line) => /^\S+ \S+ GHSA-[\w-]+/.exec(line)?.[0]).sort()).toEqual([
       'critical proxy-addr GHSA-jqcg-44mw-7w3h',
       'high compression GHSA-vc2v-76pw-4v95',
@@ -29,7 +41,7 @@ describe('the audit gate', () => {
   })
 
   it('lets an excepted advisory through, and says so', () => {
-    const { failures, excused } = evaluate(report('npm-audit-after-fix.json'), EXCEPTIONS, TODAY)
+    const { failures, excused } = evaluate(report('npm-audit-after-fix.json'), [BRACES], TODAY)
     expect(failures).toEqual([])
     expect(excused).toHaveLength(1)
     expect(excused[0]).toMatch(
@@ -44,14 +56,14 @@ describe('the audit gate', () => {
   })
 
   it('blocks it again once the exception lapses', () => {
-    const lapsed = EXCEPTIONS.map((exception) => ({ ...exception, until: '2026-10-06' }))
+    const lapsed = [BRACES].map((exception) => ({ ...exception, until: '2026-10-06' }))
     const { failures } = evaluate(report('npm-audit-after-fix.json'), lapsed, TODAY)
     expect(failures).toEqual([expect.stringMatching(/exception lapsed on 2026-10-06/)])
   })
 
   it('fails on an exception that matches nothing, so the list cannot outlive its reasons', () => {
     const stale = [
-      ...EXCEPTIONS,
+      BRACES,
       { id: 'GHSA-0000-0000-0000', package: 'left-pad', reason: 'gone', until: '2099-01-01' },
     ]
     const { failures } = evaluate(report('npm-audit-after-fix.json'), stale, TODAY)
@@ -81,7 +93,7 @@ describe('the audit gate', () => {
 
   it('refuses an exception whose date is not a real one', () => {
     // Compared as text, '2027-13-15' would sort after every day of 2027.
-    const impossible = EXCEPTIONS.map((exception) => ({ ...exception, until: '2027-13-15' }))
+    const impossible = [BRACES].map((exception) => ({ ...exception, until: '2027-13-15' }))
     const { failures, excused } = evaluate(report('npm-audit-after-fix.json'), impossible, TODAY)
     expect(excused).toEqual([])
     expect(failures).toContainEqual(expect.stringMatching(/has no valid date: 2027-13-15/))
@@ -105,13 +117,13 @@ describe('the audit gate', () => {
         },
       },
     }
-    const { failures } = evaluate(downgraded, EXCEPTIONS, TODAY)
+    const { failures } = evaluate(downgraded, [BRACES], TODAY)
     expect(failures).toEqual([expect.stringMatching(/braces GHSA-vfj7-8cjw-p6xm matches nothing/)])
   })
 
   it('never reads a missing report as a clean one', () => {
-    expect(evaluate(null, EXCEPTIONS, TODAY).failures).toEqual(['npm audit produced no report'])
-    expect(evaluate({}, EXCEPTIONS, TODAY).failures).toEqual(['npm audit produced no report'])
+    expect(evaluate(null, [BRACES], TODAY).failures).toEqual(['npm audit produced no report'])
+    expect(evaluate({}, [BRACES], TODAY).failures).toEqual(['npm audit produced no report'])
   })
 
   it('does not block on moderate advisories', () => {
@@ -121,7 +133,7 @@ describe('the audit gate', () => {
       (advisory) => advisory.severity === 'moderate',
     )
     expect(moderate.length).toBeGreaterThan(0)
-    const { failures } = evaluate(report('npm-audit-after-fix.json'), EXCEPTIONS, TODAY)
+    const { failures } = evaluate(report('npm-audit-after-fix.json'), [BRACES], TODAY)
     expect(failures).toEqual([])
   })
 
