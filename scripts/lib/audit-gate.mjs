@@ -19,20 +19,13 @@
  * @typedef {{ id: string, package: string, severity: string, title: string }} Advisory
  */
 
-/** @type {Exception[]} */
-export const EXCEPTIONS = [
-  {
-    id: 'GHSA-vfj7-8cjw-p6xm',
-    package: 'braces',
-    reason:
-      'No patched release exists. braces reaches us only through tailwindcss 3 (chokidar, ' +
-      'micromatch), at build time, where the patterns it expands are the content globs in ' +
-      'tailwind.config.ts: written in this repository, never supplied by anyone else. The ' +
-      'advisory is a stack overflow on deeply nested patterns, so the worst case is a build ' +
-      'that crashes. Nothing ships to players. Leaving it needs the Tailwind 4 migration.',
-    until: '2027-01-15',
-  },
-]
+/**
+ * None at present. braces had one until GitHub withdrew its advisory on 23
+ * October 2026; the gate then failed on the exception itself, as designed.
+ *
+ * @type {Exception[]}
+ */
+export const EXCEPTIONS = []
 
 const BLOCKING = new Set(['high', 'critical'])
 
