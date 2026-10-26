@@ -1,9 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 import react from '@vitejs/plugin-react'
 import { loadEnv, type Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { INDEXABLE_ROUTES } from './src/seo'
+import { INDEXABLE_ROUTES, llmsTxt } from './src/seo'
 
 /**
  * Absolute URLs for the social preview tags.
@@ -22,14 +23,24 @@ function siteUrl(mode: string): Plugin {
 }
 
 /**
- * robots.txt and sitemap.xml, generated rather than committed.
+ * robots.txt, sitemap.xml and llms.txt, generated rather than committed.
  *
- * Both must state the real domain, and neither can be a static file in public/
- * without repeating a value that already lives in the environment. Without them
- * the SPA rewrite answers both addresses with index.html and HTTP 200, so a
- * crawler asking for the sitemap is handed a web page and a submission to
- * Search Console fails.
+ * Each states the real domain, so none can be a static file in public/ without
+ * repeating a value that already lives in the environment, and the sitemap and
+ * llms.txt, whose links must be absolute, are left out of a build that has no
+ * domain. Without them the SPA rewrite answers each address with the app's HTML
+ * and HTTP 200: a crawler asking for the sitemap is handed a web page and a
+ * submission to Search Console fails, and an agent reads a malformed index.
  */
+const ENTITIES: Record<string, string> = {
+  amp: '&',
+  quot: '"',
+  apos: "'",
+  '#39': "'",
+  lt: '<',
+  gt: '>',
+}
+
 function discoveryFiles(mode: string): Plugin {
   const site = (loadEnv(mode, process.cwd(), 'VITE_').VITE_SITE_URL ?? '').replace(/\/$/, '')
   return {
@@ -57,6 +68,19 @@ function discoveryFiles(mode: string): Plugin {
         fileName: 'robots.txt',
         source: `User-agent: *\nAllow: /\n${sitemap}`,
       })
+      if (!site) return
+      // The summary is the one index.html gives search engines, read from it
+      // rather than written a second time, as the text it stands for: entities
+      // decoded and the lines run together.
+      const attribute = /<meta\s+name="description"\s+content="([^"]+)"/.exec(
+        readFileSync(fileURLToPath(new URL('./index.html', import.meta.url)), 'utf8'),
+      )?.[1]
+      if (!attribute) this.error('index.html has no meta description for llms.txt to quote')
+      const summary = attribute
+        .replace(/&(amp|quot|apos|#39|lt|gt);/g, (_, name: string) => ENTITIES[name]!)
+        .replace(/\s+/g, ' ')
+        .trim()
+      this.emitFile({ type: 'asset', fileName: 'llms.txt', source: llmsTxt(site, summary) })
     },
   }
 }
