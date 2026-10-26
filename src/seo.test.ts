@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ROUTES } from '@/routes'
-import { INDEXABLE_ROUTES, PAGE_META, withRouteHead } from '@/seo'
+import { INDEXABLE_ROUTES, PAGE_META, llmsTxt, withRouteHead } from '@/seo'
 
 describe('PAGE_META', () => {
   it('covers every route', () => {
@@ -98,5 +98,40 @@ describe('withRouteHead', () => {
   it('refuses a template whose anchors moved', () => {
     const untitled = template.replace(/<title>[^<]*<\/title>/, '')
     expect(() => withRouteHead(untitled, ROUTES.coach, SITE)).toThrow(/lost its <title>/)
+  })
+})
+
+describe('llmsTxt', () => {
+  const index = llmsTxt('https://example.org', 'A summary.')
+
+  it('opens on a title and the summary, as llms.txt asks', () => {
+    // Lighthouse's agentic audit wants an H1 and at least one link; the app's
+    // HTML, which the SPA rewrite served here before, has neither.
+    expect(index).toMatch(/^# \S/)
+    expect(index).toContain('\n> A summary.\n')
+  })
+
+  it('links every indexable page, and no other, under its own title', () => {
+    const links = [...index.matchAll(/^- \[(.+)\]\((.+)\)$/gm)]
+    expect(links.map(([, , url]) => url)).toEqual(
+      INDEXABLE_ROUTES.map((path) => `https://example.org${path}`),
+    )
+    for (const [, title, url] of links) {
+      const path = url!.replace('https://example.org', '') as keyof typeof PAGE_META
+      expect(PAGE_META[path].title).toContain(title!)
+    }
+  })
+
+  it('escapes a bracket in a title, which would end the link early, and a backslash', () => {
+    // An unescaped backslash before the closing bracket would escape the bracket.
+    const title = PAGE_META[INDEXABLE_ROUTES[1]!].title
+    PAGE_META[INDEXABLE_ROUTES[1]!].title = 'Openings [beta] \\'
+    try {
+      expect(llmsTxt('https://example.org', 'A summary.')).toContain(
+        '- [Openings \\[beta\\] \\\\](',
+      )
+    } finally {
+      PAGE_META[INDEXABLE_ROUTES[1]!].title = title
+    }
   })
 })

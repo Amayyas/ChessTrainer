@@ -4,7 +4,9 @@ import type { Key, MoveMetadata } from '@lichess-org/chessground/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ChessBoard from '@/components/Board/ChessBoard'
 import { boardStyle } from '@/components/Board/boardTheme'
+import { Chess } from 'chess.js'
 import { useChessGame } from '@/hooks/useChessGame'
+import { describePosition } from '@/utils/describeBoard'
 import { board, durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
@@ -85,6 +87,7 @@ function Harness({
         lastMove={game.lastMove}
         checkSquare={game.checkSquare}
         arrows={arrows}
+        moves={game.history}
       />
       <p data-testid="history">{game.sanHistory.join(' ')}</p>
     </div>
@@ -281,6 +284,94 @@ describe('ChessBoard', () => {
     expect(screen.getByRole('group', { name: /Promotion/ })).toBeInTheDocument()
     rerender(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" interactive={false} />)
     expect(screen.queryByRole('group', { name: /Promotion/ })).not.toBeInTheDocument()
+  })
+
+  it('describes the position to assistive technology, beside the picture', () => {
+    render(<Harness />)
+    expect(screen.getByRole('img', { name: 'Échiquier' })).toHaveAccessibleDescription(
+      describePosition(new Chess().fen()),
+    )
+  })
+
+  it('says each move as it is played, and nothing before one is', () => {
+    const { container } = render(<Harness />)
+    const live = container.querySelector('[aria-live="polite"]')!
+    expect(live).toHaveTextContent('')
+    moveOnBoard('e2', 'e4')
+    expect(live).toHaveTextContent('Les blancs jouent Pion de e2 en e4.')
+  })
+
+  it('says a mate with the move that gives it', () => {
+    // 1.e4 f6 2.d4 g5: the queen to h5 mates.
+    const { container } = render(
+      <Harness fen="rnbqkbnr/ppppp2p/5p2/6p1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3" />,
+    )
+    moveOnBoard('d1', 'h5')
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      'Les blancs jouent Dame de d1 en h5, échec et mat.',
+    )
+  })
+
+  it('says a move again when it is played again after a take-back', () => {
+    const played = new Chess()
+    played.move('e4')
+    const [e4] = played.history({ verbose: true })
+    const props = {
+      fen: played.fen(),
+      turn: 'b' as const,
+      onMove: () => false,
+      getLegalTargets: () => [],
+      isPromotion: () => false,
+    }
+    const { container, rerender } = render(<ChessBoard {...props} moves={[]} />)
+    const live = () => container.querySelector('[aria-live="polite"]')!.textContent
+    rerender(<ChessBoard {...props} moves={[e4!]} />)
+    const first = live()
+    expect(first).toMatch(/^Les blancs jouent Pion de e2 en e4\.\s?$/)
+    // The same moves in a new array, as a page builds them at each render: nothing new.
+    rerender(<ChessBoard {...props} moves={[{ ...e4! }]} />)
+    expect(live()).toBe(first)
+
+    rerender(<ChessBoard {...props} moves={[]} />)
+    expect(live()).toBe('')
+    rerender(<ChessBoard {...props} moves={[e4!]} />)
+    // The same words, told apart by a space the reader does not say, or the
+    // live region would not change and the move would go unsaid.
+    expect(live()).toMatch(/^Les blancs jouent Pion de e2 en e4\.\s?$/)
+    expect(live()).not.toBe(first)
+  })
+
+  it('says a move and its reply when they arrive together', () => {
+    const played = new Chess()
+    played.move('e4')
+    played.move('e5')
+    const props = {
+      fen: played.fen(),
+      turn: 'w' as const,
+      onMove: () => false,
+      getLegalTargets: () => [],
+      isPromotion: () => false,
+    }
+    const { container, rerender } = render(<ChessBoard {...props} moves={[]} />)
+    rerender(<ChessBoard {...props} moves={played.history({ verbose: true })} />)
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      'Les blancs jouent Pion de e2 en e4. Les noirs jouent Pion de e7 en e5.',
+    )
+  })
+
+  it('announces nothing on a diagram, which is only looked at', () => {
+    const { container } = render(
+      <ChessBoard
+        diagram
+        fen="8/8/8/8/8/8/8/K6k w - - 0 1"
+        turn="w"
+        onMove={() => false}
+        getLegalTargets={() => []}
+        isPromotion={() => false}
+      />,
+    )
+    expect(container.querySelector('[aria-live]')).toBeNull()
+    expect(screen.getByRole('img')).toHaveAccessibleDescription(/Blancs : Roi a1/)
   })
 
   it('sets the coordinates outside the frame, turned with the board', () => {

@@ -185,6 +185,22 @@ test('a square keeps its marks under the ones a selection adds', async ({ page }
   expect(rings).toContain(rgbOf(newsprint.ink.DEFAULT))
 })
 
+test('the board reads to a screen reader: the position, then each move', async ({ page }) => {
+  // chessground draws one picture; the words are what assistive technology has.
+  await page.goto('/coach')
+  await expect(page.locator('.cg-wrap piece').first()).toBeVisible({ timeout: 30_000 })
+  const board = page.getByRole('img', { name: 'Échiquier' })
+  await expect(board).toHaveAccessibleDescription(
+    /^Blancs : Roi e1 ; Dame d1 .* Trait aux blancs\.$/,
+  )
+
+  const field = page.getByRole('textbox', { name: 'Jouer au clavier' })
+  await field.fill('Cf3')
+  await field.press('Enter')
+  await expect(page.getByText('Les blancs jouent Cavalier de g1 en f3.')).toBeAttached()
+  await expect(board).toHaveAccessibleDescription(/Cavaliers b1 et f3 .* Trait aux noirs\.$/)
+})
+
 test('a move typed into the field under the board is played on it', async ({ page }) => {
   // chessground answers the pointer alone; the field is the keyboard's way in.
   await page.goto('/coach')

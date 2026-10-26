@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import type { Config } from '@lichess-org/chessground/config'
 import type { Key } from '@lichess-org/chessground/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ import HuntBoard, { type HuntBoardProps } from '@/features/hunt/HuntBoard'
 import { huntPlacement, type EnemyType } from '@/features/hunt/board'
 import { durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
+import { describeHunt, describeTaken } from '@/utils/describeBoard'
 
 // chessground finds a square from the pointer's place on a measured board,
 // which jsdom has not got: these tests check what the board tells chessground,
@@ -160,6 +161,60 @@ describe('HuntBoard', () => {
     expect(frame.style.getPropertyValue('--board-squares')).toBe(
       (boardStyle('plain', false) as Record<string, string>)['--board-squares'],
     )
+  })
+
+  it('describes the round to assistive technology', () => {
+    renderBoard({ threats: ['f5'] })
+    expect(screen.getByRole('img', { name: 'Échiquier' })).toHaveAccessibleDescription(
+      describeHunt('n', 'd4', ENEMIES, ['f5']),
+    )
+  })
+
+  it('says the danger the moment it comes, and again on each square it follows', () => {
+    const { container, rerender } = renderBoard()
+    const alert = () => container.querySelector('[aria-live="assertive"]')!.textContent
+    expect(alert()).toBe('')
+
+    const board = (championSquare: string, threats: string[]) => (
+      <HuntBoard
+        champion="n"
+        championSquare={championSquare}
+        enemies={ENEMIES}
+        moves={[]}
+        threats={threats}
+        onMove={() => {}}
+      />
+    )
+    rerender(board('d4', ['f5']))
+    const first = alert()
+    expect(first).toMatch(/^En danger : Fou f5 peut vous prendre\.\s?$/)
+    // Another render of the same round says nothing new.
+    rerender(board('d4', ['f5']))
+    expect(alert()).toBe(first)
+
+    // Moved, and the same bishop still aims at it: the same words, told apart
+    // by a space the reader does not say, or they would go unsaid.
+    rerender(board('e4', ['f5']))
+    expect(alert()).toMatch(/^En danger : Fou f5 peut vous prendre\.\s?$/)
+    expect(alert()).not.toBe(first)
+
+    rerender(board('c4', []))
+    expect(alert()).toBe('')
+  })
+
+  it('says the champion taken the moment it is', () => {
+    const { container, rerender } = renderBoard({ threats: ['f5'] })
+    rerender(
+      <HuntBoard
+        champion="n"
+        championSquare={null}
+        enemies={ENEMIES}
+        moves={[]}
+        threats={[]}
+        onMove={() => {}}
+      />,
+    )
+    expect(container.querySelector('[aria-live="assertive"]')).toHaveTextContent(describeTaken('n'))
   })
 
   it('leaves the stand-ins the test setup lays down in place', () => {
