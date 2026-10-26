@@ -35,6 +35,17 @@
   status = 301
   force = true
 
+# Nothing is published under /.well-known/, the address agents and crawlers
+# probe for files a site declares (ai-catalog.json, security.txt and the like).
+# The rewrite below would answer every one of them with the app's HTML and HTTP
+# 200, which reads as a malformed file rather than as none: Lighthouse's
+# agentic audit failed ai-catalog.json for exactly that. A 404 says there is
+# nothing there.
+[[redirects]]
+  from = "/.well-known/*"
+  to = "/app.html"
+  status = 404
+
 # Client-side routing. Without this, a direct hit on /coach — a shared link, a
 # bookmark, a page reload — asks the CDN for a file that does not exist and
 # gets a 404, so the app never starts. Navigating from the home page hides the
