@@ -67,6 +67,7 @@ export default function CoachPage() {
                 lastMove={coach.viewLastMove}
                 checkSquare={inReplay ? null : game.checkSquare}
                 arrows={coach.arrows}
+                moves={inReplay ? game.history.slice(0, coach.replayPly) : game.history}
               />
             </div>
           </div>
