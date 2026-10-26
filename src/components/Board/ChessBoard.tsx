@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { Config } from '@lichess-org/chessground/config'
 import type { DrawBrushes } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
@@ -10,6 +10,12 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board, durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
+import {
+  describeNewMoves,
+  describePosition,
+  sameMoves,
+  type SpokenMove,
+} from '@/utils/describeBoard'
 import { piecesOf } from '@/utils/fen'
 
 export interface ChessBoardProps {
@@ -33,6 +39,33 @@ export interface ChessBoardProps {
   diagram?: boolean
   /** What the board shows, for assistive technology. */
   label?: string
+  /**
+   * The moves played so far, as chess.js gives them: the board says each new
+   * one to a screen reader. Left out, the board says no moves.
+   */
+  moves?: ReadonlyArray<SpokenMove>
+}
+
+/**
+ * The text of the live region: the moves added since the last render, said
+ * once each. A screen reader speaks a region only when its text changes, so
+ * the same move twice — played, taken back, played again — alternates a
+ * trailing no-break space, which it does not read, to change the text.
+ */
+function useSpokenMoves(moves: ReadonlyArray<SpokenMove> | undefined): string {
+  const [spoken, setSpoken] = useState({ text: '', count: 0 })
+  const previous = useRef(moves ?? [])
+  useEffect(() => {
+    const before = previous.current
+    previous.current = moves ?? []
+    // A page may hand over the same moves in a new array at each render.
+    if (!moves || sameMoves(before, moves)) return
+    const said = describeNewMoves(before, moves)
+    setSpoken((last) =>
+      said ? { text: said, count: last.count + 1 } : last.text ? { ...last, text: '' } : last,
+    )
+  }, [moves])
+  return spoken.text && `${spoken.text}${spoken.count % 2 ? '\u00a0' : ''}`
 }
 
 /**
@@ -58,6 +91,7 @@ export default function ChessBoard({
   arrows,
   diagram = false,
   label = 'Échiquier',
+  moves,
 }: ChessBoardProps) {
   const reduceMotion = usePrefersReducedMotion()
   // A diagram is the printed figure and keeps its hatching; the boards one
@@ -68,6 +102,14 @@ export default function ChessBoard({
 
   const latest = useRef({ onMove, isPromotion })
   latest.current = { onMove, isPromotion }
+
+  // chessground draws a picture with no element per square, so the board is
+  // also said in words: the position as its description, and the moves the
+  // page reports, the engine's and a puzzle's reply included, in a live region
+  // as they are played. Not on the first render, which has played nothing.
+  const describedBy = useId()
+  const description = useMemo(() => describePosition(fen), [fen])
+  const spoken = useSpokenMoves(moves)
 
   const color = turn === 'w' ? 'white' : 'black'
 
@@ -202,7 +244,23 @@ export default function ChessBoard({
       orientation={orientation}
       style={boardStyle(diagram ? 'hatched' : squares, reduceMotion)}
     >
-      <div ref={wrapRef} role="img" aria-label={label} className="cg-wrap" />
+      <div
+        ref={wrapRef}
+        role="img"
+        aria-label={label}
+        aria-describedby={describedBy}
+        className="cg-wrap"
+      />
+      {/* Hidden rather than sr-only: the description is read with the picture,
+          and an exposed paragraph would read the whole position a second time. */}
+      <p id={describedBy} hidden>
+        {description}
+      </p>
+      {!diagram && (
+        <p aria-live="polite" className="sr-only">
+          {spoken}
+        </p>
+      )}
       {promotion && (
         <PromotionPicker
           square={promotion.to}
