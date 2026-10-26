@@ -91,6 +91,7 @@ export default function BattlePage() {
             isPromotion={game.isPromotion}
             lastMove={game.lastMove}
             checkSquare={game.checkSquare}
+            moves={game.history}
           />
           <BoardControls>
             <MoveInput

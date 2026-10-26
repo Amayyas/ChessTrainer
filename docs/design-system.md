@@ -96,3 +96,6 @@ from the `board` tokens:
   would take.
 - Under each board the player plays on, a field takes a move from the keyboard:
   chessground answers the pointer alone.
+- chessground draws one picture, so every board is also said in words: the
+  position as its accessible description, and each move, or in the Piece Hunt
+  the danger, in a live region as it happens.
