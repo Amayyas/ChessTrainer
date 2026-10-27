@@ -129,10 +129,19 @@ account.
 
 ## Architecture
 
-Class diagrams of the engine layer, the game modes, the global state and the
-data model are in [docs/architecture.md](docs/architecture.md). The visual
-rules — palette, type, surfaces, motion — are in
-[docs/design-system.md](docs/design-system.md).
+The [`docs/`](docs/) folder goes further than this page:
+
+| Document                                  | What it covers                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------- |
+| [architecture.md](docs/architecture.md)   | Class diagrams of the engine, the modes, the stores and the data model  |
+| [design-system.md](docs/design-system.md) | Palette, type, surfaces, motion and the board                           |
+| [move-grading.md](docs/move-grading.md)   | How the coach grades a move and measures accuracy                       |
+| [accessibility.md](docs/accessibility.md) | The boards for a screen reader and the keyboard, and the limits left    |
+| [rendering.md](docs/rendering.md)         | The prerender, how each address is served, headers, surviving a deploy  |
+| [testing.md](docs/testing.md)             | The test layers and how to prove a test can fail                        |
+| [releasing.md](docs/releasing.md)         | From merge to release, the deploy budget, and when a release goes wrong |
+
+Coding agents start from [AGENTS.md](AGENTS.md).
 
 ```
 src/
