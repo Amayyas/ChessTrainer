@@ -5,8 +5,8 @@
 # would find it first.
 #
 # Runs every six hours, and by hand after a deploy — which means after merging
-# a release PR, since production builds on nothing else (see CLAUDE.md,
-# "Deploy budget"). The schedule catches what no deploy causes: a setting
+# a release PR, since production builds on nothing else (see
+# docs/releasing.md). The schedule catches what no deploy causes: a setting
 # changed in the Netlify UI, a certificate, the domain.
 #
 # Each run makes 19 requests and downloads about 215 KB, most of it the bundle

@@ -8,7 +8,7 @@ import { FIGURINES, FRENCH_LETTERS } from '@/utils/notation'
 /**
  * The counts were prose: "imprécisions", "erreurs" and "gaffes" written by hand
  * beside numbers that come from the tier table. That is the shape of the bug
- * CLAUDE.md records under "Copy that restates data drifts from it" — the home
+ * AGENTS.md records under "Copy that restates data drifts from it" — the home
  * page advertised five levels for two releases after there were six.
  */
 function summaryWith(overrides: Partial<GameSummaryData> = {}): GameSummaryData {

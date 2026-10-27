@@ -10,7 +10,7 @@ allowed-tools: Bash(curl:*) Bash(date:*) Bash(echo:*) Bash(jq:*)
 
 ## Why this skill exists
 
-CLAUDE.md states the budget in prose — 300 credits a month, a production deploy
+docs/releasing.md states the budget in prose — 300 credits a month, a production deploy
 15, bandwidth 20 per GB, web requests 2 per 10,000, reset on the **16th**. Prose
 drifts, and the reset date is the part people get wrong (they assume the 1st).
 Measure instead.
