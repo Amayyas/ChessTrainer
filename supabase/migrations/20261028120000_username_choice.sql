@@ -58,9 +58,54 @@ as $$
 $$;
 
 -- --------------------------------------------------------------- the column --
--- Every name the old trigger produced is plain [A-Za-z0-9_-], 3 to 24 long, so
--- existing rows pass the check, and folding accents out of names that have none
--- changes nothing the lower() index did not already enforce.
+-- Every name the old trigger produced is plain [A-Za-z0-9_-], 3 to 24 long, but
+-- a player could also rename themselves through the API to anything 3 to 24
+-- characters long once trimmed: "ab cd", or "Rémi" beside an existing "remi".
+-- One such row would make the check or the index below fail, and the whole
+-- migration with it. So those rows are renamed first, the way the sign-up
+-- trigger settles a name: disallowed characters dropped, a placeholder when
+-- fewer than three remain, and a suffix taken from the account's id while the
+-- name collides. Of names that collide once folded, the oldest account keeps
+-- its own.
+do $$
+declare
+  r         record;
+  base      text;
+  candidate text;
+  attempt   integer;
+begin
+  for r in
+    select p.id, p.username
+    from public.profiles p
+    where not public.is_valid_username(p.username)
+       or exists (
+         select 1 from public.profiles q
+         where public.username_key(q.username) = public.username_key(p.username)
+           and (q.created_at, q.id) < (p.created_at, p.id)
+       )
+    order by p.created_at, p.id
+  loop
+    base := left(
+      regexp_replace(normalize(r.username, nfc), '[^' || public.username_charset() || ']', '', 'g'),
+      24
+    );
+    if char_length(base) < 3 then
+      base := 'joueur';
+    end if;
+    candidate := base;
+    attempt := 0;
+    while exists (
+      select 1 from public.profiles
+      where id <> r.id and public.username_key(username) = public.username_key(candidate)
+    ) loop
+      attempt := attempt + 1;
+      candidate := left(base, 16) || left(md5(r.id::text || attempt), 8);
+    end loop;
+    update public.profiles set username = candidate where id = r.id;
+  end loop;
+end
+$$;
+
 alter table public.profiles
   add constraint profiles_username_format check (public.is_valid_username(username));
 
