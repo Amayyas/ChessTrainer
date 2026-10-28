@@ -142,6 +142,7 @@ The [`docs/`](docs/) folder goes further than this page:
 | [rendering.md](docs/rendering.md)         | The prerender, how each address is served, headers, surviving a deploy  |
 | [testing.md](docs/testing.md)             | The test layers and how to prove a test can fail                        |
 | [releasing.md](docs/releasing.md)         | From merge to release, the deploy budget, and when a release goes wrong |
+| [moderation.md](docs/moderation.md)       | Profile photos: how one is checked, reported, and reviewed              |
 
 Coding agents start from [AGENTS.md](AGENTS.md).
 
