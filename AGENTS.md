@@ -136,8 +136,10 @@ The short version of each:
   worldwide leaderboard does. Progression is scoped to an owner, so a sign-out
   must never leave one player's data to the next.
 - **The client is not trusted.** The anon key ships in the bundle. Anything the
-  server must believe — a score — is checked server-side; RLS filters rows, not
-  columns, so a column a player must not write needs a column grant.
+  server must believe — a score — is checked server-side. RLS filters rows, not
+  columns, so a column a player must not write needs a column grant. That grant
+  only holds once the table-level privileges Supabase granted by default have
+  been revoked.
 - **Moves are shown in figurine notation** and typed in French notation (R, D,
   T, F, C). Chess logic goes through chess.js, except in the Piece Hunt, which
   has rules of its own in `src/features/hunt/board.ts`.

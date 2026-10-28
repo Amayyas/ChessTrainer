@@ -446,7 +446,10 @@ sets it once the photo has passed moderation. See
 > **The security point worth remembering.** Row Level Security filters **rows**,
 > never **columns**. Checking row ownership is therefore not enough: without a
 > column-level privilege, a player could write any field of their own row —
-> including their XP. Hence the restricted `GRANT` on `profiles`.
+> including their XP. Hence the restricted `GRANT` on `profiles`. And a column
+> grant only restricts a role that holds nothing more: the table-level `ALL`
+> Supabase used to grant by default has to be revoked first, which
+> `20261029090000_profile_photo.sql` does.
 
 ### Trust boundary
 
