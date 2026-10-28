@@ -68,3 +68,16 @@ begin
   end if;
 end
 $$;
+
+-- The bucket the profile photos live in is created by a migration, as a row in
+-- Supabase's own table. Only the columns that insert names; the files
+-- themselves never reach Postgres.
+create schema if not exists storage;
+
+create table if not exists storage.buckets (
+  id                  text primary key,
+  name                text not null,
+  public              boolean default false,
+  file_size_limit     bigint,
+  allowed_mime_types  text[]
+);

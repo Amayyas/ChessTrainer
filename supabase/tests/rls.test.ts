@@ -44,6 +44,14 @@ async function asAnon<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   return result.rows as T[]
 }
 
+/** The same, for the Edge Function: service_role, as its secret key gives it. */
+async function asService<T>(sql: string, params: unknown[] = []): Promise<T[]> {
+  await db.query('set local role service_role')
+  await db.query(`set local request.jwt.claims = '{}'`)
+  const result = await db.query(sql, params)
+  return result.rows as T[]
+}
+
 let savepoints = 0
 
 /**
@@ -277,6 +285,170 @@ describe('the name a player may take', () => {
     ])
     const { rows } = await db.query('select username from profiles where id = $1', [zoe])
     expect(rows[0].username).toBe('Zoé')
+  })
+})
+
+describe('the profile photo', () => {
+  const photoOf = (player: string) => `${player}/${randomUUID()}.jpg`
+
+  it('cannot be set by the player, only by the function that checks it', async () => {
+    // Writable from the client, the column would let anyone point their
+    // profile at an image the moderation never saw.
+    const error = await refused(() =>
+      asUser(alice, 'update profiles set photo_path = $1 where id = $2', [photoOf(alice), alice]),
+    )
+    expect(error.message).toMatch(/permission denied/i)
+  })
+
+  it("keeps the function's own entry points out of a client's reach", async () => {
+    const calls: Array<[string, unknown[]]> = [
+      ['select begin_photo_upload($1)', [alice]],
+      ['select set_profile_photo($1, $2)', [alice, photoOf(alice)]],
+      ['select clear_profile_photo($1)', [bob]],
+    ]
+    for (const [call, params] of calls) {
+      expect((await refused(() => asUser(alice, call, params))).message, call).toMatch(
+        /permission denied/i,
+      )
+      expect((await refused(() => asAnon(call, params))).message, call).toMatch(
+        /permission denied/i,
+      )
+    }
+  })
+
+  it('keeps the moderation tables out of every client', async () => {
+    for (const table of ['photo_attempts', 'photo_reports', 'hidden_photos']) {
+      const error = await refused(() => asUser(alice, `select * from ${table}`))
+      expect(error.message, table).toMatch(/permission denied/i)
+    }
+  })
+
+  it("refuses a path outside the player's own folder", async () => {
+    // Deleting a player's photos means removing their folder; a file filed
+    // under someone else's would survive their account.
+    const error = await refused(() =>
+      asService('select set_profile_photo($1, $2)', [alice, photoOf(bob)]),
+    )
+    expect(error.message).toMatch(/violates check constraint/i)
+  })
+
+  it('hands back the photo it replaces, for the function to delete', async () => {
+    const first = photoOf(alice)
+    await asService('select set_profile_photo($1, $2)', [alice, first])
+    const [row] = await asService<{ old: string }>('select set_profile_photo($1, $2) as old', [
+      alice,
+      photoOf(alice),
+    ])
+    expect(row?.old).toBe(first)
+  })
+
+  it('refuses another attempt once the hourly allowance is spent', async () => {
+    const [limit] = await asService<{ n: number }>('select max_photo_attempts_per_hour() as n')
+    for (let i = 0; i < limit!.n; i += 1) {
+      await asService('select begin_photo_upload($1)', [alice])
+    }
+    const error = await refused(() => asService('select begin_photo_upload($1)', [alice]))
+    expect((error as Error & { hint?: string }).hint).toBe('rate_limited')
+  })
+})
+
+describe('reporting a photo', () => {
+  let threshold = 0
+  let bobsPhoto = ''
+  /** Players beyond alice and bob, enough to reach the threshold. */
+  let reporters: string[] = []
+
+  beforeEach(async () => {
+    await db.query('set local role postgres')
+    threshold = (await db.query('select photo_report_threshold() as n')).rows[0].n
+    reporters = Array.from({ length: threshold }, () => randomUUID())
+    for (const [index, id] of reporters.entries()) {
+      await db.query('insert into auth.users (id, email) values ($1, $2)', [
+        id,
+        `reporter${index}@example.test`,
+      ])
+    }
+    bobsPhoto = `${bob}/${randomUUID()}.jpg`
+    await db.query('update profiles set photo_path = $1 where id = $2', [bobsPhoto, bob])
+  })
+
+  async function bobsPhotoNow(): Promise<string | null> {
+    await db.query('set local role postgres')
+    return (await db.query('select photo_path from profiles where id = $1', [bob])).rows[0]
+      .photo_path
+  }
+
+  it('is refused to a visitor without an account', async () => {
+    const error = await refused(() => asAnon('select report_photo($1)', [bob]))
+    expect(error.message).toMatch(/permission denied/i)
+  })
+
+  it("is refused for the player's own photo", async () => {
+    await db.query('set local role postgres')
+    await db.query('update profiles set photo_path = $1 where id = $2', [
+      `${alice}/${randomUUID()}.jpg`,
+      alice,
+    ])
+    const error = await refused(() => asUser(alice, 'select report_photo($1)', [alice]))
+    expect(error.message).toMatch(/own photo/)
+  })
+
+  it('counts one player once, however often they report', async () => {
+    for (let i = 0; i < threshold + 1; i += 1) {
+      await asUser(alice, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('leaves the photo up one report short of the threshold', async () => {
+    for (const reporter of reporters.slice(1)) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('takes the photo down at the threshold and files it for review', async () => {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBeNull()
+    const { rows } = await db.query('select photo_path from hidden_photos where user_id = $1', [
+      bob,
+    ])
+    expect(rows).toEqual([{ photo_path: bobsPhoto }])
+  })
+
+  it('starts a new photo with no reports', async () => {
+    for (const reporter of reporters.slice(1)) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    const next = `${bob}/${randomUUID()}.jpg`
+    await asService('select set_profile_photo($1, $2)', [bob, next])
+    await asUser(reporters[0]!, 'select report_photo($1)', [bob])
+    expect(await bobsPhotoNow()).toBe(next)
+  })
+
+  it('stops the player sending another photo until the review releases them', async () => {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    const error = await refused(() => asService('select begin_photo_upload($1)', [bob]))
+    expect((error as Error & { hint?: string }).hint).toBe('under_review')
+
+    await db.query('set local role postgres')
+    await db.query('update hidden_photos set released_at = now() where user_id = $1', [bob])
+    await asService('select begin_photo_upload($1)', [bob])
+  })
+
+  it('keeps the review record when the player deletes their account', async () => {
+    // The record is the only pointer left to a file still in the bucket.
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    await asUser(bob, 'select delete_my_account()')
+    await db.query('set local role postgres')
+    const { rows } = await db.query('select count(*)::int as n from hidden_photos')
+    expect(rows[0].n).toBe(1)
   })
 })
 

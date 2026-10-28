@@ -35,6 +35,27 @@ export type Database = {
           },
         ]
       }
+      hidden_photos: {
+        Row: {
+          hidden_at: string
+          photo_path: string
+          released_at: string | null
+          user_id: string
+        }
+        Insert: {
+          hidden_at?: string
+          photo_path: string
+          released_at?: string | null
+          user_id: string
+        }
+        Update: {
+          hidden_at?: string
+          photo_path?: string
+          released_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hunt_rounds: {
         Row: {
           id: string
@@ -64,23 +85,85 @@ export type Database = {
           },
         ]
       }
+      photo_attempts: {
+        Row: {
+          attempted_at: string
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_reports: {
+        Row: {
+          photo_path: string
+          reported_at: string
+          reporter: string
+          target: string
+        }
+        Insert: {
+          photo_path: string
+          reported_at?: string
+          reporter: string
+          target: string
+        }
+        Update: {
+          photo_path?: string
+          reported_at?: string
+          reporter?: string
+          target?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_reports_reporter_fkey"
+            columns: ["reporter"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_reports_target_fkey"
+            columns: ["target"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_piece: string
           created_at: string
           id: string
+          photo_path: string | null
           username: string
         }
         Insert: {
           avatar_piece?: string
           created_at?: string
           id: string
+          photo_path?: string | null
           username: string
         }
         Update: {
           avatar_piece?: string
           created_at?: string
           id?: string
+          photo_path?: string | null
           username?: string
         }
         Relationships: []
@@ -172,6 +255,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      begin_photo_upload: {
+        Args: { p_user: string }
+        Returns: undefined
+      }
+      clear_profile_photo: {
+        Args: { p_user: string }
+        Returns: string
+      }
       delete_my_account: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -188,6 +279,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      max_photo_attempts_per_hour: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       max_points_per_capture: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -199,6 +294,18 @@ export type Database = {
       min_round_seconds: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      photo_report_threshold: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      report_photo: {
+        Args: { p_target: string }
+        Returns: undefined
+      }
+      set_profile_photo: {
+        Args: { p_path: string; p_user: string }
+        Returns: string
       }
       start_hunt_round: {
         Args: Record<PropertyKey, never>
