@@ -64,4 +64,21 @@ describe('UsernameForm', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(USERNAME_TAKEN))
     expect(screen.queryByText('Pseudo enregistré.')).not.toBeInTheDocument()
   })
+
+  it('clears a failed attempt when the same name is saved on a retry', async () => {
+    // The field is unchanged after a failure, so the retry comes without an
+    // edit — which is what cleared the message before.
+    updateProfile.mockImplementationOnce(async () => {
+      useAuthStore.setState({ error: 'Une erreur est survenue. Réessayez dans un instant.' })
+      return false
+    })
+    render(<UsernameForm current="magnus" />)
+    rename('hikaru')
+    await screen.findByRole('alert')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+
+    expect(await screen.findByText('Pseudo enregistré.')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
 })
