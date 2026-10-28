@@ -234,7 +234,9 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       // come from the test, not from the working copy it happens to run in.
       env: { VITE_SUPABASE_URL: '', VITE_SUPABASE_ANON_KEY: '', VITE_SITE_URL: '' },
       setupFiles: ['./src/test/setup.ts'],
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      // The Edge Functions' decisions too: the code that runs on Deno is kept
+      // to wiring, and what it decides lives beside it in plain TypeScript.
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'supabase/functions/**/*.test.ts'],
       coverage: {
         provider: 'v8',
         reporter: ['text-summary', 'lcov'],
