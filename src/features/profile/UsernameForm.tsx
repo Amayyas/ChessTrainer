@@ -30,6 +30,10 @@ export default function UsernameForm({ current }: { current: string }) {
     event.preventDefault()
     if (unchanged) return
     setIsSaving(true)
+    // A retry without editing keeps the field as it was, so the last
+    // attempt's outcome would otherwise outlive this one.
+    setSaveError(null)
+    setSaved(false)
     const name = await usernameCheck.validate(draft)
     if (name && (await updateProfile({ username: name }))) {
       setDraft(name)
