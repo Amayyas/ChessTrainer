@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
@@ -182,6 +182,20 @@ describe('RegisterPage', () => {
     await waitFor(() => expect(signUp).toHaveBeenCalled())
     expect(checkUsername).toHaveBeenCalledWith('Zéphyr')
     expect(signUp.mock.calls[0]?.[0]).toMatchObject({ username: 'Zéphyr' })
+  })
+
+  it('ignores an answer about a name the player has since changed', async () => {
+    let answer: (status: string) => void = () => {}
+    checkUsername.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+
+    renderPage(<RegisterPage />)
+    const field = screen.getByLabelText('Pseudo')
+    fireEvent.change(field, { target: { value: 'magnus' } })
+    fireEvent.blur(field)
+    fireEvent.change(field, { target: { value: 'hikaru' } })
+    await act(async () => answer('taken'))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('goes ahead when the server cannot be asked', async () => {
