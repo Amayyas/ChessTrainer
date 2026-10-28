@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { create } from 'zustand'
 import { isSupabaseConfigured, supabase, type AvatarPiece, type Profile } from '@/lib/supabase'
+import { USERNAME_FORMAT, USERNAME_TAKEN, type UsernameStatus } from '@/lib/username'
 import { ROUTES } from '@/routes'
 
 interface AuthState {
@@ -50,6 +51,12 @@ interface AuthState {
    */
   isRecovering: boolean
   updateProfile: (patch: { username?: string; avatar_piece?: AvatarPiece }) => Promise<boolean>
+  /**
+   * Asks the database whether a name is free. Null when it cannot be asked —
+   * no backend, or a network failure — and the caller goes ahead: the write is
+   * still checked, so an unanswered question only costs the early warning.
+   */
+  checkUsername: (name: string) => Promise<UsernameStatus | null>
   /** Erases the account and everything filed under it. Irreversible. */
   deleteAccount: () => Promise<boolean>
   clearDeleteError: () => void
@@ -73,8 +80,10 @@ function friendlyError(message: string): string {
   if (text.includes('already registered')) return 'Un compte existe déjà avec cet email.'
   if (text.includes('password')) return 'Le mot de passe doit faire au moins 6 caractères.'
   if (text.includes('email')) return 'Adresse email invalide.'
-  if (text.includes('duplicate key') || text.includes('profiles_username'))
-    return 'Ce pseudo est déjà pris.'
+  // Before the duplicate test: the format check's name also starts
+  // "profiles_username".
+  if (text.includes('profiles_username_format')) return USERNAME_FORMAT
+  if (text.includes('duplicate key') || text.includes('profiles_username')) return USERNAME_TAKEN
   return 'Une erreur est survenue. Réessayez dans un instant.'
 }
 
@@ -282,6 +291,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
     set({ profile: data as Profile })
     return true
+  },
+
+  checkUsername: async (name) => {
+    if (!supabase) return null
+    const { data, error } = await supabase.rpc('username_status', { candidate: name })
+    if (error) return null
+    return data === 'invalid' || data === 'taken' || data === 'available' ? data : null
   },
 
   clearError: () => set({ error: null }),

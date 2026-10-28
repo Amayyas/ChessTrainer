@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Profile } from '@/lib/supabase'
+import { USERNAME_FORMAT } from '@/lib/username'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -12,7 +13,7 @@ type QueryResult = { data: unknown; error: { message: string } | null }
 const api = vi.hoisted(() => ({
   signUp: vi.fn(),
   signOut: vi.fn(),
-  rpc: vi.fn<(name: string) => Promise<QueryResult>>(),
+  rpc: vi.fn<(name: string, args?: unknown) => Promise<QueryResult>>(),
   lookup: vi.fn<(column: string, value: unknown) => Promise<QueryResult>>(),
   update: vi.fn<(patch: unknown, column: string, value: unknown) => Promise<QueryResult>>(),
 }))
@@ -22,7 +23,8 @@ vi.mock('@/lib/supabase', async () => ({
   isSupabaseConfigured: true,
   supabase: {
     auth: { signUp: api.signUp, signOut: api.signOut },
-    rpc: (name: string) => api.rpc(name),
+    rpc: (name: string, args?: unknown) =>
+      args === undefined ? api.rpc(name) : api.rpc(name, args),
     from: (table: string) => {
       if (table !== 'profiles') throw new Error(`unexpected table ${table}`)
       return {
@@ -207,10 +209,47 @@ describe('useAuthStore — updateProfile', () => {
     expect(useAuthStore.getState().error).toBe('Ce pseudo est déjà pris.')
   })
 
+  it('explains a name the format check refused, rather than calling it taken', async () => {
+    // The format constraint's name also begins "profiles_username", which the
+    // duplicate test matches on.
+    api.update.mockResolvedValue(
+      failed(
+        'new row for relation "profiles" violates check constraint "profiles_username_format"',
+      ),
+    )
+
+    await expect(useAuthStore.getState().updateProfile({ username: 'a b' })).resolves.toBe(false)
+
+    expect(useAuthStore.getState().error).toBe(USERNAME_FORMAT)
+  })
+
   it('does nothing without a session', async () => {
     useAuthStore.setState({ session: null })
 
     await expect(useAuthStore.getState().updateProfile({ avatar_piece: 'q' })).resolves.toBe(false)
     expect(api.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('useAuthStore — checkUsername', () => {
+  it('passes on what the database answers', async () => {
+    api.rpc.mockResolvedValue(ok('taken'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBe('taken')
+    expect(api.rpc).toHaveBeenCalledWith('username_status', { candidate: 'Rémi' })
+  })
+
+  it('answers nothing when the question could not be asked', async () => {
+    // Null lets the form go ahead; a guess of "taken" would block every sign-up
+    // whenever the network hiccups.
+    api.rpc.mockResolvedValue(failed('fetch failed'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBeNull()
+  })
+
+  it('answers nothing to a reply it does not recognise', async () => {
+    api.rpc.mockResolvedValue(ok('maybe'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBeNull()
   })
 })
