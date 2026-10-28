@@ -44,7 +44,19 @@ alter table public.profiles
         and split_part(photo_path, '/', 1) = id::text)
   );
 
--- No grant to anon or authenticated: the column is the function's to write.
+-- The column is the function's to write, and a column grant cannot keep a
+-- client off it on its own. Until Supabase changed its default in 2026, every
+-- table created in public was granted ALL to anon and authenticated, profiles
+-- included; the column grants in the init migration only add to that, so a
+-- player could in fact write every column of their own row. Here that would
+-- let a player whose photo was taken down by reports point their profile back
+-- at it — the file stays in their folder until it is reviewed. So the table
+-- privileges go, and the intended ones are granted again. Revoking a table
+-- privilege also revokes the column grants beneath it, hence the re-grant.
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to anon, authenticated;
+grant insert (id, username, avatar_piece) on public.profiles to authenticated;
+grant update (username, avatar_piece) on public.profiles to authenticated;
 
 -- ----------------------------------------------------------------- attempts --
 -- One row per photo sent for checking, accepted or not. Reading the image
@@ -99,7 +111,11 @@ language sql
 immutable
 as $$ select 3 $$;
 
--- No policies on any of the three tables: no client reads or writes them.
+-- No policies on any of the three tables, and no privileges either: no client
+-- reads or writes them. Revoked explicitly, because a project created before
+-- Supabase's 2026 change grants them to every role by default.
+revoke all on public.photo_attempts, public.photo_reports, public.hidden_photos
+  from anon, authenticated;
 
 -- ----------------------------------------------------------- reporting one --
 create or replace function public.report_photo(p_target uuid)
@@ -141,7 +157,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.report_photo(uuid) from public;
+-- From anon too, and not only from PUBLIC: Supabase's default privileges grant
+-- EXECUTE on every new function to anon and authenticated by name.
+revoke execute on function public.report_photo(uuid) from public, anon;
 grant execute on function public.report_photo(uuid) to authenticated;
 
 -- ------------------------------------------------- the Edge Function's side --
@@ -205,9 +223,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.begin_photo_upload(uuid) from public;
-revoke execute on function public.set_profile_photo(uuid, text) from public;
-revoke execute on function public.clear_profile_photo(uuid) from public;
+revoke execute on function public.begin_photo_upload(uuid) from public, anon, authenticated;
+revoke execute on function public.set_profile_photo(uuid, text) from public, anon, authenticated;
+revoke execute on function public.clear_profile_photo(uuid) from public, anon, authenticated;
 grant execute on function public.begin_photo_upload(uuid) to service_role;
 grant execute on function public.set_profile_photo(uuid, text) to service_role;
 grant execute on function public.clear_profile_photo(uuid) to service_role;
