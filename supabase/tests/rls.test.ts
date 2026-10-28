@@ -316,6 +316,26 @@ describe('the profile photo', () => {
     }
   })
 
+  it('grants those entry points to no client role at all', async () => {
+    // Asked of the catalogue, not by calling: a call by a player also fails on
+    // the column grant inside, which would hide an EXECUTE left in place.
+    await db.query('set local role postgres')
+    for (const fn of [
+      'begin_photo_upload(uuid)',
+      'set_profile_photo(uuid, text)',
+      'clear_profile_photo(uuid)',
+    ]) {
+      for (const role of ['anon', 'authenticated']) {
+        const { rows } = await db.query('select has_function_privilege($1, $2, $3) as ok', [
+          role,
+          fn,
+          'execute',
+        ])
+        expect(rows[0].ok, `${role} ${fn}`).toBe(false)
+      }
+    }
+  })
+
   it('keeps the moderation tables out of every client', async () => {
     for (const table of ['photo_attempts', 'photo_reports', 'hidden_photos']) {
       const error = await refused(() => asUser(alice, `select * from ${table}`))

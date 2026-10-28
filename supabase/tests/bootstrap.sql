@@ -31,6 +31,19 @@ $$;
 
 grant usage on schema public to anon, authenticated, service_role;
 
+-- Supabase's former default privileges, under which every table here was
+-- created: ALL on each new table, function and sequence in public, to anon and
+-- authenticated by name. The migrations' GRANTs only add to these, so without
+-- them the tests measured a database stricter than production. A column
+-- grant on profiles looked like it held, and in production it did not.
+--
+-- Projects created after Supabase changed this default in 2026 no longer get
+-- the table grants. This keeps them anyway: a migration has to hold under the
+-- defaults it was, or may still be, deployed with.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
 -- Only the columns the migrations actually reference. A fuller copy would
 -- suggest this file tracks Supabase, which it does not.
 create table if not exists auth.users (
