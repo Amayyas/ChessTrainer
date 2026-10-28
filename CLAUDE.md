@@ -1,155 +1,29 @@
 # Working on ChessTrainer AI
 
 Context for Claude Code, read automatically at the start of every session on any
-machine. Live at [chesstrainer.fr](https://chesstrainer.fr).
+machine. The project's instructions are shared with every other coding agent
+and live in `AGENTS.md`, imported here whole:
 
-## Ground rules
+@AGENTS.md
 
-These are not preferences. Breaking one means the work gets redone.
+What follows is only what is specific to Claude Code.
 
-- **Never start work without being asked.** Answer the question that was asked.
-  Investigate freely; do not begin changing things on your own initiative.
-- **Commits and PR descriptions in English**, using
-  [Conventional Commits](https://www.conventionalcommits.org). The subject says
-  what changed; the body says why it was wrong before.
-- **Never add a `Co-Authored-By: Claude` trailer**, and never write "Generated
-  with Claude Code" in a commit or a PR body.
-- **Split work into several logical commits.** One commit per idea, not one
-  commit per session.
-- **No French anywhere in the repository** — code, comments, tests, README,
-  commits, CI. The single exception is copy the player reads: UI strings, error
-  messages and the legal pages stay in French, because the audience is French.
+## Where AGENTS.md names a procedure, run the command
 
-## Verification, which is the point
+| AGENTS.md says                                  | Run                                          |
+| ----------------------------------------------- | -------------------------------------------- |
+| Never call a PR ready from one green signal     | `/pr-ready`                                  |
+| Review before pushing                           | `/code-review`                               |
+| A security pass for auth, policies or secrets   | `/security-review`                           |
+| A test that has never failed proves nothing     | `/verify-test`                               |
+| Is `main` healthy before deploying or branching | `/main-green`                                |
+| Merging the release PR is spending credits      | `/deploy-budget` first, for the real balance |
 
-Two production bugs were found by the user, not by the test suite. The lesson
-stuck, and these follow from it.
+`/code-review` reads the branch's commits and the working tree in a subagent of
+its own and costs nothing; it catches what it catches while the code is still
+private.
 
-- **A test that has never failed proves nothing.** Break the code it covers and
-  watch it go red.
-- **Measure rather than recall.** Claims about the engine, about bundle size,
-  about what a service does — check them. Several confident statements in this
-  project turned out to be backwards.
-- **Beware the censored measurement.** Outside roughly 25–75%, a score stops
-  discriminating, and a check that cannot come out wrong is not a check. Give
-  every measurement a control that must fail, and read that control first.
-- **Never quote a commit hash without reading it back.** Fabricated hashes have
-  reached PR comments twice.
-
-The mechanics behind the first two — the anchor check before a mutation, why to
-commit first, which runner covers which files, the band the Elo figures were
-measured in — live in `.claude/rules/`. Those files load when the code they
-govern is opened, so they are current where it matters without being carried
-through every unrelated session.
-
-## Pull requests
-
-- `npm run ci` must pass locally before pushing. It runs format, lint,
-  typecheck, the jsdom tests, the database policy tests (which need Docker — it
-  brings up its own Postgres), build and the bundle size budget. The Playwright
-  smoke tests (`npm run test:e2e`) are a CI job of their own, not part of it.
-- `main` is protected: checks must pass, the branch must be current, and every
-  review thread must be resolved.
-- Releases are handled by release-please: it keeps one open "release PR" that
-  bumps the version and updates `CHANGELOG.md`; merging it tags the commit.
-  `feat` moves the minor, `fix`/`perf` the patch, everything else rides along.
-  It needs a `RELEASE_PLEASE_TOKEN` secret (a fine-grained PAT, Contents +
-  Pull requests write) — without it the release PR opens but CI will not run
-  on it until someone approves the run by hand.
-- **Never call a PR ready without querying its state.** Run `/pr-ready`, which
-  checks all four blocking conditions — checks, approvals, branch freshness,
-  unresolved threads — and confirms the state is stable across more than one
-  reading.
-- **Run `/code-review` before pushing.** It reads the branch's commits and the
-  working tree in a subagent of its own, costs nothing, and catches what it
-  catches while the code is still private. `/security-review` is its counterpart
-  for the changes that touch auth, policies or secrets.
-- **CodeRabbit reviews on demand: comment `@coderabbitai review`.** On the free
-  tier for public repositories it starts nothing by itself. It posts a
-  `CodeRabbit` commit status reading "Review skipped: manual review required for
-  this OSS repository" and waits — a green status for a review that never ran.
-  Its settings are in `.coderabbit.yaml`. It is worth more than a second pass by
-  the model that wrote the code, which is the whole reason to keep it: verify
-  each finding rather than deferring to it.
-- **A silent reviewer looks exactly like a clean one.** Qodo, which reviewed
-  here until its trial ended on 1 September 2026, spent its last pull requests
-  answering with a billing notice rather than a review — which reads as "no
-  findings" to anyone skimming. Before taking an empty review as a pass, confirm
-  something actually ran: a comment, a check run, anything carrying a timestamp
-  newer than the last push.
-
-## Deploy budget
-
-Netlify runs on credits: 300 a month on the free plan, and **every project is
-paused when they run out** — visitors get a "Site not available" page until the
-cycle resets. The free plan can neither buy credits nor auto recharge, so
-running out means waiting. The cycle resets on the **16th**, not the 1st.
-
-Deploys are not the only thing that spends them. A production deploy costs
-**15**, but bandwidth costs **20 per GB** and web requests **2 per 10,000** — so
-traffic drains the balance while nobody deploys at all. Deploy previews, branch
-deploys, failed builds, rollbacks and CI are free.
-
-So read the balance against the traffic as much as against the deploys.
-
-**One release, one deploy.** An `ignore` command in `netlify.toml` cancels
-every production build except the merge of release-please's release PR — the
-only merge that changes `.release-please-manifest.json`. Merging a `fix`, a
-docs change or a Dependabot bump into `main` costs nothing and publishes
-nothing; they all go live together when the release PR is merged. So merging
-is free, and **merging the release PR is the deploy**: treat it as spending 15
-credits. To publish outside a release, trigger a Netlify build hook, which the
-ignore command never cancels. Deploy previews are unaffected and still build on
-every PR.
-
-A change that is merged is therefore not live until the next release. Check
-`scripts/check-deployed.mjs` against production after merging the release PR,
-not after merging the change.
-
-If the release build fails, nothing later catches up on its own: the ignore
-command compares each merge with the one before it, not with what production
-serves, so the next ordinary merge is cancelled too and production stays on the
-previous version while GitHub has already tagged the new one. Retry the failed
-deploy in the Netlify UI — it rebuilds the release commit, which still changes
-the manifest, and failed builds cost nothing.
-
-## The stack, briefly
-
-React 18, TypeScript strict, Vite, Tailwind, React Router 7, Zustand with
-persisted and versioned state. Vitest with Testing Library; a separate
-`vitest.rls.config.ts` runs the database policy tests against Postgres.
-
-Supabase provides auth, Postgres and row-level security, hosted in the EU.
-Policies are tested — `npm run test:rls` — because nothing else verifies them.
-The client's row types live in `src/lib/database.types.ts`, generated from the
-migrations by `npm run db:types` (needs Docker). A migration that changes a
-column has to regenerate them in the same commit — `database.types.test.ts`
-replays the migrations in plain Node and fails when the committed file drifts.
-
-Stockfish 18 (the `lite-single` NNUE build) runs single-threaded in a Web
-Worker, vendored into `public/stockfish/` from a pinned release rather than
-installed. It exposes `UCI_LimitStrength` + `UCI_Elo`, so the top four levels
-set their strength directly; the two below Stockfish's 1320 floor both pin it
-there and are told apart by a depth cap alone (`Skill Level` is inert once
-`UCI_LimitStrength` is on). See `src/engine/levels.ts` for the figures and
-their caveats.
-
-Sentry reports errors only, lazily loaded, with source maps uploaded at build
-time when `SENTRY_AUTH_TOKEN` is set.
-
-### Where things live
-
-`src/features/<domain>/` holds each mode and its hooks. `src/engine/` wraps
-Stockfish. `src/store/` holds the Zustand stores. `src/utils/evaluation.ts`
-grades moves. `src/seo.ts` is the single source for page titles and which pages
-are indexable — the sitemap is generated from it at build time.
-
-### Commands
-
-`npm run dev`, `npm run ci`, `npm run test:watch`, `npm run test:rls`,
-`npm run size`, `npm run db:types`.
-
-### Configuration for this agent
+## Configuration for this agent
 
 `.claude/` is part of the repository and follows its rules: English, formatted,
 reviewed. It holds four things.
@@ -165,86 +39,16 @@ about the first time it starts here.
 
 `rules/*.md` are instructions scoped to file paths through their `paths`
 frontmatter. They load when a matching file is opened rather than at startup,
-which is what keeps this file short — the engine calibration, the test
-procedure, and the migration rules each live next to the code they govern.
+so the engine calibration, the test procedure and the migration rules are
+current where they matter without being carried through every unrelated
+session. Other agents reach the same files through the table in `AGENTS.md`.
 
-`skills/*` are the slash commands. `/pr-ready` queries the four conditions that
-block a merge and reports each with its evidence; `/main-green` is its
-counterpart for after the merge — the CI run for main's current tip and the
-scheduled workflows that go red on their own schedule. `/verify-test` runs the
-"prove the test can fail" procedure — anchor, mutation, red run, restore — and
-reports the quoted failure. `/deploy-budget` measures the Netlify credit
-position rather than trusting the figures written above.
+`skills/*` are the slash commands above. `/pr-ready` queries the four
+conditions that block a merge and reports each with its evidence; `/main-green`
+is its counterpart for after the merge — the CI run for main's current tip and
+the scheduled workflows that go red on their own schedule. `/verify-test` runs
+the "prove the test can fail" procedure — anchor, mutation, red run, restore —
+and reports the quoted failure. `/deploy-budget` measures the Netlify credit
+position rather than trusting the figures written down.
 
 `settings.local.json`, if it exists, is personal and gitignored.
-
-## Copy that restates data drifts from it
-
-The home page advertised "cinq niveaux, de 800 à 2200 Elo" for two releases
-after the ladder had six levels and different figures. Nothing failed, because
-the numbers were prose. Derive user-facing copy from the data it describes, and
-add a test that fails when someone writes the numbers back in by hand.
-
-## Where the project stands
-
-A snapshot, updated when something material changes rather than every session —
-enough to pick the work up on another machine without re-reading a transcript.
-
-**Shipped and verified in production:** the six-level difficulty ladder; the
-coach's seven-tier move grading with a legend; password
-recovery, tested end to end; a confirmation screen after registering, since
-sign-up returns no session while email confirmation is on; a lander that carries
-an emailed auth link to the screen it was for, whatever address Supabase drops
-it at; `robots.txt` and `sitemap.xml` generated from the route table; per-route
-titles and `noindex`.
-
-**The newsprint redesign, shipped in 2.5.0 (22 October 2026):** direction A,
-"Chronique", merged as one stack of four pull requests (#123, #124, #128,
-#130). Paper, ink and one red, the rubric; Newsreader; rules instead of boxes;
-moves in figurine notation. The boards are chessground (GPL-3.0-or-later)
-drawn as a printed diagram, the dark squares hatched or, on the player's
-choice, plain; every board the player plays on takes a move typed in French
-notation. The rules are in `docs/design-system.md`.
-
-**Built after 2.5.0, live with the next release:** every board is said in
-words to a screen reader — the position as its description, each move in a
-live region, and in the Piece Hunt the danger, again on each square it follows
-the champion to. No square can be visited one by one; the keyboard field is how
-a move is made.
-
-**Search Console:** the domain property is verified by DNS, the sitemap is
-submitted, and indexing has been requested for the home page. Nothing more to do
-but wait — a new domain takes days to appear, and the brand query longer.
-
-**Email:** Supabase sends auth mail from its own shared domain, not from
-chesstrainer.fr, so DMARC on this domain does not govern it. The domain's own
-mail is one OVH Zimbra Starter mailbox, `contact@chesstrainer.fr`, which also
-receives the DMARC aggregate reports. (The OVH panel also lists an empty
-"redirect" email offer for the domain; it is not where the mail lives.) DMARC
-has been at `p=reject` since 5 September 2026, after a week of aggregate
-reports came back clean with no legitimate sender failing.
-
-DKIM is active: Zimbra signs outgoing mail with `d=chesstrainer.fr`, under the
-selectors `ovhmo-selector-1` and `ovhmo-selector-2`, both CNAMEs to keys OVH
-publishes. Measured on 1 October 2026 on a real message to Gmail: SPF, DKIM and
-DMARC all `PASS`, with DKIM aligned on chesstrainer.fr. This was long recorded
-here as missing — a probe of common selector names found nothing because the
-OVH name has a hyphen before the digit; only a real message's
-`DKIM-Signature` header gives the selector reliably. Mail sent through OVH's
-SMTP is covered; mail sent "as" this address from another provider, such as
-Gmail's send-as, is not, and `reject` would refuse it.
-
-**Known and deliberately unfixed:** per-move accuracy saturates on forced mates.
-The grade now prices a slow mate by its distance, but the win-chances curve reads
-±10000 as a certainty either way, so the same move still measures 100% accurate.
-Telling those apart on that scale needs a different model, not a different
-constant, and the model was chosen rather than inherited: pinning mates lower on
-the curve was measured — at 1250 cp a slow mate reads 98.5%, at 600 cp it reads
-87.6% — and the scale, not the evidence, decides the answer. It stays at 100%,
-because the grade already judges the move and accuracy judges how close to
-winning the player stayed. A forced mate is a forced mate. Stockfish stays
-single-threaded: the migration to 18 took the `lite-single` build on purpose,
-because a threaded one needs `SharedArrayBuffer` and so COOP/COEP on every
-response. The coach's search depth (14) did not change in the migration, and a
-full 40-move analysis with the new build measured a few seconds on a desktop —
-the isolation headers buy nothing worth that constraint.
