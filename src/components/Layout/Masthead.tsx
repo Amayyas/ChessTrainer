@@ -2,8 +2,8 @@ import { Link, NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '@/components/Layout/navigation'
 import { PAGE_WIDTH } from '@/components/Layout/pageWidth'
 import DoubleRule from '@/components/UI/DoubleRule'
+import PlayerAvatar from '@/components/UI/PlayerAvatar'
 import { brand } from '@/lib/design-tokens'
-import { AVATAR_GLYPHS } from '@/lib/supabase'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn } from '@/utils/cn'
@@ -29,9 +29,11 @@ function Account({ className }: { className?: string }) {
         to={ROUTES.profile}
         className={cn(box, 'gap-2 text-caption transition-colors hover:text-rubric')}
       >
-        <span aria-hidden="true" className="font-figurine">
-          {profile ? AVATAR_GLYPHS[profile.avatar_piece] : '♟'}
-        </span>
+        <PlayerAvatar
+          piece={profile?.avatar_piece ?? 'p'}
+          photoPath={profile?.photo_path}
+          className="size-6"
+        />
         <span className="max-w-[12rem] truncate">{profile?.username ?? 'Mon profil'}</span>
       </NavLink>
     )

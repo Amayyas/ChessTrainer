@@ -1,8 +1,10 @@
 import type { Session } from '@supabase/supabase-js'
 import { create } from 'zustand'
+import { PHOTO_MESSAGES } from '@/lib/photo'
 import { isSupabaseConfigured, supabase, type AvatarPiece, type Profile } from '@/lib/supabase'
 import { USERNAME_FORMAT, USERNAME_TAKEN, type UsernameStatus } from '@/lib/username'
 import { ROUTES } from '@/routes'
+import { isPhotoErrorCode } from '../../supabase/functions/profile-photo/rules'
 
 interface AuthState {
   /** False until the stored session has been read, so guards do not flash. */
@@ -57,6 +59,16 @@ interface AuthState {
    * still checked, so an unanswered question only costs the early warning.
    */
   checkUsername: (name: string) => Promise<UsernameStatus | null>
+  /**
+   * Sends a JPEG, already squared and re-encoded, to the profile-photo
+   * function, which checks it before anyone sees it. Resolves to null once it
+   * is on the profile, or to what went wrong, in the player's words.
+   */
+  setPhoto: (jpeg: Blob) => Promise<string | null>
+  /** Takes the photo off the profile, and out of storage. Null on success. */
+  removePhoto: () => Promise<string | null>
+  /** Reports another player's current photo. */
+  reportPhoto: (target: string) => Promise<boolean>
   /** Erases the account and everything filed under it. Irreversible. */
   deleteAccount: () => Promise<boolean>
   clearDeleteError: () => void
@@ -85,6 +97,24 @@ function friendlyError(message: string): string {
   if (text.includes('profiles_username_format')) return USERNAME_FORMAT
   if (text.includes('duplicate key') || text.includes('profiles_username')) return USERNAME_TAKEN
   return 'Une erreur est survenue. Réessayez dans un instant.'
+}
+
+/**
+ * The failure code the profile-photo function answered with. A response that
+ * never arrived, or one in another shape, is a plain failure.
+ */
+async function photoFailure(error: unknown): Promise<string> {
+  const context = (error as { context?: unknown }).context
+  if (context instanceof Response) {
+    try {
+      const body: unknown = await context.json()
+      const code = (body as { error?: unknown } | null)?.error
+      if (isPhotoErrorCode(code)) return PHOTO_MESSAGES[code]
+    } catch {
+      // Not JSON: fall through.
+    }
+  }
+  return PHOTO_MESSAGES.failed
 }
 
 /**
@@ -239,6 +269,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const userId = get().session?.user.id
     if (!client || !userId) return false
     set({ deleteError: null })
+    // The photo first: storage is not Postgres, so the account's cascade does
+    // not reach it, and once the account is gone nobody could ask for it to
+    // be removed. Stopping here keeps the erasure whole rather than partial.
+    if (get().profile?.photo_path && (await get().removePhoto())) {
+      set({
+        deleteError:
+          "Votre photo n'a pas pu être effacée, la suppression est interrompue. Réessayez dans un instant.",
+      })
+      return false
+    }
     // The server takes the account from the session and cascades the delete,
     // so nothing is left behind and nobody can aim this at another account.
     const { error } = await client.rpc('delete_my_account')
@@ -298,6 +338,33 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const { data, error } = await supabase.rpc('username_status', { candidate: name })
     if (error) return null
     return data === 'invalid' || data === 'taken' || data === 'available' ? data : null
+  },
+
+  setPhoto: async (jpeg) => {
+    const { session, profile } = get()
+    if (!supabase || !session || !profile) return PHOTO_MESSAGES.failed
+    const { data, error } = await supabase.functions.invoke<{ photo_path: string | null }>(
+      'profile-photo',
+      { body: jpeg, headers: { 'Content-Type': 'image/jpeg' } },
+    )
+    if (error || !data) return photoFailure(error)
+    set({ profile: { ...profile, photo_path: data.photo_path } })
+    return null
+  },
+
+  removePhoto: async () => {
+    const { session, profile } = get()
+    if (!supabase || !session || !profile) return PHOTO_MESSAGES.failed
+    const { error } = await supabase.functions.invoke('profile-photo', { method: 'DELETE' })
+    if (error) return photoFailure(error)
+    set({ profile: { ...profile, photo_path: null } })
+    return null
+  },
+
+  reportPhoto: async (target) => {
+    if (!supabase || !get().session) return false
+    const { error } = await supabase.rpc('report_photo', { p_target: target })
+    return !error
   },
 
   clearError: () => set({ error: null }),

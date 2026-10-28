@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, PageHeader, Tag } from '@/components/UI'
 import BoxScore from '@/components/UI/BoxScore'
+import PlayerAvatar from '@/components/UI/PlayerAvatar'
 import Input from '@/components/UI/Input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
+import PhotoPicker from '@/features/profile/PhotoPicker'
 import UsernameForm from '@/features/profile/UsernameForm'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
@@ -93,9 +95,12 @@ export default function ProfilePage() {
             ) : session && authProfile ? (
               <>
                 <div className="flex items-center gap-4">
-                  <span aria-hidden="true" className="font-figurine text-[2.75rem] leading-none">
-                    {AVATAR_GLYPHS[authProfile.avatar_piece]}
-                  </span>
+                  <PlayerAvatar
+                    piece={authProfile.avatar_piece}
+                    photoPath={authProfile.photo_path}
+                    className="size-14"
+                    glyphClassName="text-[2.75rem] leading-none"
+                  />
                   <span>
                     <span className="block text-heading font-semibold">{authProfile.username}</span>
                     <span className="block text-caption italic text-ink-soft">
@@ -106,8 +111,12 @@ export default function ProfilePage() {
 
                 <UsernameForm current={authProfile.username} />
 
+                <PhotoPicker photoPath={authProfile.photo_path} />
+
                 <div>
-                  <p className="mb-1.5 text-caption font-semibold">Avatar</p>
+                  <p className="mb-1.5 text-caption font-semibold">
+                    {authProfile.photo_path ? 'Pièce, affichée si la photo est retirée' : 'Avatar'}
+                  </p>
                   <ToggleGroup
                     type="single"
                     variant="tiles"
