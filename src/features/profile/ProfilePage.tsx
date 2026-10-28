@@ -5,6 +5,7 @@ import BoxScore from '@/components/UI/BoxScore'
 import Input from '@/components/UI/Input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import AccuracyHistoryPanel from '@/features/progression/AccuracyHistoryPanel'
+import UsernameForm from '@/features/profile/UsernameForm'
 import LevelBar from '@/features/progression/LevelBar'
 import { BADGES } from '@/features/progression/badges'
 import { levelFromXp } from '@/features/progression/levels'
@@ -21,9 +22,8 @@ import { cn } from '@/utils/cn'
 import { formatPercent } from '@/utils/format'
 
 /**
- * Profile: level, global statistics and the badge
- * collection. The account details — pseudonym, avatar, sign-up
- * date — arrive with authentication.
+ * Profile: level, global statistics and the badge collection, and for a
+ * signed-in player the account itself — pseudonym, avatar, sign-up date.
  */
 const COLUMN_HEAD = 'text-kicker font-semibold uppercase'
 
@@ -103,6 +103,8 @@ export default function ProfilePage() {
                     </span>
                   </span>
                 </div>
+
+                <UsernameForm current={authProfile.username} />
 
                 <div>
                   <p className="mb-1.5 text-caption font-semibold">Avatar</p>
