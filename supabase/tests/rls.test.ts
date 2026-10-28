@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Client } from 'pg'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { USERNAME_ACCENTED_LETTERS } from '../../src/lib/username'
 
 /**
  * The policies in supabase/migrations, executed rather than read.
@@ -205,6 +206,77 @@ describe('the columns a player may write', () => {
       asUser(alice, 'update profiles set created_at = now() where id = $1', [alice]),
     )
     expect(error.message).toMatch(/permission denied/i)
+  })
+})
+
+describe('the name a player may take', () => {
+  /** Alice renames herself; resolves to the error, or null when it went through. */
+  async function rename(name: string): Promise<Error | null> {
+    const point = `rename_${(savepoints += 1)}`
+    await db.query(`savepoint ${point}`)
+    try {
+      await asUser(alice, 'update profiles set username = $1 where id = $2', [name, alice])
+      await db.query(`release savepoint ${point}`)
+      return null
+    } catch (error) {
+      await db.query(`rollback to savepoint ${point}`)
+      return error as Error
+    }
+  }
+
+  it("refuses another player's name with a different accent or case", async () => {
+    // Bob is "bob". Each of these would pass for him on the leaderboard.
+    for (const lookalike of ['Bob', 'BÓB', 'bôb']) {
+      const error = await rename(lookalike)
+      expect(error?.message, lookalike).toMatch(/profiles_username_key/)
+    }
+  })
+
+  it('refuses what the format does not allow', async () => {
+    for (const name of ['al ice', 'al', 'a'.repeat(25), 'alice!', 'cœur', 'e\u0301ric']) {
+      const error = await rename(name)
+      // "al" trips the original length check before the format one; either
+      // way the row is refused by a constraint, which is what matters.
+      expect(error?.message, name).toMatch(/violates check constraint "profiles_username_/)
+    }
+  })
+
+  it('accepts every accented letter the client offers', async () => {
+    // The client checks the format before asking the server; a letter it
+    // allows and the database refuses would fail only after the player
+    // submitted, with a message that contradicts the form.
+    for (const letter of USERNAME_ACCENTED_LETTERS) {
+      expect(await rename(`ab${letter}`), letter).toBeNull()
+    }
+  })
+
+  it('tells a visitor whether a name is free, ignoring accents and case', async () => {
+    const [row] = await asAnon<{ taken: string; free: string; bad: string }>(
+      `select username_status('BÖB') as taken, username_status('zoé') as free,
+              username_status('a b') as bad`,
+    )
+    expect(row).toEqual({ taken: 'taken', free: 'available', bad: 'invalid' })
+  })
+
+  it("does not count a player's own name as taken by them", async () => {
+    const [row] = await asUser<{ status: string }>(
+      alice,
+      "select username_status('Alîce') as status",
+    )
+    expect(row.status).toBe('available')
+  })
+
+  it('keeps the accents a player signs up with', async () => {
+    const zoe = randomUUID()
+    // Decomposed on purpose: "e" followed by a combining acute, as some
+    // keyboards send it. Stripped character by character, it would become "Zoe".
+    await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)', [
+      zoe,
+      'zoe@example.test',
+      { username: 'Zoe\u0301' },
+    ])
+    const { rows } = await db.query('select username from profiles where id = $1', [zoe])
+    expect(rows[0].username).toBe('Zoé')
   })
 })
 

@@ -176,6 +176,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      is_valid_username: {
+        Args: { name: string }
+        Returns: boolean
+      }
       max_captures_per_round: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -208,6 +212,18 @@ export type Database = {
           p_score: number
         }
         Returns: number
+      }
+      username_charset: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      username_key: {
+        Args: { name: string }
+        Returns: string
+      }
+      username_status: {
+        Args: { candidate: string }
+        Returns: string
       }
     }
     Enums: {
