@@ -284,6 +284,37 @@ describe('useAuthStore — photo', () => {
     expect(useAuthStore.getState().profile?.photo_path).toBeNull()
   })
 
+  it('keeps a piece chosen while the photo was being checked', async () => {
+    api.invoke.mockImplementation(async () => {
+      useAuthStore.setState({ profile: { ...profile, avatar_piece: 'q' } })
+      return ok({ photo_path: 'player-1/new.jpg' })
+    })
+
+    await useAuthStore.getState().setPhoto(jpeg)
+
+    expect(useAuthStore.getState().profile).toMatchObject({
+      avatar_piece: 'q',
+      photo_path: 'player-1/new.jpg',
+    })
+  })
+
+  it('leaves a player who signed out meanwhile signed out', async () => {
+    for (const send of [
+      () => useAuthStore.getState().setPhoto(jpeg),
+      () => useAuthStore.getState().removePhoto(),
+    ]) {
+      useAuthStore.setState({ session, profile })
+      api.invoke.mockImplementation(async () => {
+        useAuthStore.setState({ session: null, profile: null })
+        return ok({ photo_path: null })
+      })
+
+      await send()
+
+      expect(useAuthStore.getState().profile).toBeNull()
+    }
+  })
+
   it('reports another player through the database, which reads the photo itself', async () => {
     api.rpc.mockResolvedValue(ok(null))
 

@@ -348,7 +348,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       { body: jpeg, headers: { 'Content-Type': 'image/jpeg' } },
     )
     if (error || !data) return photoFailure(error)
-    set({ profile: { ...profile, photo_path: data.photo_path } })
+    // The upload waits on the analysis, long enough for the player to change
+    // their piece or sign out meanwhile: write the photo alone, and only onto
+    // the profile that sent it.
+    const photo_path = data.photo_path
+    set((state) =>
+      state.profile?.id === profile.id ? { profile: { ...state.profile, photo_path } } : {},
+    )
     return null
   },
 
@@ -357,7 +363,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (!supabase || !session || !profile) return PHOTO_MESSAGES.failed
     const { error } = await supabase.functions.invoke('profile-photo', { method: 'DELETE' })
     if (error) return photoFailure(error)
-    set({ profile: { ...profile, photo_path: null } })
+    set((state) =>
+      state.profile?.id === profile.id ? { profile: { ...state.profile, photo_path: null } } : {},
+    )
     return null
   },
 
