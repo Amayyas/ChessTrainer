@@ -47,6 +47,7 @@ const row = (id: number, userId: string, score: number, captures = 0): Leaderboa
   userId,
   username: userId,
   avatarPiece: 'n',
+  photoPath: null,
   piece: 'q',
   score,
   captures,

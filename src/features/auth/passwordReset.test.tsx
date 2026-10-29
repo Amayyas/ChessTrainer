@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
 import RegisterPage from '@/features/auth/RegisterPage'
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
+import { USERNAME_FORMAT, USERNAME_TAKEN } from '@/lib/username'
 import { useAuthStore } from '@/store/useAuthStore'
 
 // No environment is configured under test, so the real client is null. A stand
@@ -128,6 +129,86 @@ describe('requestPasswordReset', () => {
 })
 
 describe('RegisterPage', () => {
+  const checkUsername = vi.fn()
+
+  beforeEach(() => {
+    checkUsername.mockReset().mockResolvedValue('available')
+    useAuthStore.setState({ checkUsername })
+  })
+
+  function fillIn(username: string) {
+    fireEvent.change(screen.getByLabelText('Pseudo'), { target: { value: username } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@example.com' } })
+    fireEvent.change(screen.getByLabelText(/Mot de passe/), { target: { value: 'motdepasse' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Créer mon compte' }))
+  }
+
+  it('refuses a taken name before the account is created', async () => {
+    // Created anyway, the account would carry the name with eight random
+    // characters appended by the database, and the player would find out on
+    // their profile.
+    checkUsername.mockResolvedValue('taken')
+    const signUp = vi.fn()
+    useAuthStore.setState({ signUp })
+
+    renderPage(<RegisterPage />)
+    fillIn('magnus')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(USERNAME_TAKEN)
+    expect(signUp).not.toHaveBeenCalled()
+  })
+
+  it('refuses a space without asking the server', async () => {
+    const signUp = vi.fn()
+    useAuthStore.setState({ signUp })
+
+    renderPage(<RegisterPage />)
+    fillIn('Ré mi')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(USERNAME_FORMAT)
+    expect(checkUsername).not.toHaveBeenCalled()
+    expect(signUp).not.toHaveBeenCalled()
+  })
+
+  it('sends the name composed and trimmed', async () => {
+    // "e" plus a combining accent, as some keyboards type "é", and a stray
+    // trailing space: neither is in the character set the database accepts.
+    const signUp = vi.fn().mockResolvedValue('signed-in')
+    useAuthStore.setState({ signUp })
+
+    renderPage(<RegisterPage />)
+    fillIn(' Ze\u0301phyr ')
+
+    await waitFor(() => expect(signUp).toHaveBeenCalled())
+    expect(checkUsername).toHaveBeenCalledWith('Zéphyr')
+    expect(signUp.mock.calls[0]?.[0]).toMatchObject({ username: 'Zéphyr' })
+  })
+
+  it('ignores an answer about a name the player has since changed', async () => {
+    let answer: (status: string) => void = () => {}
+    checkUsername.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+
+    renderPage(<RegisterPage />)
+    const field = screen.getByLabelText('Pseudo')
+    fireEvent.change(field, { target: { value: 'magnus' } })
+    fireEvent.blur(field)
+    fireEvent.change(field, { target: { value: 'hikaru' } })
+    await act(async () => answer('taken'))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('goes ahead when the server cannot be asked', async () => {
+    checkUsername.mockResolvedValue(null)
+    const signUp = vi.fn().mockResolvedValue('signed-in')
+    useAuthStore.setState({ signUp })
+
+    renderPage(<RegisterPage />)
+    fillIn('magnus')
+
+    await waitFor(() => expect(signUp).toHaveBeenCalled())
+  })
+
   it('sends the player to their profile only when a session came back', async () => {
     const signUp = vi.fn().mockResolvedValue('signed-in')
     useAuthStore.setState({ signUp })

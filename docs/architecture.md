@@ -431,17 +431,25 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 
 ### Access rules
 
-| Table          | Read                                     | Write                                                 |
-| -------------- | ---------------------------------------- | ----------------------------------------------------- |
-| `profiles`     | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only** |
-| `scores`       | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**   |
-| `progression`  | **private** to its owner                 | owner only                                            |
-| `achievements` | public — badges can be shown off         | insert under one's own id                             |
+| Table                      | Read                                     | Write                                                                 |
+| -------------------------- | ---------------------------------------- | --------------------------------------------------------------------- |
+| `profiles`                 | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only**                 |
+| `scores`                   | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**                   |
+| `progression`              | **private** to its owner                 | owner only                                                            |
+| `achievements`             | public — badges can be shown off         | insert under one's own id                                             |
+| `photo_*`, `hidden_photos` | nobody                                   | nobody — only through `report_photo()` and the profile-photo function |
+
+`profiles.photo_path` is written by no client: the profile-photo Edge Function
+sets it once the photo has passed moderation. See
+[moderation.md](moderation.md).
 
 > **The security point worth remembering.** Row Level Security filters **rows**,
 > never **columns**. Checking row ownership is therefore not enough: without a
 > column-level privilege, a player could write any field of their own row —
-> including their XP. Hence the restricted `GRANT` on `profiles`.
+> including their XP. Hence the restricted `GRANT` on `profiles`. And a column
+> grant only restricts a role that holds nothing more: the table-level `ALL`
+> Supabase used to grant by default has to be revoked first, which
+> `20261029090000_profile_photo.sql` does.
 
 ### Trust boundary
 
