@@ -460,6 +460,59 @@ describe('reporting a photo', () => {
     await asService('select begin_photo_upload($1)', [bob])
   })
 
+  async function takeDownBobsPhoto(): Promise<void> {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+  }
+
+  it('restores a photo the review clears, and forgets the reports against it', async () => {
+    await takeDownBobsPhoto()
+    await db.query('set local role postgres')
+    await db.query('select restore_photo($1, $2)', [bob, bobsPhoto])
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+    await asService('select begin_photo_upload($1)', [bob])
+
+    // Had the old reports been kept, this one alone would take it down again.
+    await asUser(reporters[0]!, 'select report_photo($1)', [bob])
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('puts a restored photo back in the review queue when it is taken down again', async () => {
+    await takeDownBobsPhoto()
+    await db.query('set local role postgres')
+    await db.query('select restore_photo($1, $2)', [bob, bobsPhoto])
+    await takeDownBobsPhoto()
+
+    expect(await bobsPhotoNow()).toBeNull()
+    const { rows } = await db.query(
+      'select count(*)::int as n from hidden_photos where user_id = $1 and released_at is null',
+      [bob],
+    )
+    expect(rows[0].n).toBe(1)
+    const error = await refused(() => asService('select begin_photo_upload($1)', [bob]))
+    expect((error as Error & { hint?: string }).hint).toBe('under_review')
+  })
+
+  it('refuses to restore a photo to an account that no longer exists', async () => {
+    await takeDownBobsPhoto()
+    await asUser(bob, 'select delete_my_account()')
+    await db.query('set local role postgres')
+    const error = await refused(() => db.query('select restore_photo($1, $2)', [bob, bobsPhoto]))
+    expect(error.message).toMatch(/no longer exists/)
+  })
+
+  it('leaves restoring a photo to the owner of the site', async () => {
+    await takeDownBobsPhoto()
+    for (const attempt of [
+      () => asUser(bob, 'select restore_photo($1, $2)', [bob, bobsPhoto]),
+      () => asService('select restore_photo($1, $2)', [bob, bobsPhoto]),
+    ]) {
+      const error = await refused(attempt)
+      expect(error.message).toMatch(/permission denied/i)
+    }
+  })
+
   it('keeps the review record when the player deletes their account', async () => {
     // The record is the only pointer left to a file still in the bucket.
     for (const reporter of reporters) {

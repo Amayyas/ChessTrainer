@@ -303,6 +303,10 @@ export type Database = {
         Args: { p_target: string }
         Returns: undefined
       }
+      restore_photo: {
+        Args: { p_path: string; p_user: string }
+        Returns: undefined
+      }
       set_profile_photo: {
         Args: { p_path: string; p_user: string }
         Returns: string

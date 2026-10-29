@@ -150,9 +150,12 @@ begin
     select count(*) from public.photo_reports where target = p_target and photo_path = v_path
   ) >= public.photo_report_threshold() then
     update public.profiles set photo_path = null where id = p_target and photo_path = v_path;
+    -- A photo restored after a review and reported again goes back in the
+    -- queue: the row it already has is reopened rather than left released.
     insert into public.hidden_photos (user_id, photo_path)
     values (p_target, v_path)
-    on conflict do nothing;
+    on conflict (user_id, photo_path) do update
+      set hidden_at = now(), released_at = null;
   end if;
 end;
 $$;
@@ -222,6 +225,44 @@ begin
   return v_old;
 end;
 $$;
+
+-- ------------------------------------------------------ the owner's side --
+-- For a photo the review finds the reports were wrong about: put it back,
+-- release the player, and forget those reports, all at once. Left in place,
+-- the reports would still count, so one more would take the photo down again.
+-- Refuses when the account is gone: there is no profile to put it back on, and
+-- the file is to be deleted in Storage instead (docs/moderation.md).
+create or replace function public.restore_photo(p_user uuid, p_path text)
+returns void
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1 from public.hidden_photos
+    where user_id = p_user and photo_path = p_path and released_at is null
+  ) then
+    raise exception 'no photo % of player % is awaiting review', p_path, p_user
+      using errcode = 'P0002';
+  end if;
+
+  update public.profiles set photo_path = p_path where id = p_user;
+  if not found then
+    raise exception 'player % no longer exists: delete the file in Storage instead', p_user
+      using errcode = 'P0002';
+  end if;
+
+  update public.hidden_photos set released_at = now()
+    where user_id = p_user and photo_path = p_path;
+  delete from public.photo_reports where target = p_user and photo_path = p_path;
+end;
+$$;
+
+-- Run from the dashboard's SQL editor, as the owner. No client and not the
+-- Edge Function: nothing but the review decides a photo was wrongly reported.
+revoke execute on function public.restore_photo(uuid, text)
+  from public, anon, authenticated, service_role;
 
 revoke execute on function public.begin_photo_upload(uuid) from public, anon, authenticated;
 revoke execute on function public.set_profile_photo(uuid, text) from public, anon, authenticated;

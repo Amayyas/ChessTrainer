@@ -69,18 +69,29 @@ In the Supabase dashboard:
    `select * from hidden_photos where released_at is null order by hidden_at;`
 2. **Storage → avatars:** open the file at `photo_path` and look at it.
 3. Then do one of two things.
-   - **The reports were wrong.** Put the photo back and release the player:
+   - **The reports were wrong.** Put the photo back:
 
      ```sql
-     update profiles set photo_path = '<photo_path>' where id = '<user_id>';
+     select restore_photo('<user_id>', '<photo_path>');
+     ```
+
+     In one step it sets the photo on the profile again, releases the player
+     and deletes the reports against that photo. Left behind, those reports
+     would still count, and a single new one would take it down again. If the
+     photo is reported back to the threshold later, it returns to this queue.
+
+   - **The reports were right, or the account is gone.** `restore_photo`
+     refuses a player who has since deleted their account: there is no profile
+     to put the photo back on, and the file is still public in the bucket.
+     Either way, delete the file in **Storage**, not in SQL: a SQL delete
+     leaves the file orphaned in the bucket. Then mark the review done, or,
+     for a player who still exists, leave the row unreleased to keep them on
+     their piece:
+
+     ```sql
      update hidden_photos set released_at = now()
        where user_id = '<user_id>' and photo_path = '<photo_path>';
      ```
-
-   - **The reports were right.** Delete the file in **Storage**, not in SQL: a
-     SQL delete leaves the file orphaned in the bucket. Then either release the
-     player, so they can send another photo, or leave the row unreleased to
-     keep them on their piece.
 
 A photo the player removes themselves is deleted by the function. A hidden
 photo is not, because it waits for this review.
