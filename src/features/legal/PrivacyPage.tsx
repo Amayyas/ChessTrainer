@@ -147,6 +147,8 @@ export default function PrivacyPage() {
           </Link>
           . La suppression est immédiate et définitive : elle efface le compte, les scores, la
           progression, les badges et la photo, sans étape intermédiaire ni délai de rétractation.
+          Seule exception : une photo masquée après des signalements est conservée jusqu'à sa
+          vérification, puis supprimée.
         </p>
         <p>
           Vous disposez également des droits d'accès, de rectification, de portabilité et
