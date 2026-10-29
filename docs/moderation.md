@@ -93,8 +93,10 @@ In the Supabase dashboard:
        where user_id = '<user_id>' and photo_path = '<photo_path>';
      ```
 
-A photo the player removes themselves is deleted by the function. A hidden
-photo is not, because it waits for this review.
+When a player removes their photo, or deletes their account, the function
+deletes every file in their folder, not only the one on the profile: a replaced
+photo whose deletion failed at the time is caught then. A hidden photo awaiting
+review is kept, because it waits for this review.
 
 ## Deploying
 

@@ -11,8 +11,10 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3'
 import {
   checkUpload,
+  filesToDelete,
   MAX_PHOTO_BYTES,
   type PhotoErrorCode,
+  readAtMost,
   readModeration,
   statusFor,
   toBase64,
@@ -92,19 +94,42 @@ async function upload(admin: SupabaseClient, userId: string, bytes: Uint8Array) 
     await admin.storage.from(BUCKET).remove([path])
     return fail('failed')
   }
+  // Not fatal if it fails: the new photo is in place, and removing the photo
+  // later deletes every file in the folder, this one included.
   if (typeof previous === 'string') await admin.storage.from(BUCKET).remove([previous])
   return reply(200, { photo_path: path })
 }
 
+// The files first, the profile after. The other way round, a failed deletion
+// left the file public with the profile no longer pointing at it, and a retry
+// found nothing to delete: an account erased with its photo still online.
+// Stopped halfway now, the profile points at a missing file, which shows the
+// piece, and a retry finishes the job.
 async function remove(admin: SupabaseClient, userId: string) {
-  const { data: previous, error } = await admin.rpc('clear_profile_photo', { p_user: userId })
-  if (error) return fail('failed')
-  // Only the photo on the profile: one taken down by reports stays in the
-  // bucket until it has been reviewed.
-  if (typeof previous === 'string') {
-    const { error: removed } = await admin.storage.from(BUCKET).remove([previous])
+  const { data: files, error: listed } = await admin.storage
+    .from(BUCKET)
+    .list(userId, { limit: 1000 })
+  if (listed) return fail('failed')
+  // A photo taken down by reports stays in the bucket until it is reviewed.
+  const { data: held, error: heldError } = await admin
+    .from('hidden_photos')
+    .select('photo_path')
+    .eq('user_id', userId)
+    .is('released_at', null)
+  if (heldError) return fail('failed')
+
+  const paths = filesToDelete(
+    userId,
+    files.map((file) => file.name),
+    held.map((row) => row.photo_path as string),
+  )
+  if (paths.length > 0) {
+    const { error: removed } = await admin.storage.from(BUCKET).remove(paths)
     if (removed) return fail('failed')
   }
+
+  const { error } = await admin.rpc('clear_profile_photo', { p_user: userId })
+  if (error) return fail('failed')
   return reply(200, { photo_path: null })
 }
 
@@ -125,11 +150,10 @@ Deno.serve(async (request) => {
 
   if (request.method === 'DELETE') return remove(admin, user.id)
   if (request.method === 'POST') {
-    // Before reading the body: an oversized one is refused without holding it.
-    if (Number(request.headers.get('Content-Length') ?? 0) > MAX_PHOTO_BYTES) {
-      return fail('too_large')
-    }
-    return upload(admin, user.id, new Uint8Array(await request.arrayBuffer()))
+    // An oversized body is refused before it is all held, whatever it declares.
+    const bytes = await readAtMost(request.body, MAX_PHOTO_BYTES)
+    if (!bytes) return fail('too_large')
+    return upload(admin, user.id, bytes)
   }
   return reply(405, { error: 'failed' })
 })

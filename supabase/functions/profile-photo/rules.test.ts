@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   checkUpload,
+  filesToDelete,
   isJpeg,
   MAX_PHOTO_BYTES,
   PHOTO_ERROR_CODES,
+  readAtMost,
   readModeration,
   statusFor,
   toBase64,
@@ -90,5 +92,53 @@ describe('toBase64', () => {
   it('encodes a photo larger than one slice, as Node does', () => {
     const bytes = new Uint8Array(100_000).map((_, i) => (i * 31) % 256)
     expect(toBase64(bytes)).toBe(Buffer.from(bytes).toString('base64'))
+  })
+})
+
+/** A body arriving in chunks, as a chunked request does, with no length. */
+function streamOf(...chunks: number[]): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      for (const size of chunks) controller.enqueue(new Uint8Array(size))
+      controller.close()
+    },
+  })
+}
+
+describe('reading the body', () => {
+  it('keeps a body at the limit, whole', async () => {
+    const bytes = await readAtMost(streamOf(MAX_PHOTO_BYTES - 10, 10), MAX_PHOTO_BYTES)
+    expect(bytes?.length).toBe(MAX_PHOTO_BYTES)
+  })
+
+  it('gives up on one byte over, however the body is cut', async () => {
+    expect(await readAtMost(streamOf(MAX_PHOTO_BYTES, 1), MAX_PHOTO_BYTES)).toBeNull()
+  })
+
+  it('stops reading once over, rather than holding the rest', async () => {
+    // A megabyte, a kilobyte at a time: finite, so a reader that never stops
+    // fails this test rather than hanging it.
+    let pulled = 0
+    const long = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1
+        if (pulled > 1024) controller.close()
+        else controller.enqueue(new Uint8Array(1024))
+      },
+    })
+    expect(await readAtMost(long, 4096)).toBeNull()
+    expect(pulled).toBeLessThan(10)
+  })
+})
+
+describe('the files removed with a photo', () => {
+  const user = 'u1'
+
+  it('include every file in the folder, not only the one on the profile', () => {
+    expect(filesToDelete(user, ['a.jpg', 'orphan.jpg'], [])).toEqual(['u1/a.jpg', 'u1/orphan.jpg'])
+  })
+
+  it('leave a photo held for review in place', () => {
+    expect(filesToDelete(user, ['a.jpg', 'held.jpg'], ['u1/held.jpg'])).toEqual(['u1/a.jpg'])
   })
 })

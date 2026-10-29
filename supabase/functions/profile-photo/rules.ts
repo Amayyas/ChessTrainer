@@ -92,3 +92,46 @@ export function toBase64(bytes: Uint8Array): string {
   }
   return btoa(binary)
 }
+
+/**
+ * The body, read no further than `limit` bytes: null once it goes over. The
+ * declared Content-Length is the client's word, absent from a chunked body, so
+ * the count is kept on what actually arrives, before it is all held in memory.
+ */
+export async function readAtMost(
+  body: ReadableStream<Uint8Array> | null,
+  limit: number,
+): Promise<Uint8Array | null> {
+  if (!body) return new Uint8Array(0)
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.length
+    if (total > limit) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.length
+  }
+  return bytes
+}
+
+/**
+ * Which files in a player's folder to delete when they remove their photo:
+ * all of them except those held for review. Every file, not only the one on
+ * the profile, so a replaced photo whose deletion once failed is caught here
+ * rather than left public with nothing pointing at it.
+ */
+export function filesToDelete(userId: string, names: string[], held: string[]): string[] {
+  const keep = new Set(held)
+  return names.map((name) => `${userId}/${name}`).filter((path) => !keep.has(path))
+}
