@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.6.0](https://github.com/Amayyas/ChessTrainer/compare/v2.5.0...v2.6.0) (2026-10-29)
+
+
+### Features
+
+* **auth:** check the chosen username on the sign-up form ([02843f7](https://github.com/Amayyas/ChessTrainer/commit/02843f7a9243e5c2bc2dba799d61545d72204eec))
+* **board:** read the boards to a screen reader ([ee7339d](https://github.com/Amayyas/ChessTrainer/commit/ee7339d71e547f0cdd3f5655576c143d81474dbf))
+* **board:** read the boards to a screen reader ([f2fd00d](https://github.com/Amayyas/ChessTrainer/commit/f2fd00dff23eed0ab6c02c234afb7137b5a6a9a5))
+* **board:** say a position, a move and a hunt in words ([d8bcf77](https://github.com/Amayyas/ChessTrainer/commit/d8bcf775a96214ffeb3c8712d7ad4322bfb74b76))
+* **csp:** let the site load players' photos from Supabase Storage ([306371f](https://github.com/Amayyas/ChessTrainer/commit/306371fe9138120a419a4a988d19191f5f60a70d))
+* **db:** accept accented usernames and say whether one is free ([ca35a85](https://github.com/Amayyas/ChessTrainer/commit/ca35a851d8fb00b1dc052a7b1b7936ae1b5394b9))
+* **db:** store a checked profile photo and take it down on reports ([db68863](https://github.com/Amayyas/ChessTrainer/commit/db6886324687463097014a897d6eae45fe48aa33))
+* **functions:** check a profile photo before it is stored ([f8f88ce](https://github.com/Amayyas/ChessTrainer/commit/f8f88cef00740f1ab1c200b78c1cf4d346208ca8))
+* **hunt:** read the Piece Hunt's board to a screen reader ([669c8ca](https://github.com/Amayyas/ChessTrainer/commit/669c8ca7e841b6486ffa60605c79aee57834c2ad))
+* **leaderboard:** show players' photos and let them be reported ([d004b59](https://github.com/Amayyas/ChessTrainer/commit/d004b5956004daf8cca2102773a6ac183a9401b3))
+* **legal:** describe the profile photo in the privacy policy ([5be973e](https://github.com/Amayyas/ChessTrainer/commit/5be973e34a2164b5036f31bbd04bff4fa71303f5))
+* profile photos, checked before publication and taken down on reports ([0632b3a](https://github.com/Amayyas/ChessTrainer/commit/0632b3ad3e4d42bea435194e0e162f850a4a4f40))
+* **profile:** let a player change their username ([431ea2c](https://github.com/Amayyas/ChessTrainer/commit/431ea2c36dc5db83f13e4ff39b0e42aa38f5e11d))
+* **profile:** let a player use a photo from their device as avatar ([6685112](https://github.com/Amayyas/ChessTrainer/commit/66851123f45ce43629f31a32d09ad714f23a01b9))
+* **seo:** publish llms.txt, built from the pages the sitemap lists ([6de64d0](https://github.com/Amayyas/ChessTrainer/commit/6de64d068d6a06f93a16526f309fcf30cabafb6b))
+
+
+### Bug Fixes
+
+* **auth:** ignore a username answer about a name since changed ([f86388a](https://github.com/Amayyas/ChessTrainer/commit/f86388ac9a32ec22de5e2481fb5c95157a179921))
+* **ci:** drop the braces exception now its advisory is withdrawn ([cc740bc](https://github.com/Amayyas/ChessTrainer/commit/cc740bcf50c3c88ee6e4ac03a64103e784ee0fdb))
+* **db:** keep clients off profiles.photo_path despite default grants ([dab091a](https://github.com/Amayyas/ChessTrainer/commit/dab091af28f57bce4a342d7f2dcdaf4e98924a93))
+* **db:** rename usernames the new rule refuses before enforcing it ([144f818](https://github.com/Amayyas/ChessTrainer/commit/144f8188994086c6997ec33b077efdb2236c5337))
+* **db:** restore a wrongly reported photo in one step, and requeue it ([6981a7f](https://github.com/Amayyas/ChessTrainer/commit/6981a7f951ad82e41b0397b39ad8937c6ce8681c))
+* **db:** run the policy tests under Supabase's default grants ([4b5bb41](https://github.com/Amayyas/ChessTrainer/commit/4b5bb41b4158c1cbc3af8aec4119c84796db8563))
+* **deps:** clear the audit gate's three blocking findings ([45b2c0f](https://github.com/Amayyas/ChessTrainer/commit/45b2c0f2ba55bfde4e4b573b54e029f6016615e4))
+* **deps:** lift Lighthouse CI's puppeteer-core past the zod advisory ([0301f6b](https://github.com/Amayyas/ChessTrainer/commit/0301f6bfd295035c028f191c4f0fec666f59158c))
+* **deps:** take body-parser 1.20.9 under Lighthouse CI ([a9dfc3c](https://github.com/Amayyas/ChessTrainer/commit/a9dfc3ca68962f805745dd7ff8cc78c94fd2b100))
+* **hunt:** never refill the board under the champion ([8dbe26d](https://github.com/Amayyas/ChessTrainer/commit/8dbe26d5982086e71c474f57a8e581798eaba738))
+* **hunt:** never refill the board under the champion ([4f9f964](https://github.com/Amayyas/ChessTrainer/commit/4f9f964e9b6b6c98d749ee34719e26ded4a48392))
+* **netlify:** answer /.well-known/ with a 404, not the app ([495d226](https://github.com/Amayyas/ChessTrainer/commit/495d22697d6231806907bf4ae4f394a250dd08a3))
+* **photo:** delete the files before the pointer, and cap the body as it is read ([00bbc84](https://github.com/Amayyas/ChessTrainer/commit/00bbc84f01c23315c5e77d62299a7644c3238b8c))
+* **profile:** clear a failed rename's message when a retry succeeds ([2e23f19](https://github.com/Amayyas/ChessTrainer/commit/2e23f190b0195074f24fefceb9a915751207d869))
+* **profile:** write a checked photo onto the current profile, not a stale copy ([94fc5f2](https://github.com/Amayyas/ChessTrainer/commit/94fc5f2f17700da611d2533ea25641bd92ea544d))
+* **seo:** escape a backslash in llms.txt link text ([2dd9d51](https://github.com/Amayyas/ChessTrainer/commit/2dd9d518feafbbff23ff26a1c3e446a3f1a9f144))
+* **seo:** publish llms.txt, and answer /.well-known/ with a 404 ([b913376](https://github.com/Amayyas/ChessTrainer/commit/b9133765a1d355b25929c915fe8b2c83dce203a6))
+
 ## [2.5.0](https://github.com/Amayyas/ChessTrainer/compare/v2.4.0...v2.5.0) (2026-10-22)
 
 
