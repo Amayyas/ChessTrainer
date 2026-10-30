@@ -15,7 +15,7 @@ was worth, and turns practice into something you actually come back to.
 Every mode is playable without an account. The interface is in French — the app
 targets French-speaking learners — while the codebase is English throughout.
 
-[![The AI Coach: an annotated game, a live evaluation and the best move drawn on the board](docs/screenshots/coach.png)](https://chesstrainer.fr/coach)
+[![The AI Coach: a game played move by move, each move graded, the evaluation and the best move redrawn after every one](docs/screenshots/coach.gif)](https://chesstrainer.fr/coach)
 
 ## What it does
 
