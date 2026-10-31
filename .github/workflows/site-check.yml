@@ -39,4 +39,6 @@ jobs:
           persist-credentials: false
 
       - name: check-deployed
-        run: node scripts/check-deployed.mjs "${{ inputs.base-url || 'https://chesstrainer.fr' }}"
+        env:
+          BASE_URL: ${{ inputs.base-url || 'https://chesstrainer.fr' }}
+        run: node scripts/check-deployed.mjs "$BASE_URL"
