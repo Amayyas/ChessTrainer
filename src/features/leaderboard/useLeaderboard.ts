@@ -10,6 +10,7 @@ export interface LeaderboardRow {
   userId: string
   username: string
   avatarPiece: string
+  photoPath: string | null
   piece: string
   score: number
   captures: number
@@ -60,7 +61,9 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
 
     let query = supabase
       .from('scores')
-      .select('id, user_id, piece, score, captures, played_at, profiles(username, avatar_piece)')
+      .select(
+        'id, user_id, piece, score, captures, played_at, profiles(username, avatar_piece, photo_path)',
+      )
       .order('score', { ascending: false })
       .limit(200)
 
@@ -83,6 +86,7 @@ export function useLeaderboard(piece: LeaderboardPiece, period: LeaderboardPerio
           userId: row.user_id,
           username: row.profiles?.username ?? 'Joueur',
           avatarPiece: row.profiles?.avatar_piece ?? 'n',
+          photoPath: row.profiles?.photo_path ?? null,
           piece: row.piece,
           score: row.score,
           captures: row.captures,

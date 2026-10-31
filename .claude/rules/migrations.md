@@ -49,9 +49,19 @@ A column a player must not be able to write — their own XP, say — needs a
 column-level `GRANT`, not just a policy. A row that passes the policy's check
 still has every one of its columns writable unless a grant says otherwise.
 
+A column grant narrows nothing on its own: it only adds to what the role
+already holds. Every table here was created while Supabase granted `ALL` on
+each new table and function in `public` to `anon` and `authenticated`, so a
+column grant only holds after `revoke all on <table> from anon, authenticated`.
+Revoking the table privilege also takes the column grants beneath it, so grant
+them again afterwards. The same goes for functions: `revoke execute … from
+public` does not remove the `anon` and `authenticated` grants that were made by
+name. Name them too.
+
 ## bootstrap.sql is not a mirror
 
 It recreates only the slice of Supabase the migrations lean on: `auth.uid()`,
-`auth.users`, the `anon` and `authenticated` roles, the realtime publication.
+`auth.users`, the `anon` and `authenticated` roles, Supabase's former default
+privileges, the realtime publication, `storage.buckets`.
 Growing it to resemble the real thing would suggest it tracks Supabase, which it
 does not.

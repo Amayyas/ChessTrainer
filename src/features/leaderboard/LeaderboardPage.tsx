@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { PageHeader, Spinner, Tag } from '@/components/UI'
 import Alert from '@/components/UI/Alert'
+import PlayerAvatar from '@/components/UI/PlayerAvatar'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { CHAMPION_LABELS, type ChampionType } from '@/features/hunt/board'
+import ReportPhoto from '@/features/leaderboard/ReportPhoto'
 import {
   useLeaderboard,
   type LeaderboardPeriod,
   type LeaderboardPiece,
 } from '@/features/leaderboard/useLeaderboard'
-import { AVATAR_GLYPHS, type AvatarPiece } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn } from '@/utils/cn'
 
@@ -117,11 +118,13 @@ export default function LeaderboardPage() {
                   <span className="w-8 shrink-0 text-right text-heading font-bold tabular-nums lining-nums">
                     {index + 1}.
                   </span>
-                  <span
-                    aria-hidden="true"
-                    className="w-7 text-center font-figurine text-[1.25rem] leading-7"
-                  >
-                    {AVATAR_GLYPHS[row.avatarPiece as AvatarPiece] ?? '♟'}
+                  <span className="flex w-7 shrink-0 justify-center">
+                    <PlayerAvatar
+                      piece={row.avatarPiece}
+                      photoPath={row.photoPath}
+                      className="size-7"
+                      glyphClassName="text-[1.25rem] leading-7"
+                    />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2.5">
@@ -132,6 +135,15 @@ export default function LeaderboardPage() {
                       {CHAMPION_LABELS[row.piece as ChampionType] ?? row.piece} · {row.captures}{' '}
                       captures · {new Date(row.playedAt).toLocaleDateString('fr-FR')}
                     </span>
+                    {/* Only a signed-in player may report, and not their own. */}
+                    {session && !isMe && row.photoPath && (
+                      <ReportPhoto
+                        // A new photo is a new thing to report.
+                        key={row.photoPath}
+                        target={row.userId}
+                        username={row.username}
+                      />
+                    )}
                   </span>
                   <span className="shrink-0 text-title font-semibold tabular-nums lining-nums">
                     {row.score}

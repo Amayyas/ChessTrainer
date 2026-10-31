@@ -406,6 +406,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# The gateway turns away a request without a valid token before the function
+# runs; the function then reads the player from that token.
+[functions.profile-photo]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

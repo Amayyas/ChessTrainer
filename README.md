@@ -5,7 +5,7 @@ an account.
 
 [![Live](https://img.shields.io/badge/chesstrainer.fr-live-1C1A16)](https://chesstrainer.fr)
 [![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
-[![Node](https://img.shields.io/badge/node-%E2%89%A522.12-5FA04E)](.nvmrc)
+[![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FAmayyas%2FChessTrainer%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&color=5FA04E)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0-1C1A16)](LICENSE)
 
@@ -15,13 +15,14 @@ was worth, and turns practice into something you actually come back to.
 Every mode is playable without an account. The interface is in French — the app
 targets French-speaking learners — while the codebase is English throughout.
 
-[![The AI Coach: an annotated game, a live evaluation and the best move drawn on the board](docs/screenshots/coach.png)](https://chesstrainer.fr/coach)
+[![The AI Coach: a game played move by move, each move graded, the evaluation and the best move redrawn after every one](docs/screenshots/coach.gif)](https://chesstrainer.fr/coach)
 
 ## What it does
 
 **AI Coach** — play both sides and get a running evaluation, a grade for every
-move (excellent, good, inaccuracy, mistake, blunder) from the centipawns it lost
-against the best line, and the best continuation drawn as an arrow. Hints are
+move on seven tiers, from the engine's own move down to a blunder, measured by
+the centipawns it lost against the best line, and the best continuation drawn as
+an arrow. [How a move is graded](docs/move-grading.md). Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
 Finished games can be replayed move by move.
 
@@ -71,11 +72,14 @@ every mode, kept locally for guests and synced to your account once you sign in.
 
 ## Requirements
 
-Node.js 22.12 or later, and npm.
+A patched Node.js 22 or later, and npm. `engines` in `package.json` holds the
+exact floor on each line.
 
-The minor matters: Vite 8 and puppeteer-core 25 both ask for `>=22.12`, so
-`22.0` to `22.11` would install but not be supported. `.nvmrc` pins the major,
-so `nvm use` picks the newest 22.x you have installed.
+The floor is a security one: earlier releases carry CVE-2026-111497, an
+out-of-bounds write in the Brotli decoder. It sits above what the tools need —
+Vite 8 and puppeteer-core 25 ask for `>=22.12`, and the puzzle import reads the
+Lichess export with `node:zlib`'s zstd, which arrived in 22.15. `.nvmrc` pins
+the exact release, which `nvm use` and the Netlify build both read.
 
 ## Install and run
 
@@ -129,10 +133,20 @@ account.
 
 ## Architecture
 
-Class diagrams of the engine layer, the game modes, the global state and the
-data model are in [docs/architecture.md](docs/architecture.md). The visual
-rules — palette, type, surfaces, motion — are in
-[docs/design-system.md](docs/design-system.md).
+The [`docs/`](docs/) folder goes further than this page:
+
+| Document                                  | What it covers                                                          |
+| ----------------------------------------- | ----------------------------------------------------------------------- |
+| [architecture.md](docs/architecture.md)   | Class diagrams of the engine, the modes, the stores and the data model  |
+| [design-system.md](docs/design-system.md) | Palette, type, surfaces, motion and the board                           |
+| [move-grading.md](docs/move-grading.md)   | How the coach grades a move and measures accuracy                       |
+| [accessibility.md](docs/accessibility.md) | The boards for a screen reader and the keyboard, and the limits left    |
+| [rendering.md](docs/rendering.md)         | The prerender, how each address is served, headers, surviving a deploy  |
+| [testing.md](docs/testing.md)             | The test layers and how to prove a test can fail                        |
+| [releasing.md](docs/releasing.md)         | From merge to release, the deploy budget, and when a release goes wrong |
+| [moderation.md](docs/moderation.md)       | Profile photos: how one is checked, reported, and reviewed              |
+
+Coding agents start from [AGENTS.md](AGENTS.md).
 
 ```
 src/
@@ -145,8 +159,10 @@ src/
 │   ├── battle/      # AI battle mode
 │   ├── puzzle/      # Puzzle mode
 │   ├── hunt/        # Piece Hunt arcade mode
-│   ├── home/        # Dashboard
+│   ├── home/        # Landing page and dashboard
 │   ├── profile/     # User profile
+│   ├── progression/ # XP, levels, badges, daily challenges, sync
+│   ├── seo/         # Per-route title, canonical and noindex
 │   ├── auth/        # Sign-in and the route guard
 │   ├── legal/       # Notices and privacy policy
 │   └── leaderboard/ # Global leaderboard
@@ -312,11 +328,10 @@ Defined in [`scripts/check-bundle-size.mjs`](scripts/check-bundle-size.mjs),
 expressed in gzip. Shipping a chess engine to the browser makes bundle weight a
 standing risk, so a regression is made visible on the PR that introduces it.
 
-| Category                     | Budget |
-| ---------------------------- | ------ |
-| Initial JavaScript           | 200 kB |
-| CSS                          | 50 kB  |
-| Stockfish (loaded on demand) | 5 MB   |
+There are four, on the initial JavaScript, the CSS, the Stockfish engine and
+the puzzle set — the last two loaded on demand. The limits live in the script
+alone, so they are not repeated here: `npm run size` prints each one beside what
+the build actually weighs.
 
 The build here sets `VITE_SENTRY_DSN`, because production does. Without it the
 guard in `monitoring.ts` is statically false, the dynamic import is dropped as
@@ -348,15 +363,11 @@ gets.
 
 ### Lighthouse thresholds
 
-Configured in [`lighthouserc.json`](lighthouserc.json). Performance,
-accessibility and best practices are blocking; SEO only warns.
-
-| Category       | Threshold | Blocking |
-| -------------- | --------- | -------- |
-| Performance    | 90        | Yes      |
-| Accessibility  | 95        | Yes      |
-| Best practices | 95        | Yes      |
-| SEO            | 95        | No       |
+Configured in [`lighthouserc.json`](lighthouserc.json), three runs each on the
+home page and the coach. On the home page performance, accessibility and best
+practices block the merge and SEO only warns. The coach boots a chess engine, so
+its performance only warns; accessibility and best practices still block. The
+scores themselves live in that file alone.
 
 ## Deployment
 
@@ -384,7 +395,7 @@ It must be served from the **root of a domain**. The engine is loaded from an
 absolute path (`/stockfish/stockfish.js`), so a deployment under a sub-path
 would leave the coach unable to start unless Vite's `base` is set to match.
 
-Three environment variables are read **at build time** — Vite writes them into
+Four environment variables are read **at build time** — Vite writes them into
 the bundle rather than reading them at runtime, so changing one means
 rebuilding:
 

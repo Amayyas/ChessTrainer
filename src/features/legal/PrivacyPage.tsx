@@ -33,9 +33,9 @@ export default function PrivacyPage() {
 
       <Section title="Données enregistrées avec un compte">
         <p>
-          <strong>Votre identité de joueur</strong> : adresse e-mail, pseudo, pièce d'avatar et date
-          d'inscription. Si vous passez par Google, votre adresse nous est transmise par Google au
-          moment de la connexion.
+          <strong>Votre identité de joueur</strong> : adresse e-mail, pseudo, pièce d'avatar, photo
+          de profil si vous en ajoutez une, et date d'inscription. Si vous passez par Google, votre
+          adresse nous est transmise par Google au moment de la connexion.
         </p>
         <p>
           <strong>Votre jeu</strong> : scores de la Chasse aux Pièces (pièce, points, captures,
@@ -55,10 +55,33 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="Votre photo de profil">
+        <p>
+          Elle est facultative. Votre navigateur la recadre et la réduit avant de l'envoyer : les
+          informations que l'appareil photo y inscrit, dont le lieu de la prise de vue, ne quittent
+          pas votre appareil.
+        </p>
+        <p>
+          Avant d'être publiée, elle est analysée automatiquement par le service de modération d'
+          <strong>OpenAI</strong>, aux États-Unis, qui la reçoit uniquement pour cette vérification.
+          Selon ses conditions, OpenAI ne conserve pas ce qu'il analyse ainsi et ne s'en sert pas
+          pour entraîner ses modèles. Une photo refusée n'est pas enregistrée. L'heure de chaque
+          envoi est notée, afin de limiter le nombre d'essais.
+        </p>
+        <p>
+          Une photo acceptée est publique, comme votre pseudo. Les autres joueurs peuvent la
+          signaler : après plusieurs signalements, elle est masquée et conservée le temps d'une
+          vérification par l'éditeur du site, puis rétablie ou supprimée — y compris si vous
+          supprimez votre compte entre-temps. Vous pouvez la retirer à tout moment depuis votre
+          profil.
+        </p>
+      </Section>
+
       <Section title="Ce qui est visible par les autres">
         <p>
-          Publics : votre <strong>pseudo</strong>, votre <strong>avatar</strong>, vos{' '}
-          <strong>scores</strong> au classement et vos <strong>badges</strong>.
+          Publics : votre <strong>pseudo</strong>, votre <strong>avatar</strong> ou votre{' '}
+          <strong>photo</strong>, vos <strong>scores</strong> au classement et vos{' '}
+          <strong>badges</strong>.
         </p>
         <p>
           Privés : votre <strong>adresse e-mail</strong> et l'ensemble de votre{' '}
@@ -86,7 +109,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           Elles sont conservées tant que votre compte existe. Elles sont hébergées par Supabase dans
-          l'Union européenne (Irlande) et ne quittent pas ce territoire.
+          l'Union européenne (Irlande) et ne quittent pas ce territoire, à une exception près : la
+          photo de profil, transmise à OpenAI le temps de son analyse.
         </p>
       </Section>
 
@@ -122,7 +146,9 @@ export default function PrivacyPage() {
             page de profil
           </Link>
           . La suppression est immédiate et définitive : elle efface le compte, les scores, la
-          progression et les badges, sans étape intermédiaire ni délai de rétractation.
+          progression, les badges et la photo, sans étape intermédiaire ni délai de rétractation.
+          Seule exception : une photo masquée après des signalements est conservée jusqu'à sa
+          vérification, puis supprimée.
         </p>
         <p>
           Vous disposez également des droits d'accès, de rectification, de portabilité et

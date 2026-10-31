@@ -4,8 +4,9 @@ Class diagrams of ChessTrainer AI, derived from the source: the engine layer, th
 game modes, the global state and the data model.
 
 > **Read this first.** ChessTrainer is written in functional TypeScript, not in an
-> object-oriented style: the codebase holds **exactly one class**,
-> `StockfishEngine`. Everything else is built from _interfaces_ (type contracts),
+> object-oriented style: the codebase holds **exactly one domain class**,
+> `StockfishEngine`, beside the two error boundaries, which React can only
+> write as classes. Everything else is built from _interfaces_ (type contracts),
 > React _hooks_ (functions that own state and expose an API) and Zustand
 > _stores_.
 >
@@ -237,7 +238,9 @@ it is an arcade game, not a game of chess.
 
 ## 3. Global state
 
-Two Zustand stores hold the only genuinely global state. `useProgressionSync`
+Two Zustand stores hold the only genuinely global state that crosses modes. A
+third, `useBoardStore`, keeps one device setting — hatched or plain dark
+squares — and is left out of the diagram. `useProgressionSync`
 bridges the local progression and the account: it pulls the server snapshot on
 sign-in, then writes changes back.
 
@@ -277,7 +280,8 @@ classDiagram
         <<interface>>
         +number gamesPlayed
         +number gamesWon
-        +number averageAccuracy
+        +number battleAccuracy
+        +number battleAccuracySamples
         +number puzzlesSolved
         +number flawlessPuzzles
         +number bestHuntScore
@@ -427,17 +431,25 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 
 ### Access rules
 
-| Table          | Read                                     | Write                                                 |
-| -------------- | ---------------------------------------- | ----------------------------------------------------- |
-| `profiles`     | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only** |
-| `scores`       | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**   |
-| `progression`  | **private** to its owner                 | owner only                                            |
-| `achievements` | public — badges can be shown off         | insert under one's own id                             |
+| Table                      | Read                                     | Write                                                                 |
+| -------------------------- | ---------------------------------------- | --------------------------------------------------------------------- |
+| `profiles`                 | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only**                 |
+| `scores`                   | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**                   |
+| `progression`              | **private** to its owner                 | owner only                                                            |
+| `achievements`             | public — badges can be shown off         | insert under one's own id                                             |
+| `photo_*`, `hidden_photos` | nobody                                   | nobody — only through `report_photo()` and the profile-photo function |
+
+`profiles.photo_path` is written by no client: the profile-photo Edge Function
+sets it once the photo has passed moderation. See
+[moderation.md](moderation.md).
 
 > **The security point worth remembering.** Row Level Security filters **rows**,
 > never **columns**. Checking row ownership is therefore not enough: without a
 > column-level privilege, a player could write any field of their own row —
-> including their XP. Hence the restricted `GRANT` on `profiles`.
+> including their XP. Hence the restricted `GRANT` on `profiles`. And a column
+> grant only restricts a role that holds nothing more: the table-level `ALL`
+> Supabase used to grant by default has to be revoked first, which
+> `20261029090000_profile_photo.sql` does.
 
 ### Trust boundary
 

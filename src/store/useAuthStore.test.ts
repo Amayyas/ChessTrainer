@@ -1,6 +1,8 @@
 import type { Session } from '@supabase/supabase-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Profile } from '@/lib/supabase'
+import { PHOTO_MESSAGES } from '@/lib/photo'
+import { USERNAME_FORMAT } from '@/lib/username'
 import { ROUTES } from '@/routes'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -12,9 +14,10 @@ type QueryResult = { data: unknown; error: { message: string } | null }
 const api = vi.hoisted(() => ({
   signUp: vi.fn(),
   signOut: vi.fn(),
-  rpc: vi.fn<(name: string) => Promise<QueryResult>>(),
+  rpc: vi.fn<(name: string, args?: unknown) => Promise<QueryResult>>(),
   lookup: vi.fn<(column: string, value: unknown) => Promise<QueryResult>>(),
   update: vi.fn<(patch: unknown, column: string, value: unknown) => Promise<QueryResult>>(),
+  invoke: vi.fn<(name: string, options: unknown) => Promise<QueryResult>>(),
 }))
 
 vi.mock('@/lib/supabase', async () => ({
@@ -22,7 +25,9 @@ vi.mock('@/lib/supabase', async () => ({
   isSupabaseConfigured: true,
   supabase: {
     auth: { signUp: api.signUp, signOut: api.signOut },
-    rpc: (name: string) => api.rpc(name),
+    functions: { invoke: (name: string, options: unknown) => api.invoke(name, options) },
+    rpc: (name: string, args?: unknown) =>
+      args === undefined ? api.rpc(name) : api.rpc(name, args),
     from: (table: string) => {
       if (table !== 'profiles') throw new Error(`unexpected table ${table}`)
       return {
@@ -207,10 +212,166 @@ describe('useAuthStore — updateProfile', () => {
     expect(useAuthStore.getState().error).toBe('Ce pseudo est déjà pris.')
   })
 
+  it('explains a name the format check refused, rather than calling it taken', async () => {
+    // The format constraint's name also begins "profiles_username", which the
+    // duplicate test matches on.
+    api.update.mockResolvedValue(
+      failed(
+        'new row for relation "profiles" violates check constraint "profiles_username_format"',
+      ),
+    )
+
+    await expect(useAuthStore.getState().updateProfile({ username: 'a b' })).resolves.toBe(false)
+
+    expect(useAuthStore.getState().error).toBe(USERNAME_FORMAT)
+  })
+
   it('does nothing without a session', async () => {
     useAuthStore.setState({ session: null })
 
     await expect(useAuthStore.getState().updateProfile({ avatar_piece: 'q' })).resolves.toBe(false)
     expect(api.update).not.toHaveBeenCalled()
+  })
+})
+
+/** How functions.invoke reports a non-2xx answer: the Response as `context`. */
+const answered = (status: number, body: unknown): QueryResult =>
+  ({
+    data: null,
+    error: {
+      message: 'Edge Function returned a non-2xx status code',
+      context: Response.json(body, { status }),
+    },
+  }) as unknown as QueryResult
+
+describe('useAuthStore — photo', () => {
+  const jpeg = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' })
+
+  it('puts the stored photo on the profile', async () => {
+    api.invoke.mockResolvedValue(ok({ photo_path: 'player-1/new.jpg' }))
+
+    await expect(useAuthStore.getState().setPhoto(jpeg)).resolves.toBeNull()
+
+    expect(api.invoke).toHaveBeenCalledWith('profile-photo', {
+      body: jpeg,
+      headers: { 'Content-Type': 'image/jpeg' },
+    })
+    expect(useAuthStore.getState().profile?.photo_path).toBe('player-1/new.jpg')
+  })
+
+  it('says why the function refused it, and keeps the profile as it was', async () => {
+    api.invoke.mockResolvedValue(answered(422, { error: 'refused' }))
+
+    await expect(useAuthStore.getState().setPhoto(jpeg)).resolves.toBe(PHOTO_MESSAGES.refused)
+    expect(useAuthStore.getState().profile).toBe(profile)
+  })
+
+  it('falls back to a plain failure on an answer it does not know', async () => {
+    api.invoke.mockResolvedValue(answered(502, { error: 'bad gateway' }))
+    await expect(useAuthStore.getState().setPhoto(jpeg)).resolves.toBe(PHOTO_MESSAGES.failed)
+
+    api.invoke.mockResolvedValue(failed('Failed to send a request to the Edge Function'))
+    await expect(useAuthStore.getState().setPhoto(jpeg)).resolves.toBe(PHOTO_MESSAGES.failed)
+  })
+
+  it('takes the photo off the profile', async () => {
+    useAuthStore.setState({ profile: { ...profile, photo_path: 'player-1/old.jpg' } })
+    api.invoke.mockResolvedValue(ok({ photo_path: null }))
+
+    await expect(useAuthStore.getState().removePhoto()).resolves.toBeNull()
+
+    expect(api.invoke).toHaveBeenCalledWith('profile-photo', { method: 'DELETE' })
+    expect(useAuthStore.getState().profile?.photo_path).toBeNull()
+  })
+
+  it('keeps a piece chosen while the photo was being checked', async () => {
+    api.invoke.mockImplementation(async () => {
+      useAuthStore.setState({ profile: { ...profile, avatar_piece: 'q' } })
+      return ok({ photo_path: 'player-1/new.jpg' })
+    })
+
+    await useAuthStore.getState().setPhoto(jpeg)
+
+    expect(useAuthStore.getState().profile).toMatchObject({
+      avatar_piece: 'q',
+      photo_path: 'player-1/new.jpg',
+    })
+  })
+
+  it('leaves a player who signed out meanwhile signed out', async () => {
+    for (const send of [
+      () => useAuthStore.getState().setPhoto(jpeg),
+      () => useAuthStore.getState().removePhoto(),
+    ]) {
+      useAuthStore.setState({ session, profile })
+      api.invoke.mockImplementation(async () => {
+        useAuthStore.setState({ session: null, profile: null })
+        return ok({ photo_path: null })
+      })
+
+      await send()
+
+      expect(useAuthStore.getState().profile).toBeNull()
+    }
+  })
+
+  it('reports another player through the database, which reads the photo itself', async () => {
+    api.rpc.mockResolvedValue(ok(null))
+
+    await expect(useAuthStore.getState().reportPhoto('player-2')).resolves.toBe(true)
+    expect(api.rpc).toHaveBeenCalledWith('report_photo', { p_target: 'player-2' })
+  })
+})
+
+describe('useAuthStore — deleteAccount with a photo', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ profile: { ...profile, photo_path: 'player-1/old.jpg' } })
+  })
+
+  it('removes the photo before the account', async () => {
+    api.invoke.mockResolvedValue(ok({ photo_path: null }))
+    api.rpc.mockResolvedValue(ok(null))
+
+    await expect(useAuthStore.getState().deleteAccount()).resolves.toBe(true)
+
+    expect(api.invoke).toHaveBeenCalledWith('profile-photo', { method: 'DELETE' })
+    expect(api.invoke.mock.invocationCallOrder[0]).toBeLessThan(
+      api.rpc.mock.invocationCallOrder[0] ?? 0,
+    )
+  })
+
+  it('keeps the account when the photo could not be removed', async () => {
+    // The account's cascade does not reach storage: deleted first, the account
+    // would leave a photo nobody can ask to have removed any more.
+    api.invoke.mockResolvedValue(failed('Failed to send a request to the Edge Function'))
+
+    await expect(useAuthStore.getState().deleteAccount()).resolves.toBe(false)
+
+    expect(api.rpc).not.toHaveBeenCalledWith('delete_my_account')
+    expect(useAuthStore.getState().session).toBe(session)
+    expect(useAuthStore.getState().deleteError).toMatch(/photo/)
+  })
+})
+
+describe('useAuthStore — checkUsername', () => {
+  it('passes on what the database answers', async () => {
+    api.rpc.mockResolvedValue(ok('taken'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBe('taken')
+    expect(api.rpc).toHaveBeenCalledWith('username_status', { candidate: 'Rémi' })
+  })
+
+  it('answers nothing when the question could not be asked', async () => {
+    // Null lets the form go ahead; a guess of "taken" would block every sign-up
+    // whenever the network hiccups.
+    api.rpc.mockResolvedValue(failed('fetch failed'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBeNull()
+  })
+
+  it('answers nothing to a reply it does not recognise', async () => {
+    api.rpc.mockResolvedValue(ok('maybe'))
+
+    await expect(useAuthStore.getState().checkUsername('Rémi')).resolves.toBeNull()
   })
 })

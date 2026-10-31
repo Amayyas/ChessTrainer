@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { Client } from 'pg'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { USERNAME_ACCENTED_LETTERS } from '../../src/lib/username'
 
 /**
  * The policies in supabase/migrations, executed rather than read.
@@ -38,6 +39,14 @@ async function asUser<T>(userId: string, sql: string, params: unknown[] = []): P
 /** The same, for a visitor who has not signed in. */
 async function asAnon<T>(sql: string, params: unknown[] = []): Promise<T[]> {
   await db.query('set local role anon')
+  await db.query(`set local request.jwt.claims = '{}'`)
+  const result = await db.query(sql, params)
+  return result.rows as T[]
+}
+
+/** The same, for the Edge Function: service_role, as its secret key gives it. */
+async function asService<T>(sql: string, params: unknown[] = []): Promise<T[]> {
+  await db.query('set local role service_role')
   await db.query(`set local request.jwt.claims = '{}'`)
   const result = await db.query(sql, params)
   return result.rows as T[]
@@ -205,6 +214,314 @@ describe('the columns a player may write', () => {
       asUser(alice, 'update profiles set created_at = now() where id = $1', [alice]),
     )
     expect(error.message).toMatch(/permission denied/i)
+  })
+})
+
+describe('the name a player may take', () => {
+  /** Alice renames herself; resolves to the error, or null when it went through. */
+  async function rename(name: string): Promise<Error | null> {
+    const point = `rename_${(savepoints += 1)}`
+    await db.query(`savepoint ${point}`)
+    try {
+      await asUser(alice, 'update profiles set username = $1 where id = $2', [name, alice])
+      await db.query(`release savepoint ${point}`)
+      return null
+    } catch (error) {
+      await db.query(`rollback to savepoint ${point}`)
+      return error as Error
+    }
+  }
+
+  it("refuses another player's name with a different accent or case", async () => {
+    // Bob is "bob". Each of these would pass for him on the leaderboard.
+    for (const lookalike of ['Bob', 'BÓB', 'bôb']) {
+      const error = await rename(lookalike)
+      expect(error?.message, lookalike).toMatch(/profiles_username_key/)
+    }
+  })
+
+  it('refuses what the format does not allow', async () => {
+    for (const name of ['al ice', 'al', 'a'.repeat(25), 'alice!', 'cœur', 'e\u0301ric']) {
+      const error = await rename(name)
+      // "al" trips the original length check before the format one; either
+      // way the row is refused by a constraint, which is what matters.
+      expect(error?.message, name).toMatch(/violates check constraint "profiles_username_/)
+    }
+  })
+
+  it('accepts every accented letter the client offers', async () => {
+    // The client checks the format before asking the server; a letter it
+    // allows and the database refuses would fail only after the player
+    // submitted, with a message that contradicts the form.
+    for (const letter of USERNAME_ACCENTED_LETTERS) {
+      expect(await rename(`ab${letter}`), letter).toBeNull()
+    }
+  })
+
+  it('tells a visitor whether a name is free, ignoring accents and case', async () => {
+    const [row] = await asAnon<{ taken: string; free: string; bad: string }>(
+      `select username_status('BÖB') as taken, username_status('zoé') as free,
+              username_status('a b') as bad`,
+    )
+    expect(row).toEqual({ taken: 'taken', free: 'available', bad: 'invalid' })
+  })
+
+  it("does not count a player's own name as taken by them", async () => {
+    const [row] = await asUser<{ status: string }>(
+      alice,
+      "select username_status('Alîce') as status",
+    )
+    expect(row.status).toBe('available')
+  })
+
+  it('keeps the accents a player signs up with', async () => {
+    const zoe = randomUUID()
+    // Decomposed on purpose: "e" followed by a combining acute, as some
+    // keyboards send it. Stripped character by character, it would become "Zoe".
+    await db.query('insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)', [
+      zoe,
+      'zoe@example.test',
+      { username: 'Zoe\u0301' },
+    ])
+    const { rows } = await db.query('select username from profiles where id = $1', [zoe])
+    expect(rows[0].username).toBe('Zoé')
+  })
+})
+
+describe('the profile photo', () => {
+  const photoOf = (player: string) => `${player}/${randomUUID()}.jpg`
+
+  it('cannot be set by the player, only by the function that checks it', async () => {
+    // Writable from the client, the column would let anyone point their
+    // profile at an image the moderation never saw.
+    const error = await refused(() =>
+      asUser(alice, 'update profiles set photo_path = $1 where id = $2', [photoOf(alice), alice]),
+    )
+    expect(error.message).toMatch(/permission denied/i)
+  })
+
+  it("keeps the function's own entry points out of a client's reach", async () => {
+    const calls: Array<[string, unknown[]]> = [
+      ['select begin_photo_upload($1)', [alice]],
+      ['select set_profile_photo($1, $2)', [alice, photoOf(alice)]],
+      ['select clear_profile_photo($1)', [bob]],
+    ]
+    for (const [call, params] of calls) {
+      expect((await refused(() => asUser(alice, call, params))).message, call).toMatch(
+        /permission denied/i,
+      )
+      expect((await refused(() => asAnon(call, params))).message, call).toMatch(
+        /permission denied/i,
+      )
+    }
+  })
+
+  it('grants those entry points to no client role at all', async () => {
+    // Asked of the catalogue, not by calling: a call by a player also fails on
+    // the column grant inside, which would hide an EXECUTE left in place.
+    await db.query('set local role postgres')
+    for (const fn of [
+      'begin_photo_upload(uuid)',
+      'set_profile_photo(uuid, text)',
+      'clear_profile_photo(uuid)',
+    ]) {
+      for (const role of ['anon', 'authenticated']) {
+        const { rows } = await db.query('select has_function_privilege($1, $2, $3) as ok', [
+          role,
+          fn,
+          'execute',
+        ])
+        expect(rows[0].ok, `${role} ${fn}`).toBe(false)
+      }
+    }
+  })
+
+  it('keeps the moderation tables out of every client', async () => {
+    for (const table of ['photo_attempts', 'photo_reports', 'hidden_photos']) {
+      const error = await refused(() => asUser(alice, `select * from ${table}`))
+      expect(error.message, table).toMatch(/permission denied/i)
+    }
+  })
+
+  it("refuses a path outside the player's own folder", async () => {
+    // Deleting a player's photos means removing their folder; a file filed
+    // under someone else's would survive their account.
+    const error = await refused(() =>
+      asService('select set_profile_photo($1, $2)', [alice, photoOf(bob)]),
+    )
+    expect(error.message).toMatch(/violates check constraint/i)
+  })
+
+  it('hands back the photo it replaces, for the function to delete', async () => {
+    const first = photoOf(alice)
+    await asService('select set_profile_photo($1, $2)', [alice, first])
+    const [row] = await asService<{ old: string }>('select set_profile_photo($1, $2) as old', [
+      alice,
+      photoOf(alice),
+    ])
+    expect(row?.old).toBe(first)
+  })
+
+  it('refuses another attempt once the hourly allowance is spent', async () => {
+    const [limit] = await asService<{ n: number }>('select max_photo_attempts_per_hour() as n')
+    for (let i = 0; i < limit!.n; i += 1) {
+      await asService('select begin_photo_upload($1)', [alice])
+    }
+    const error = await refused(() => asService('select begin_photo_upload($1)', [alice]))
+    expect((error as Error & { hint?: string }).hint).toBe('rate_limited')
+  })
+})
+
+describe('reporting a photo', () => {
+  let threshold = 0
+  let bobsPhoto = ''
+  /** Players beyond alice and bob, enough to reach the threshold. */
+  let reporters: string[] = []
+
+  beforeEach(async () => {
+    await db.query('set local role postgres')
+    threshold = (await db.query('select photo_report_threshold() as n')).rows[0].n
+    reporters = Array.from({ length: threshold }, () => randomUUID())
+    for (const [index, id] of reporters.entries()) {
+      await db.query('insert into auth.users (id, email) values ($1, $2)', [
+        id,
+        `reporter${index}@example.test`,
+      ])
+    }
+    bobsPhoto = `${bob}/${randomUUID()}.jpg`
+    await db.query('update profiles set photo_path = $1 where id = $2', [bobsPhoto, bob])
+  })
+
+  async function bobsPhotoNow(): Promise<string | null> {
+    await db.query('set local role postgres')
+    return (await db.query('select photo_path from profiles where id = $1', [bob])).rows[0]
+      .photo_path
+  }
+
+  it('is refused to a visitor without an account', async () => {
+    const error = await refused(() => asAnon('select report_photo($1)', [bob]))
+    expect(error.message).toMatch(/permission denied/i)
+  })
+
+  it("is refused for the player's own photo", async () => {
+    await db.query('set local role postgres')
+    await db.query('update profiles set photo_path = $1 where id = $2', [
+      `${alice}/${randomUUID()}.jpg`,
+      alice,
+    ])
+    const error = await refused(() => asUser(alice, 'select report_photo($1)', [alice]))
+    expect(error.message).toMatch(/own photo/)
+  })
+
+  it('counts one player once, however often they report', async () => {
+    for (let i = 0; i < threshold + 1; i += 1) {
+      await asUser(alice, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('leaves the photo up one report short of the threshold', async () => {
+    for (const reporter of reporters.slice(1)) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('takes the photo down at the threshold and files it for review', async () => {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    expect(await bobsPhotoNow()).toBeNull()
+    const { rows } = await db.query('select photo_path from hidden_photos where user_id = $1', [
+      bob,
+    ])
+    expect(rows).toEqual([{ photo_path: bobsPhoto }])
+  })
+
+  it('starts a new photo with no reports', async () => {
+    for (const reporter of reporters.slice(1)) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    const next = `${bob}/${randomUUID()}.jpg`
+    await asService('select set_profile_photo($1, $2)', [bob, next])
+    await asUser(reporters[0]!, 'select report_photo($1)', [bob])
+    expect(await bobsPhotoNow()).toBe(next)
+  })
+
+  it('stops the player sending another photo until the review releases them', async () => {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    const error = await refused(() => asService('select begin_photo_upload($1)', [bob]))
+    expect((error as Error & { hint?: string }).hint).toBe('under_review')
+
+    await db.query('set local role postgres')
+    await db.query('update hidden_photos set released_at = now() where user_id = $1', [bob])
+    await asService('select begin_photo_upload($1)', [bob])
+  })
+
+  async function takeDownBobsPhoto(): Promise<void> {
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+  }
+
+  it('restores a photo the review clears, and forgets the reports against it', async () => {
+    await takeDownBobsPhoto()
+    await db.query('set local role postgres')
+    await db.query('select restore_photo($1, $2)', [bob, bobsPhoto])
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+    await asService('select begin_photo_upload($1)', [bob])
+
+    // Had the old reports been kept, this one alone would take it down again.
+    await asUser(reporters[0]!, 'select report_photo($1)', [bob])
+    expect(await bobsPhotoNow()).toBe(bobsPhoto)
+  })
+
+  it('puts a restored photo back in the review queue when it is taken down again', async () => {
+    await takeDownBobsPhoto()
+    await db.query('set local role postgres')
+    await db.query('select restore_photo($1, $2)', [bob, bobsPhoto])
+    await takeDownBobsPhoto()
+
+    expect(await bobsPhotoNow()).toBeNull()
+    const { rows } = await db.query(
+      'select count(*)::int as n from hidden_photos where user_id = $1 and released_at is null',
+      [bob],
+    )
+    expect(rows[0].n).toBe(1)
+    const error = await refused(() => asService('select begin_photo_upload($1)', [bob]))
+    expect((error as Error & { hint?: string }).hint).toBe('under_review')
+  })
+
+  it('refuses to restore a photo to an account that no longer exists', async () => {
+    await takeDownBobsPhoto()
+    await asUser(bob, 'select delete_my_account()')
+    await db.query('set local role postgres')
+    const error = await refused(() => db.query('select restore_photo($1, $2)', [bob, bobsPhoto]))
+    expect(error.message).toMatch(/no longer exists/)
+  })
+
+  it('leaves restoring a photo to the owner of the site', async () => {
+    await takeDownBobsPhoto()
+    for (const attempt of [
+      () => asUser(bob, 'select restore_photo($1, $2)', [bob, bobsPhoto]),
+      () => asService('select restore_photo($1, $2)', [bob, bobsPhoto]),
+    ]) {
+      const error = await refused(attempt)
+      expect(error.message).toMatch(/permission denied/i)
+    }
+  })
+
+  it('keeps the review record when the player deletes their account', async () => {
+    // The record is the only pointer left to a file still in the bucket.
+    for (const reporter of reporters) {
+      await asUser(reporter, 'select report_photo($1)', [bob])
+    }
+    await asUser(bob, 'select delete_my_account()')
+    await db.query('set local role postgres')
+    const { rows } = await db.query('select count(*)::int as n from hidden_photos')
+    expect(rows[0].n).toBe(1)
   })
 })
 
