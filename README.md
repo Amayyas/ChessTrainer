@@ -5,7 +5,7 @@ an account.
 
 [![Live](https://img.shields.io/badge/chesstrainer.fr-live-1C1A16)](https://chesstrainer.fr)
 [![CI](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml/badge.svg)](https://github.com/Amayyas/ChessTrainer/actions/workflows/ci.yml)
-[![Node](https://img.shields.io/badge/node-%E2%89%A522.15-5FA04E)](package.json)
+[![Node](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FAmayyas%2FChessTrainer%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&color=5FA04E)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](tsconfig.json)
 [![Licence](https://img.shields.io/badge/licence-AGPL--3.0-1C1A16)](LICENSE)
 
@@ -72,12 +72,14 @@ every mode, kept locally for guests and synced to your account once you sign in.
 
 ## Requirements
 
-Node.js 22.15 or later, and npm.
+A patched Node.js 22 or later, and npm. `engines` in `package.json` holds the
+exact floor on each line.
 
-The minor matters: Vite 8 and puppeteer-core 25 both ask for `>=22.12`, and the
-puzzle import reads the Lichess export with `node:zlib`'s zstd, which arrived in
-22.15 — `engines` in `package.json` says so. `.nvmrc` pins the major, so
-`nvm use` picks the newest 22.x you have installed.
+The floor is a security one: earlier releases carry CVE-2026-111497, an
+out-of-bounds write in the Brotli decoder. It sits above what the tools need —
+Vite 8 and puppeteer-core 25 ask for `>=22.12`, and the puzzle import reads the
+Lichess export with `node:zlib`'s zstd, which arrived in 22.15. `.nvmrc` pins
+the exact release, which `nvm use` and the Netlify build both read.
 
 ## Install and run
 

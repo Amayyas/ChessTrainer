@@ -53,8 +53,8 @@ stuck, and these follow from it.
 
 ## Setup and commands
 
-Node.js 22.15 or later (`package.json` `engines`; `.nvmrc` pins the major), and
-npm. `npm install`, then `npm run dev` serves http://localhost:5173 in guest
+A patched Node.js 22 or later (the floor is `package.json` `engines`; `.nvmrc`
+pins the exact release Netlify builds on), and npm. `npm install`, then `npm run dev` serves http://localhost:5173 in guest
 mode with no further setup.
 
 | Command                      | What it does                                                                                                                               |
