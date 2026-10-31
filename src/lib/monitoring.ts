@@ -61,7 +61,10 @@ export async function startMonitoring() {
 
     init({
       dsn,
-      environment: import.meta.env.MODE,
+      // Set per Netlify context in netlify.toml, since a deploy preview is a
+      // production build too and MODE cannot tell the two apart.
+      environment:
+        (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) || import.meta.env.MODE,
       // No IP address, no user identity: the privacy policy promises as much.
       sendDefaultPii: false,
       // Errors only. No tracing, no session replay — both would collect far
