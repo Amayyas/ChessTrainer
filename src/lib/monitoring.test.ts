@@ -15,6 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 const sent: string[][] = []
+/** The `environment` of every event sent. */
+const environments: string[] = []
 
 vi.mock('@sentry/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sentry/react')>()
@@ -26,26 +28,39 @@ vi.mock('@sentry/react', async (importOriginal) => {
         transport: (transportOptions) =>
           actual.createTransport(transportOptions, async (request) => {
             sent.push(itemTypes(request.body))
+            environments.push(...eventEnvironments(request.body))
             return { statusCode: 200 }
           }),
       }),
   }
 })
 
-/** The `type` of every item in a serialised envelope. */
-function itemTypes(body: string | Uint8Array): string[] {
+/** Every line of a serialised envelope after its header, parsed. */
+function envelopeLines(body: string | Uint8Array): Record<string, unknown>[] {
   const text = typeof body === 'string' ? body : new TextDecoder().decode(body)
   return text
     .split('\n')
     .slice(1)
     .flatMap((line) => {
       try {
-        const parsed = JSON.parse(line) as { type?: unknown }
-        return typeof parsed.type === 'string' ? [parsed.type] : []
+        const parsed: unknown = JSON.parse(line)
+        return parsed && typeof parsed === 'object' ? [parsed as Record<string, unknown>] : []
       } catch {
         return []
       }
     })
+}
+
+/** The `type` of every item in a serialised envelope. */
+function itemTypes(body: string | Uint8Array): string[] {
+  return envelopeLines(body).flatMap(({ type }) => (typeof type === 'string' ? [type] : []))
+}
+
+/** The `environment` of every event payload in a serialised envelope. */
+function eventEnvironments(body: string | Uint8Array): string[] {
+  return envelopeLines(body).flatMap(({ type, environment }) =>
+    type === undefined && typeof environment === 'string' ? [environment] : [],
+  )
 }
 
 async function start() {
@@ -66,6 +81,7 @@ async function start() {
 describe('startMonitoring', () => {
   beforeEach(() => {
     sent.length = 0
+    environments.length = 0
   })
 
   afterEach(async () => {
@@ -95,5 +111,22 @@ describe('startMonitoring', () => {
     await sentry.flush(2000)
     expect(sent.flat()).toContain('event')
     expect(sent.flat()).not.toContain('session')
+  })
+
+  it('names the deploy an error came from', async () => {
+    // A deploy preview is a production build too, so MODE alone reported its
+    // errors as the live site's. netlify.toml sets this per context.
+    vi.stubEnv('VITE_SENTRY_ENVIRONMENT', 'deploy-preview')
+    const { monitoring, sentry } = await start()
+    await monitoring.reportError(new Error('boom'))
+    await sentry.flush(2000)
+    expect(environments).toEqual(['deploy-preview'])
+  })
+
+  it('falls back to the build mode when no deploy is named', async () => {
+    const { monitoring, sentry } = await start()
+    await monitoring.reportError(new Error('boom'))
+    await sentry.flush(2000)
+    expect(environments).toEqual([import.meta.env.MODE])
   })
 })
