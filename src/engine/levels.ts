@@ -11,26 +11,34 @@
  * `Skill Level` option — 12 searches at `UCI_Elo 1320` with `Skill Level 0`
  * and 12 with `Skill Level 20` returned the same spread of moves.
  *
- * Levels 1 and 2 both pin `UCI_Elo` at 1320: Stockfish 18 has no strength below
- * it. A play-test settled what that means — `scripts/calibrate-levels.mjs`, ~50
- * games per matchup. Near the floor nothing separates the two. The depth cap is
- * inert: level 1 played level 2 (depth 4 vs 6) dead even across three runs, and
- * played the same at depth 2 and depth 10; a depth-2 engine still scored 51%
- * against a `UCI_Elo 1320` reference. `UCI_Elo` barely moves down here too — a
- * 1400 setting gained about 40 Elo. So levels 1–2 are close by nature, both
- * about 1320; level 2's deeper cap costs nothing and stays for the rare sharp
- * position, and the `elo` gap below is a placement, not a measured difference.
- * Not from the calibration but consistent with it: a quick probe at `UCI_Elo
- * 1320`, depth 4 saw the engine grab a hanging queen 8 times in 10 — it takes
- * free material rather than hanging its own. "Novice" is a real beginner who
- * plays sound moves and calculates little, not one who blunders pieces.
+ * Stockfish 18 has no strength below `UCI_Elo` 1320, and nothing in it goes
+ * lower: an earlier play-test pinned levels 1 and 2 there with depth caps 4 and
+ * 6 and found them dead even, the depth cap inert, and `UCI_Elo` barely moving
+ * near the floor (.claude/rules/engine.md has the figures). One opponent under
+ * two names, and too strong for a beginner.
+ *
+ * So levels 1 and 2 are weakened by the app instead (`weakening`, see
+ * engine/weakening.ts): the engine runs unlimited at depth 6 and reports six
+ * lines, and the battle draws one with odds `exp(-loss / T)`. Their `elo` is
+ * measured, not handed to anything — `scripts/calibrate-levels.mjs`, 52 games
+ * per matchup, two runs averaged (9 November 2026):
+ *
+ *   Débutant vs `UCI_Elo 1320`   23.1% / 30.8%  → Δ −175  → ~1150
+ *   Novice vs Débutant           31.7% / 39.4%  → Δ −104  → ~1050
+ *   Novice vs `UCI_Elo 1320`     16.3% / 22.1%  → Δ −252  (a bound, agrees)
+ *   Débutant vs Intermédiaire    13.5% /  4.8%  (a bound: clearly weaker)
+ *
+ * These are figures on the engine's own scale, which its authors anchored to
+ * the CCRL 40/4 engine rating list — not to Lichess, Chess.com or FIDE.
+ * With 6 lines, raising `T` past ~650 changes little: the draw is close to
+ * uniform by then. A weaker Novice needs more lines, and a re-measure.
  *
  * Treat every number as ±150 and as a way for a player to place themselves,
  * not as a rating earned against humans. Never restate these figures in copy —
  * import `ENGINE_LEVELS` and read `[0].elo` / `.at(-1).elo` (see
  * `src/features/home/modes.ts`).
  *
- * Depths are capped low on purpose (4–12). `UCI_Elo` does the weakening; extra
+ * Depths are capped low on purpose (6–12). `UCI_Elo` does the weakening; extra
  * depth makes a rated bot no stronger, only slower — and a search that runs
  * past the battle's 10s `SEARCH_TIMEOUT_MS`, three times over, gives up on the
  * engine and freezes the board. Depth 12 measured a few hundred ms per move on
@@ -69,7 +77,7 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 1000,
+    elo: 1050,
     description: 'Joue des coups sensés mais voit rarement au-delà du coup suivant.',
     uciElo: null,
     weakening: { candidates: 6, temperatureCp: 650 },
