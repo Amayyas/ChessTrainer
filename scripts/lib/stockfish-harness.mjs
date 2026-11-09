@@ -81,10 +81,13 @@ export async function bootEngine(page, { name = 'sf', options = [] } = {}) {
           state.onLine = (line) => {
             const multipv = line.match(/multipv (\d+)/)
             const score = line.match(/score (cp|mate) (-?\d+)/)
-            if (line.startsWith('info') && score) {
+            // Bound lines (lowerbound/upperbound) are a search mid-flight, not
+            // a finished score for the line.
+            if (line.startsWith('info') && score && !/ (lower|upper)bound/.test(line)) {
               scores.set(multipv ? Number(multipv[1]) : 1, {
                 kind: score[1],
                 value: Number(score[2]),
+                move: line.match(/ pv (\S+)/)?.[1] ?? null,
               })
             }
             const best = line.match(/^bestmove (\S+)/)
@@ -94,6 +97,7 @@ export async function bootEngine(page, { name = 'sf', options = [] } = {}) {
                 best: best[1],
                 first: scores.get(1) ?? null,
                 second: scores.get(2) ?? null,
+                lines: [...scores.entries()].sort(([a], [b]) => a - b).map(([, line]) => line),
               })
             }
           }

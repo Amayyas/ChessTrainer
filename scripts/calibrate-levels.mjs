@@ -1,34 +1,36 @@
 /**
- * Play-tests the two weakest battle levels against Stockfish 18's own Elo model.
+ * Play-tests the battle levels below Stockfish 18's floor against its own Elo
+ * model.
  *
  * Levels 3-6 set `UCI_Elo` directly, so their rating is the number handed to the
- * engine. Levels 1-2 can't: Stockfish 18 has no strength below `UCI_Elo` 1320,
- * so both sit at that floor and differ only by a search-depth cap (4 vs 6). This
- * script measures where they actually land by playing them against `UCI_Elo`
- * references and against each other, then prints the logistic-implied Elo so
- * `src/engine/levels.ts` can carry an honest figure instead of a placeholder.
+ * engine. Stockfish 18 has no strength below `UCI_Elo` 1320, so the levels under
+ * it are weakened by the app instead: the engine reports a few lines and one is
+ * drawn by what it costs (src/engine/weakening.ts). This script measures where
+ * those levels land — the strongest of them against a `UCI_Elo` 1320 reference,
+ * each weaker one against the level above it — and prints the logistic-implied
+ * Elo so `src/engine/levels.ts` carries a measured figure.
+ *
+ * The levels and the draw are imported from src/ under Node's type stripping
+ * (from 22.18, under the `engines` floor), so what is measured is what ships.
  *
  * A fixed opening book, each line played from both sides, keeps the sample
- * comparable run to run — but Stockfish's `UCI_LimitStrength` picks moves with
- * time-seeded randomness, so the result is not deterministic. At 26 openings
- * (52 games/matchup) a score carries roughly ±90 Elo; run it twice and average.
+ * comparable run to run — but the draw is random, as is `UCI_LimitStrength`'s
+ * move choice, so the result is not deterministic. At 26 openings (52
+ * games/matchup) a score carries roughly ±90 Elo; run it twice and average.
  * Needs `npx playwright install chromium` once (same as the puzzle importer).
  *
  *   node scripts/calibrate-levels.mjs [--openings N]
  *
  * The engine rules (.claude/rules/engine.md) apply: a score outside ~25-75% only
  * bounds a level ("clearly weaker"), it does not measure it — read those as
- * bounds, not numbers.
+ * bounds, not numbers. That is why each weakened level is chained to its
+ * neighbour rather than set against a reference it cannot score against.
  */
 import { Chess } from 'chess.js'
 import { chromium } from '@playwright/test'
 import { bootEngine, servePublic } from './lib/stockfish-harness.mjs'
-
-/** Levels 1 and 2 as shipped — keep in step with src/engine/levels.ts. Held here
- *  rather than imported: nothing else in scripts/ imports a .ts module, and
- *  type-stripping only lands in the supported Node range from 22.18. */
-const L1 = { uciElo: 1320, depth: 4 }
-const L2 = { uciElo: 1320, depth: 6 }
+import { ENGINE_LEVELS, UCI_ELO_FLOOR } from '../src/engine/levels.ts'
+import { pickCandidate } from '../src/engine/weakening.ts'
 
 const openingsArg = process.argv.indexOf('--openings')
 const rawOpenings = openingsArg > 0 ? Number(process.argv[openingsArg + 1]) : 26
@@ -112,7 +114,7 @@ async function playGame(white, black, opening) {
 
   while (!chess.isGameOver() && chess.history().length < MAX_PLIES) {
     const engine = chess.turn() === 'w' ? white : black
-    const { best } = await engine.search(chess.fen(), engine.depth)
+    const best = await engine.play(chess.fen())
     if (!best || best === '(none)' || best === '0000') break
     chess.move({ from: best.slice(0, 2), to: best.slice(2, 4), promotion: best[4] || undefined })
   }
@@ -124,23 +126,45 @@ async function playGame(white, black, opening) {
   return cp > 0 ? 1 : 0
 }
 
-const limitStrength = (elo) => [
-  'setoption name UCI_LimitStrength value true',
-  `setoption name UCI_Elo value ${elo}`,
-]
+/**
+ * Boots a player for `config` — a level from levels.ts, or a reference with a
+ * `uciElo` and a `depth` — and returns `{ play(fen) }`, which answers with a
+ * move the way the battle does: a rated level's `bestmove`, a weakened level's
+ * draw from its lines.
+ */
+async function player(page, name, config) {
+  const options = config.weakening
+    ? [
+        'setoption name UCI_LimitStrength value false',
+        `setoption name MultiPV value ${config.weakening.candidates}`,
+      ]
+    : [
+        'setoption name UCI_LimitStrength value true',
+        `setoption name UCI_Elo value ${config.uciElo}`,
+      ]
+  const search = await bootEngine(page, { name, options })
+  return {
+    async play(fen) {
+      const result = await search(fen, config.depth)
+      if (!config.weakening) return result.best
+      const candidates = result.lines
+        .filter((line) => line.move)
+        .map((line) => ({
+          move: line.move,
+          scoreCp: line.kind === 'cp' ? line.value : null,
+          scoreMate: line.kind === 'mate' ? line.value : null,
+        }))
+      return pickCandidate(candidates, config.weakening.temperatureCp) ?? result.best
+    },
+  }
+}
 
 /** Plays `a` against `b` over the whole book, both colours. Score is a's. */
 async function matchup(browser, url, label, a, b) {
   const page = await browser.newPage()
   await page.goto(url)
-  const engineA = {
-    search: await bootEngine(page, { name: 'a', options: a.options }),
-    depth: a.depth,
-  }
-  const engineB = {
-    search: await bootEngine(page, { name: 'b', options: b.options }),
-    depth: b.depth,
-  }
+  const engineA = await player(page, 'a', a)
+  const engineB = await player(page, 'b', b)
 
   let score = 0
   let games = 0
@@ -165,34 +189,45 @@ async function matchup(browser, url, label, a, b) {
 
 // --- run ------------------------------------------------------------------
 
-/** A level at the 1320 floor with a given depth cap. */
-const floor = (depth) => ({ options: limitStrength(L1.uciElo), depth })
-const asRef = (elo) => ({ options: limitStrength(elo), depth: REFERENCE_DEPTH })
+/** A `UCI_Elo` yardstick at full rated strength (see REFERENCE_DEPTH). */
+const reference = (uciElo) => ({
+  label: `ref ${uciElo}`,
+  uciElo,
+  weakening: null,
+  depth: REFERENCE_DEPTH,
+})
+const WEAKENED = ENGINE_LEVELS.filter((level) => level.weakening)
+const FIRST_RATED = ENGINE_LEVELS[WEAKENED.length]
+if (WEAKENED.length === 0) {
+  console.error('No level below the floor in src/engine/levels.ts: nothing to calibrate.')
+  process.exit(1)
+}
 
 const { server, port } = await servePublic()
 const url = `http://localhost:${port}/`
 const browser = await chromium.launch()
 
+const describe = (level) =>
+  `${level.label} (MultiPV ${level.weakening.candidates}, T ${level.weakening.temperatureCp}, depth ${level.depth})`
 process.stderr.write(
-  `calibrating L1 (uciElo ${L1.uciElo}, depth ${L1.depth}) and ` +
-    `L2 (uciElo ${L2.uciElo}, depth ${L2.depth}) over ${BOOK.length} openings x2\n`,
+  `calibrating ${WEAKENED.map(describe).join(', ')} over ${BOOK.length} openings x2\n`,
 )
 
-const run = (label, a, b) => matchup(browser, url, label, a, b)
-const results = []
+// Each matchup runs on its own page, so they play side by side.
+const pairs = []
+// The strongest weakened level is anchored on the engine's own scale...
+const top = WEAKENED.at(-1)
+pairs.push([top, reference(UCI_ELO_FLOOR)])
+// ...and each one below it on its neighbour, where a score still discriminates.
+for (let i = WEAKENED.length - 2; i >= 0; i -= 1) pairs.push([WEAKENED[i], WEAKENED[i + 1]])
+// Bounds, not measurements: the ladder must still rise into the rated levels,
+// and the weakest level must sit clearly under the floor.
+pairs.push([top, FIRST_RATED])
+if (WEAKENED.length > 1) pairs.push([WEAKENED[0], reference(UCI_ELO_FLOOR)])
 
-// The problem: the two levels as shipped (both uciElo 1320, depth 4 vs 6) are
-// the same opponent, and where that opponent lands on the engine's own scale.
-results.push(await run(`L1 d${L1.depth} vs L2 d${L2.depth}`, floor(L1.depth), floor(L2.depth)))
-results.push(await run(`L1 d${L1.depth} vs ref 1320`, floor(L1.depth), asRef(1320)))
-results.push(await run(`L2 d${L2.depth} vs ref 1320`, floor(L2.depth), asRef(1320)))
-
-// Is the depth cap a lever at the floor, going shallower or deeper? These decide
-// whether level 2 can be given a real gap by depth alone.
-results.push(await run(`L1 d${L1.depth} vs d2`, floor(L1.depth), floor(2)))
-results.push(await run('d2 vs ref 1320', floor(2), asRef(1320)))
-results.push(await run(`L1 d${L1.depth} vs d10`, floor(L1.depth), floor(10)))
-results.push(await run('d10 vs ref 1500', floor(10), asRef(1500)))
+const results = await Promise.all(
+  pairs.map(([a, b]) => matchup(browser, url, `${a.label} vs ${b.label}`, a, b)),
+)
 
 await browser.close()
 server.close()
@@ -210,16 +245,18 @@ const table = [
 ].join('\n')
 
 // The markdown report goes to stdout; progress went to stderr.
-process.stdout.write(`# Battle level 1-2 calibration
+process.stdout.write(`# Calibration of the battle levels below the floor
 
 Run: ${new Date().toISOString()} — ${BOOK.length} openings, both colours (${BOOK.length * 2} games/matchup).
 Engine: vendored Stockfish 18 lite-single. References: UCI_LimitStrength + UCI_Elo, depth ${REFERENCE_DEPTH}.
-L1 = uciElo ${L1.uciElo} depth ${L1.depth}. L2 = uciElo ${L2.uciElo} depth ${L2.depth}.
+${WEAKENED.map(describe).join('. ')}.
 
 ${table}
 
 Reading (see .claude/rules/engine.md): a % outside ~25-75 only bounds a level,
-and a run carries ~±90 Elo — average two. "L1 d4 vs L2 d6" is the gap the shipped
-config produces. The "vs d2" / "vs d10" rows ask whether the depth cap is a lever
-at all near the floor; "vs ref" rows place a config on the engine's own scale.
+and a run carries ~±90 Elo — average two. The first row places ${top.label} on the
+engine's own scale (${UCI_ELO_FLOOR} + Δ); each row after it until the bounds
+places a level against the one above it, so its figure is the sum of the chain.
+The last rows are bounds: the ladder rising into ${FIRST_RATED.label}, and the
+weakest level well under the floor.
 `)
