@@ -17,10 +17,27 @@ which needs COOP/COEP on every response; `lite-single` avoids that entirely.
 Multithreading is therefore not a flag — it means changing the build and the
 headers both.
 
-Strength is set through Stockfish's own model: `configureLevel` sends
-`UCI_LimitStrength true` then `UCI_Elo`, which the engine authors calibrated
-over 1320–3190, and nothing else. It is idempotent. Levels 3–6 set `UCI_Elo`
-directly, so their `elo` is the number handed to the engine.
+Strength is set two ways, and a level uses exactly one. A rated level goes
+through Stockfish's own model: `configureLevel` sends `UCI_LimitStrength true`
+then `UCI_Elo`, which the engine authors calibrated over 1320–3190, so its
+`elo` is the number handed to the engine. A level below that floor — nothing in
+the engine reaches it, see below — has `uciElo: null` and a `weakening`
+instead: `configureLevel` sends `UCI_LimitStrength false` and `MultiPV N`, and
+the battle draws its move from the N lines with odds `exp(-loss / T)`
+(`src/engine/weakening.ts`). `MultiPV` is sent for every level, so a rated level
+on a reused worker never inherits a weakened one's lines. `configureLevel` is
+idempotent.
+
+The draw is the app's own model, so its `elo` is only what the play-test says:
+`scripts/calibrate-levels.mjs` imports the levels and the draw from `src/` and
+anchors the strongest weakened level on a `UCI_Elo 1320` reference, then chains
+each weaker one to its neighbour, keeping every step inside the band where a
+score discriminates. Change a `weakening` and the figure is stale until the
+script is run again (twice, averaged). Two things that surprised the sweep that
+chose the values: with 6 candidates the temperature saturates past ~650, since
+the draw is close to uniform by then; and the candidate count is a coarse lever
+— at 8 lines a 50cp change in temperature moved the score from 25% to 6% in one
+sample.
 
 Two things that were measured rather than assumed, both counter-intuitive:
 
@@ -28,18 +45,17 @@ Two things that were measured rather than assumed, both counter-intuitive:
   internal skill from `UCI_Elo` alone and ignores the option — so it is not
   sent. At the 1320 floor the `go depth` cap is the only knob left — and the
   play-test found it does nothing (see below).
-- **Stockfish 18 has no floor below ~1320, and nothing separates two levels
-  sitting on it.** `scripts/calibrate-levels.mjs` (~50 games/matchup) settled
-  levels 1–2: they play each other dead even across three runs, level 1 plays
-  the same at depth 2, 4, 6 and 10, and a depth-2 engine still scores 51%
-  against a 1320 reference. `UCI_Elo` barely moves down here too (a 1400 setting
-  bought ~40 Elo). Both play about 1320; their `elo` gap is a placement, not a
-  measured difference. Run the script twice and average — `UCI_LimitStrength`
-  picks moves with time-seeded randomness, so a matchup carries ~±90 Elo. Not
-  from the calibration but consistent with it: a quick probe at `UCI_Elo 1320`,
-  depth 4 saw the engine grab a hanging queen 8 times in 10 — it takes free
-  material rather than hanging its own, so "Novice" is a beginner who plays
-  soundly, not one who blunders pieces.
+- **Stockfish 18 has no floor below ~1320, and nothing in it goes lower.** An
+  earlier play-test (`scripts/calibrate-levels.mjs`, ~50 games/matchup) put
+  levels 1–2 at that floor with depth caps 4 and 6: they played each other dead
+  even across three runs, a level played the same at depth 2, 4, 6 and 10, and
+  a depth-2 engine still scored 51% against a 1320 reference. `UCI_Elo` barely
+  moved down there either (a 1400 setting bought ~40 Elo). A quick probe at
+  `UCI_Elo 1320`, depth 4 saw the engine grab a hanging queen 8 times in 10 —
+  it takes free material rather than hanging its own. That is why the levels
+  below the floor are weakened by the app's draw rather than by any engine
+  option. Run the script twice and average: the draw and `UCI_LimitStrength`
+  are both random, so a matchup carries ~±90 Elo.
 
 Before changing a level, read the header of `src/engine/levels.ts`. Every Elo
 figure is worth ±150 — a way for a player to place themselves, not a rating.

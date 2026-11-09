@@ -51,6 +51,7 @@ const analyze = vi.fn(async (fen: string): Promise<Analysis | null> => {
     scoreMate: mate === undefined ? null : mate * sign,
     depth: 14,
     pv: [],
+    candidates: [],
   }
 })
 

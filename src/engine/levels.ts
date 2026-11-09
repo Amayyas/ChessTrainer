@@ -37,6 +37,8 @@
  * a desktop; a slow phone has ample room under the deadline.
  */
 
+import type { Weakening } from '@/engine/weakening'
+
 export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface EngineLevel {
@@ -46,8 +48,13 @@ export interface EngineLevel {
   elo: number
   /** What this opponent actually does, for the player choosing a level. */
   description: string
-  /** Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below `UCI_ELO_FLOOR`. */
-  uciElo: number
+  /**
+   * Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below `UCI_ELO_FLOOR`;
+   * null for a level below it, which `weakening` plays instead.
+   */
+  uciElo: number | null
+  /** How a level below the floor draws its move (engine/weakening.ts); else null. */
+  weakening: Weakening | null
   /** Search-depth cap handed to `go depth`. Keeps a move fast; `UCI_Elo` does the weakening (see the header). */
   depth: number
   /** Simulated thinking time, so moves do not appear instantly. */
@@ -62,19 +69,21 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 1300,
+    elo: 1000,
     description: 'Joue des coups sensés mais voit rarement au-delà du coup suivant.',
-    uciElo: UCI_ELO_FLOOR,
-    depth: 4,
+    uciElo: null,
+    weakening: { candidates: 6, temperatureCp: 650 },
+    depth: 6,
     minDelayMs: 300,
     maxDelayMs: 900,
   },
   {
     id: 2,
     label: 'Débutant',
-    elo: 1350,
+    elo: 1150,
     description: 'Repère les prises et les échecs, mais n’a pas encore de plan.',
-    uciElo: UCI_ELO_FLOOR,
+    uciElo: null,
+    weakening: { candidates: 6, temperatureCp: 350 },
     depth: 6,
     minDelayMs: 400,
     maxDelayMs: 1100,
@@ -85,6 +94,7 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     elo: 1500,
     description: 'Calcule quelques coups d’avance et punit les erreurs simples.',
     uciElo: 1500,
+    weakening: null,
     depth: 8,
     minDelayMs: 500,
     maxDelayMs: 1300,
@@ -95,6 +105,7 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     elo: 1800,
     description: 'Joue proprement et sanctionne les combinaisons courtes.',
     uciElo: 1800,
+    weakening: null,
     depth: 10,
     minDelayMs: 600,
     maxDelayMs: 1500,
@@ -105,6 +116,7 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     elo: 2100,
     description: 'Cherche loin et ne laisse presque rien passer.',
     uciElo: 2100,
+    weakening: null,
     depth: 11,
     minDelayMs: 700,
     maxDelayMs: 1800,
@@ -115,6 +127,7 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     elo: 2500,
     description: 'Punit la moindre imprécision et ne pardonne aucun coup approximatif.',
     uciElo: 2500,
+    weakening: null,
     depth: 12,
     minDelayMs: 800,
     maxDelayMs: 2000,
