@@ -203,6 +203,34 @@ if (WEAKENED.length === 0) {
   process.exit(1)
 }
 
+/**
+ * Configurations that ship nowhere and exist to keep the chain measurable. Two
+ * levels about 300 apart score ~15% against each other, outside the band where
+ * a score discriminates; a bridge between them splits the gap into two steps
+ * that each stay inside it. Each sits directly under the level it names.
+ */
+const BRIDGES = [
+  {
+    label: 'bridge (6 lines, T 650)',
+    under: 'Débutant',
+    uciElo: null,
+    weakening: { candidates: 6, temperatureCp: 650 },
+    depth: 6,
+  },
+]
+for (const bridge of BRIDGES) {
+  if (!WEAKENED.some((level) => level.label === bridge.under)) {
+    console.error(`Bridge "${bridge.label}" sits under "${bridge.under}", which is not weakened.`)
+    process.exit(1)
+  }
+}
+
+/** Strongest first: each weakened level, then the bridges under it. */
+const CHAIN = WEAKENED.toReversed().flatMap((level) => [
+  level,
+  ...BRIDGES.filter((bridge) => bridge.under === level.label),
+])
+
 const { server, port } = await servePublic()
 const url = `http://localhost:${port}/`
 const browser = await chromium.launch()
@@ -216,18 +244,27 @@ process.stderr.write(
 // Each matchup runs on its own page, so they play side by side.
 const pairs = []
 // The strongest weakened level is anchored on the engine's own scale...
-const top = WEAKENED.at(-1)
+const top = CHAIN[0]
 pairs.push([top, reference(UCI_ELO_FLOOR)])
-// ...and each one below it on its neighbour, where a score still discriminates.
-for (let i = WEAKENED.length - 2; i >= 0; i -= 1) pairs.push([WEAKENED[i], WEAKENED[i + 1]])
+// ...and each link below it on the one above, where a score still discriminates.
+for (let i = 1; i < CHAIN.length; i += 1) pairs.push([CHAIN[i], CHAIN[i - 1]])
+const CHAINED = pairs.length
 // Bounds, not measurements: the ladder must still rise into the rated levels,
 // and the weakest level must sit clearly under the floor.
 pairs.push([top, FIRST_RATED])
-if (WEAKENED.length > 1) pairs.push([WEAKENED[0], reference(UCI_ELO_FLOOR)])
+if (CHAIN.length > 1) pairs.push([CHAIN.at(-1), reference(UCI_ELO_FLOOR)])
 
 const results = await Promise.all(
   pairs.map(([a, b]) => matchup(browser, url, `${a.label} vs ${b.label}`, a, b)),
 )
+
+// Each chained link's figure: the floor plus every Δ down to it.
+let figure = UCI_ELO_FLOOR
+results.forEach((result, i) => {
+  if (i >= CHAINED) return
+  figure += result.eloDelta
+  result.figure = figure
+})
 
 await browser.close()
 server.close()
@@ -235,12 +272,12 @@ server.close()
 // --- report -------------------------------------------------------------
 
 const table = [
-  '| matchup | score | % | implied Δ Elo |',
-  '| --- | --- | --- | --- |',
+  '| matchup | score | % | implied Δ Elo | chained figure |',
+  '| --- | --- | --- | --- | --- |',
   ...results.map(
     (r) =>
       `| ${r.label} | ${r.score}/${r.games} | ${(r.pct * 100).toFixed(1)}% | ` +
-      `${r.eloDelta >= 0 ? '+' : ''}${r.eloDelta} |`,
+      `${r.eloDelta >= 0 ? '+' : ''}${r.eloDelta} | ${r.figure ?? 'bound'} |`,
   ),
 ].join('\n')
 
@@ -250,13 +287,15 @@ process.stdout.write(`# Calibration of the battle levels below the floor
 Run: ${new Date().toISOString()} — ${BOOK.length} openings, both colours (${BOOK.length * 2} games/matchup).
 Engine: vendored Stockfish 18 lite-single. References: UCI_LimitStrength + UCI_Elo, depth ${REFERENCE_DEPTH}.
 ${WEAKENED.map(describe).join('. ')}.
+Bridges, measured but not shipped: ${BRIDGES.map((bridge) => `${bridge.label}, under ${bridge.under}`).join('; ') || 'none'}.
 
 ${table}
 
 Reading (see .claude/rules/engine.md): a % outside ~25-75 only bounds a level,
 and a run carries ~±90 Elo — average two. The first row places ${top.label} on the
 engine's own scale (${UCI_ELO_FLOOR} + Δ); each row after it until the bounds
-places a level against the one above it, so its figure is the sum of the chain.
+places a link against the one above it, so its figure is the sum of the chain —
+and carries the error of every link above it.
 The last rows are bounds: the ladder rising into ${FIRST_RATED.label}, and the
 weakest level well under the floor.
 `)
