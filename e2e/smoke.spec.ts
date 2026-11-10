@@ -59,8 +59,8 @@ test('a move in Affrontement gets a reply from the engine', async ({ page }) => 
 
   // Novice — a weakened level, so the reply goes through the MultiPV lines and
   // the draw among them (engine/weakening.ts), the path no unit test can run
-  // against a real worker — then start. The start button only takes its "Commencer" label once the engine
-  // has loaded.
+  // against a real worker — then start. The start button only takes its
+  // "Commencer" label once the engine has loaded.
   //
   // A radio, not a button: the three settings were rows of buttons carrying
   // aria-pressed and are toggle groups now, so the level is one option of a

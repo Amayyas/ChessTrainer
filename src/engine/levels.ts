@@ -48,8 +48,10 @@
  * import `ENGINE_LEVELS` and read `[0].elo` / `.at(-1).elo` (see
  * `src/features/home/modes.ts`).
  *
- * Depths are capped low on purpose (4–12). `UCI_Elo` does the weakening; extra
- * depth makes a rated bot no stronger, only slower — and a search that runs
+ * Depths are capped low on purpose (4–12). On a rated level `UCI_Elo` does the
+ * weakening, and extra depth makes the bot no stronger, only slower. On a
+ * weakened level depth shapes the lines the draw picks from, so changing it
+ * stales the measured figure like any other `weakening` change — and a search that runs
  * past the battle's 10s `SEARCH_TIMEOUT_MS`, three times over, gives up on the
  * engine and freezes the board. Depth 12 measured a few hundred ms per move on
  * a desktop; a slow phone has ample room under the deadline.
@@ -73,7 +75,10 @@ export interface EngineLevel {
   uciElo: number | null
   /** How a level below the floor draws its move (engine/weakening.ts); else null. */
   weakening: Weakening | null
-  /** Search-depth cap handed to `go depth`. Keeps a move fast; `UCI_Elo` does the weakening (see the header). */
+  /**
+   * Search-depth cap handed to `go depth`. Keeps a move fast. Inert on a rated
+   * level; on a weakened one it shapes the drawn lines (see the header).
+   */
   depth: number
   /** Simulated thinking time, so moves do not appear instantly. */
   minDelayMs: number

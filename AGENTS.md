@@ -110,8 +110,8 @@ The short version of each:
 
 - **Engine:** strength comes from `UCI_LimitStrength` + `UCI_Elo`, and below
   its 1320 floor from the app's own draw among the engine's top lines
-  (`src/engine/weakening.ts`). `Skill Level` is inert under `UCI_LimitStrength`. Depth caps stay at 12 or below. Every
-  Elo figure is ±150 and lives in `src/engine/levels.ts` — import it, never
+  (`src/engine/weakening.ts`). `Skill Level` is inert under
+  `UCI_LimitStrength`. Depth caps stay at 12 or below. Every Elo figure is ±150 and lives in `src/engine/levels.ts` — import it, never
   restate it.
 - **Migrations:** a shipped migration is never edited — a correction is a new
   file. Every policy change gets a test in `supabase/tests/rls.test.ts`. A column
@@ -206,8 +206,8 @@ Stockfish 18 (the `lite-single` NNUE build) runs single-threaded in a Web
 Worker, loaded on demand. The top four levels set `UCI_Elo` directly. The two
 below Stockfish's 1320 floor, which nothing in the engine reaches, run it
 unlimited and draw their move among its top lines, weighted by what each costs;
-their figures come from play-testing that draw. A threaded build would need `SharedArrayBuffer`, so COOP/COEP on every
-response, and it buys nothing at the depths this app searches.
+their figures come from play-testing that draw. A threaded build would need
+`SharedArrayBuffer`, so COOP/COEP on every response, and it buys nothing at the depths this app searches.
 
 The boards are chessground (GPL-3.0-or-later), drawn as a printed diagram. The
 code is AGPL-3.0: a deployed fork must offer its full source to its users.

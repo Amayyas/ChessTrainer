@@ -43,7 +43,7 @@ Two things that were measured rather than assumed, both counter-intuitive:
 
 - **`Skill Level` is inert under `UCI_LimitStrength`.** Stockfish derives its
   internal skill from `UCI_Elo` alone and ignores the option — so it is not
-  sent. At the 1320 floor the `go depth` cap is the only knob left — and the
+  sent. At the 1320 floor the `go depth` cap was the only knob left — and the
   play-test found it does nothing (see below).
 - **Stockfish 18 has no floor below ~1320, and nothing in it goes lower.** An
   earlier play-test (`scripts/calibrate-levels.mjs`, ~50 games/matchup) put
@@ -71,8 +71,10 @@ Never restate those figures elsewhere; import them.
   shipped build had no `UCI_Elo` at all. A claim about the engine is worth what
   the measurement behind it is worth.
 
-Depth caps stay low (≤12). `UCI_Elo` does the weakening; extra depth makes a
-rated bot no stronger, only slower, and the battle abandons a search that runs
+Depth caps stay low (≤12). On a rated level `UCI_Elo` does the weakening, and
+extra depth makes the bot no stronger, only slower. On a weakened level depth
+changes which lines the draw sees, so it is part of what the calibration
+measured. Either way, and the battle abandons a search that runs
 past `SEARCH_TIMEOUT_MS` (10s) — which, three times over, gives up on the
 engine and freezes the board.
 

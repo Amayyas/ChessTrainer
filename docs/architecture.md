@@ -69,8 +69,8 @@ classDiagram
         +number depth
         +number scoreCp
         +number scoreMate
+        +number multipv
         +string[] pv
-        +Candidate[] candidates
     }
 
     class Analysis {
