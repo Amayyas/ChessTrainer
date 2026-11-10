@@ -56,6 +56,10 @@ describe('ENGINE_LEVELS', () => {
         expect(current.weakening.candidates).toBeLessThanOrEqual(previous.weakening.candidates)
       } else if (previous.uciElo !== null && current.uciElo !== null) {
         expect(current.uciElo).toBeGreaterThan(previous.uciElo)
+      } else {
+        // The one step left is the crossing, from the draw to `UCI_Elo`.
+        expect(previous.weakening).not.toBeNull()
+        expect(current.uciElo).not.toBeNull()
       }
     }
   })
