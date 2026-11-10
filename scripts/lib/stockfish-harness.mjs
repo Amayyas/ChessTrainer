@@ -83,12 +83,13 @@ export async function bootEngine(page, { name = 'sf', options = [] } = {}) {
             const score = line.match(/score (cp|mate) (-?\d+)/)
             // Bound lines (lowerbound/upperbound) are a search mid-flight, not
             // a finished score for the line.
+            // A line with no pv keeps the slot's previous move, as the app does.
+            const move = line.match(/ pv (\S+)/)?.[1]
             if (line.startsWith('info') && score && !/ (lower|upper)bound/.test(line)) {
-              scores.set(multipv ? Number(multipv[1]) : 1, {
-                kind: score[1],
-                value: Number(score[2]),
-                move: line.match(/ pv (\S+)/)?.[1] ?? null,
-              })
+              const slot = multipv ? Number(multipv[1]) : 1
+              if (move) scores.set(slot, { kind: score[1], value: Number(score[2]), move })
+              else if (!scores.has(slot))
+                scores.set(slot, { kind: score[1], value: Number(score[2]), move: null })
             }
             const best = line.match(/^bestmove (\S+)/)
             if (best) {

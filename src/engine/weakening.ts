@@ -11,7 +11,10 @@
  *
  * Self-contained on purpose — no `@/` import, only erasable TypeScript — so
  * `scripts/calibrate-levels.mjs` runs this very function under Node's type
- * stripping and the levels are measured with the code that plays them.
+ * stripping and the levels are measured with the draw that plays them. The
+ * lines themselves are collected twice, by `StockfishEngine` and by
+ * `scripts/lib/stockfish-harness.mjs`; the harness also drops bound lines,
+ * which Stockfish prints only after seconds of search, past these depths.
  */
 
 /** One `MultiPV` line: its first move and its score, side to move's view. */
