@@ -33,11 +33,11 @@ The draw is the app's own model, so its `elo` is only what the play-test says:
 anchors the strongest weakened level on a `UCI_Elo 1320` reference, then chains
 each weaker one to its neighbour, keeping every step inside the band where a
 score discriminates. Change a `weakening` and the figure is stale until the
-script is run again (twice, averaged). Two things that surprised the sweep that
-chose the values: with 6 candidates the temperature saturates past ~650, since
-the draw is close to uniform by then; and the candidate count is a coarse lever
-— at 8 lines a 50cp change in temperature moved the score from 25% to 6% in one
-sample.
+script is run again (twice, averaged). A level too far below its neighbour for
+one matchup to measure is chained through a bridge — a weakened configuration
+that ships nowhere, declared in the script's `BRIDGES`. Each extra link adds its
+error to every figure below it. The sweep's surprises are in the header of
+`levels.ts`.
 
 Two things that were measured rather than assumed, both counter-intuitive:
 

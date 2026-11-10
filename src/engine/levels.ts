@@ -18,27 +18,37 @@
  * two names, and too strong for a beginner.
  *
  * So levels 1 and 2 are weakened by the app instead (`weakening`, see
- * engine/weakening.ts): the engine runs unlimited at depth 6 and reports six
- * lines, and the battle draws one with odds `exp(-loss / T)`. Their `elo` is
- * measured, not handed to anything — `scripts/calibrate-levels.mjs`, 52 games
- * per matchup, two runs averaged (9 November 2026):
+ * engine/weakening.ts): the engine runs unlimited and reports a few lines —
+ * six at depth 6 for Débutant, eight at depth 4 for Novice — and the battle
+ * draws one with odds `exp(-loss / T)`. Their `elo` is measured, not handed to
+ * anything — `scripts/calibrate-levels.mjs`, 52 games per matchup, two runs
+ * averaged (10 November 2026):
  *
- *   Débutant vs `UCI_Elo 1320`   23.1% / 30.8%  → Δ −175  → ~1150
- *   Novice vs Débutant           31.7% / 39.4%  → Δ −104  → ~1050
- *   Novice vs `UCI_Elo 1320`     16.3% / 22.1%  → Δ −252  (a bound, agrees)
- *   Débutant vs Intermédiaire    13.5% /  4.8%  (a bound: clearly weaker)
+ *   Débutant vs `UCI_Elo 1320`   26.0% / 29.8%  → Δ −165  → ~1155
+ *   bridge vs Débutant           23.1% / 31.7%  → Δ −171  → ~985
+ *   Novice vs bridge             20.2% / 25.0%  → Δ −215  → ~770
+ *   Novice vs `UCI_Elo 1320`      6.7% /  5.8%  (a bound, agrees)
+ *   Débutant vs Intermédiaire    18.3% / 10.6%  (a bound: clearly weaker)
+ *
+ * The bridge (six lines, T 650, depth 6) ships nowhere: Novice is too far
+ * below Débutant for one matchup to measure, so the script chains through it.
+ * Novice's figure carries the error of all three links, and its own link sits
+ * at the edge of the band where a score discriminates — read it as "about
+ * 750, give or take more than the usual 150".
  *
  * These are figures on the engine's own scale, which its authors anchored to
  * the CCRL 40/4 engine rating list — not to Lichess, Chess.com or FIDE.
- * With 6 lines, raising `T` past ~650 changes little: the draw is close to
- * uniform by then. A weaker Novice needs more lines, and a re-measure.
+ * Two things the sweep that chose the values found: with six lines, raising
+ * `T` past ~650 changes little, the draw being close to uniform by then; and
+ * the line count is a coarse lever — from eight lines to nine at the same `T`
+ * took one sample from 35% to 2% against the bridge.
  *
  * Treat every number as ±150 and as a way for a player to place themselves,
  * not as a rating earned against humans. Never restate these figures in copy —
  * import `ENGINE_LEVELS` and read `[0].elo` / `.at(-1).elo` (see
  * `src/features/home/modes.ts`).
  *
- * Depths are capped low on purpose (6–12). `UCI_Elo` does the weakening; extra
+ * Depths are capped low on purpose (4–12). `UCI_Elo` does the weakening; extra
  * depth makes a rated bot no stronger, only slower — and a search that runs
  * past the battle's 10s `SEARCH_TIMEOUT_MS`, three times over, gives up on the
  * engine and freezes the board. Depth 12 measured a few hundred ms per move on
@@ -77,11 +87,11 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 1050,
+    elo: 750,
     description: 'Joue des coups sensés mais voit rarement au-delà du coup suivant.',
     uciElo: null,
-    weakening: { candidates: 6, temperatureCp: 650 },
-    depth: 6,
+    weakening: { candidates: 8, temperatureCp: 550 },
+    depth: 4,
     minDelayMs: 300,
     maxDelayMs: 900,
   },
