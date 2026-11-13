@@ -258,12 +258,23 @@ const results = await Promise.all(
   pairs.map(([a, b]) => matchup(browser, url, `${a.label} vs ${b.label}`, a, b)),
 )
 
-// Each chained link's figure: the floor plus every Δ down to it.
+// Each chained link's figure: the floor plus every Δ down to it. A link that
+// scored outside the band only bounds its Δ — at least the band edge's — so
+// its figure, and every figure chained below it, is a bound and not a number.
+const BAND = [0.25, 0.75]
+const deltaAt = (pct) => Math.round(-400 * Math.log10(1 / pct - 1))
 let figure = UCI_ELO_FLOOR
+let bound = null // null while every link measured; then '<', '>', or 'none' once both
 results.forEach((result, i) => {
   if (i >= CHAINED) return
-  figure += result.eloDelta
-  result.figure = figure
+  let delta = result.eloDelta
+  let side = null
+  if (result.pct < BAND[0]) [delta, side] = [deltaAt(BAND[0]), '<']
+  else if (result.pct > BAND[1]) [delta, side] = [deltaAt(BAND[1]), '>']
+  if (side) bound = bound && bound !== side ? 'none' : side
+  figure += delta
+  result.figure =
+    bound === null ? `${figure}` : bound === 'none' ? 'unmeasured' : `${bound} ${figure}`
 })
 
 await browser.close()
@@ -295,7 +306,8 @@ Reading (see .claude/rules/engine.md): a % outside ~25-75 only bounds a level,
 and a run carries ~±90 Elo — average two. The first row places ${top.label} on the
 engine's own scale (${UCI_ELO_FLOOR} + Δ); each row after it until the bounds
 places a link against the one above it, so its figure is the sum of the chain —
-and carries the error of every link above it.
+and carries the error of every link above it. A link outside the band makes its
+figure, and every one below, a bound (< or >) taken at the band's edge.
 The last rows are bounds: the ladder rising into ${FIRST_RATED.label}, and the
 weakest level well under the floor.
 `)
