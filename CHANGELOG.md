@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.7.0](https://github.com/Amayyas/ChessTrainer/compare/v2.6.0...v2.7.0) (2026-11-13)
+
+
+### Features
+
+* **engine:** push Novice down to about 750 ([c923efe](https://github.com/Amayyas/ChessTrainer/commit/c923efea7ebe06b08a00cf041abff2f5e5248101))
+* **engine:** set the two lowest levels on their measured Elo ([54753f1](https://github.com/Amayyas/ChessTrainer/commit/54753f102b07e07133e5ea0a1f47d46501643456))
+* **engine:** weaken the two lowest levels below Stockfish's floor ([81580a5](https://github.com/Amayyas/ChessTrainer/commit/81580a51261890bb552725dbc21bacbb8313a732))
+* **engine:** weaken the two lowest levels below Stockfish's floor ([6932a8f](https://github.com/Amayyas/ChessTrainer/commit/6932a8f5673e694bf0e67061c954ca037f740f21))
+
+
+### Bug Fixes
+
+* clear Semgrep's open findings on main ([123c39b](https://github.com/Amayyas/ChessTrainer/commit/123c39bb474e8c7169939cd56653b39e60557b44))
+* **deps:** update ip-address to 10.7.5 ([e25342d](https://github.com/Amayyas/ChessTrainer/commit/e25342d631f7d972224aa0c0f1baefd4daca0724))
+* **engine:** describe each level by what it actually does ([e971625](https://github.com/Amayyas/ChessTrainer/commit/e971625b484a7ef9d392163b8ad68689175a23e3))
+* **monitoring:** report deploy previews under their own environment ([40acdd2](https://github.com/Amayyas/ChessTrainer/commit/40acdd25e2a14ac17a8aa1b70dc71df9caf17618))
+* **monitoring:** report deploy previews under their own environment ([990453f](https://github.com/Amayyas/ChessTrainer/commit/990453f1e559075cd8931b8b1e721325c0b779f3))
+* **scripts:** keep a line's move when Stockfish reports it without a pv ([252f163](https://github.com/Amayyas/ChessTrainer/commit/252f1639d2b01037ada3b1d975a4dac582dc7639))
+* **scripts:** print a bound, not a figure, below an out-of-band link ([d494004](https://github.com/Amayyas/ChessTrainer/commit/d494004fd2391288aac354dca8e2f814fea6d51b))
+
 ## [2.6.0](https://github.com/Amayyas/ChessTrainer/compare/v2.5.0...v2.6.0) (2026-10-29)
 
 
