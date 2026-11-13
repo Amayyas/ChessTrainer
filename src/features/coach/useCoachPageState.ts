@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
+import { useOpening } from '@/features/coach/useOpening'
 import { useChessGame } from '@/hooks/useChessGame'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
@@ -132,6 +133,13 @@ export function useCoachPageState() {
   const insight = inReplay
     ? analysis.analysisAt(viewFen)
     : { eval: analysis.currentEval, bestMove: analysis.bestMove }
+
+  // The opening as of the position on the board: in replay, the moves up to it.
+  const viewMoves = useMemo(
+    () => (inReplay ? game.history.slice(0, replayPly) : game.history),
+    [game.history, inReplay, replayPly],
+  )
+  const opening = useOpening(viewMoves)
 
   const viewLastMove =
     inReplay && replayPly > 0
@@ -275,6 +283,8 @@ export function useCoachPageState() {
 
     viewFen,
     viewLastMove,
+    viewMoves,
+    opening,
     insight,
     arrows,
     statusLabel,
