@@ -15,19 +15,21 @@ export interface Puzzle {
   sideToMove: Color
 }
 
-export type Difficulty = 'debutant' | 'intermediaire' | 'avance'
+export type Difficulty = 'debutant' | 'intermediaire' | 'avance' | 'expert'
 
 /** Difficulty bands. */
 export function difficultyOf(rating: number): Difficulty {
   if (rating < 1200) return 'debutant'
   if (rating <= 1800) return 'intermediaire'
-  return 'avance'
+  if (rating <= 2200) return 'avance'
+  return 'expert'
 }
 
 export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   debutant: 'Débutant',
   intermediaire: 'Intermédiaire',
   avance: 'Avancé',
+  expert: 'Expert',
 }
 
 /** The bands in order, easiest first — for a difficulty picker. */

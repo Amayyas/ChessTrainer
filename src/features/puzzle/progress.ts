@@ -44,8 +44,13 @@ export interface PuzzleProgress {
   dailySeries: { day: string; ids: string[] } | null
 }
 
-/** How many solved ids to remember. Comfortably above the ~1500-puzzle pool. */
-export const SEEN_CAP = 2000
+/**
+ * How many solved ids to remember. It must stay above the size of the pool, or
+ * a player who has solved them all forgets the oldest and is served them as new
+ * — puzzles.test.ts fails when the pool outgrows it. Not checked here, since
+ * this module must not import the pool (see above).
+ */
+export const SEEN_CAP = 3000
 
 export const EMPTY_PROGRESS: PuzzleProgress = {
   lastSolvedDay: null,
