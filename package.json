@@ -27,6 +27,7 @@
     "db:types": "bash scripts/gen-db-types.sh",
     "vendor:stockfish": "node scripts/vendor-stockfish.mjs",
     "import:puzzles": "node scripts/import-lichess-puzzles.mjs",
+    "build:openings": "node scripts/build-openings.mjs",
     "calibrate:levels": "node scripts/calibrate-levels.mjs"
   },
   "dependencies": {
