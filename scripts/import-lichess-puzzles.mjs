@@ -1,5 +1,13 @@
 /**
- * Rebuilds src/features/puzzle/puzzles.ts from the Lichess Open Database.
+ * Tops up src/features/puzzle/puzzles.ts from the Lichess Open Database.
+ *
+ * The pool only ever grows. Every puzzle already in the file is kept as it is,
+ * id and all, and the run collects just enough new ones to bring each rating
+ * bucket up to PER_BUCKET, numbering them after the highest id in use. Players'
+ * progress names puzzles by id — the solved list, the day's series — so
+ * renumbering the pool would quietly swap every one of those records for a
+ * different puzzle. Widening RATING_MIN or RATING_MAX adds the new buckets;
+ * re-running with nothing changed adds nothing.
  *
  * The old generator played random games and hoped a tactic fell out. This one
  * draws from ~6M rated, human-solved, human-tagged puzzles
@@ -15,13 +23,14 @@
  *   npx playwright install chromium
  *   curl -L -o lichess_db_puzzle.csv.zst \
  *     https://database.lichess.org/lichess_db_puzzle.csv.zst
- *   node scripts/import-lichess-puzzles.mjs lichess_db_puzzle.csv.zst \
- *     > src/features/puzzle/puzzles.ts
+ *   node scripts/import-lichess-puzzles.mjs lichess_db_puzzle.csv.zst
  *
- * Progress and the summary go to stderr; only the file goes to stdout.
+ * The script rewrites puzzles.ts itself rather than printing it: it reads the
+ * current pool from that file first, and a shell redirect would have emptied it
+ * before Node started. Progress and the summary go to stderr.
  */
 import { createReadStream } from 'node:fs'
-import { open } from 'node:fs/promises'
+import { open, writeFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { createZstdDecompress } from 'node:zlib'
@@ -29,8 +38,10 @@ import { Chess } from 'chess.js'
 import { chromium } from '@playwright/test'
 import prettier from 'prettier'
 import { bootEngine, servePublic } from './lib/stockfish-harness.mjs'
+// Under Node's type stripping, as scripts/calibrate-levels.mjs reads the levels.
+import { PUZZLES as EXISTING } from '../src/features/puzzle/puzzles.ts'
 
-/** Where the workflow redirects stdout — used to resolve the Prettier config. */
+/** The file read above and rewritten at the end. */
 const PUZZLE_OUT = fileURLToPath(new URL('../src/features/puzzle/puzzles.ts', import.meta.url))
 
 const CSV = process.argv[2]
@@ -39,20 +50,29 @@ if (!CSV) {
   process.exit(1)
 }
 
+/** 700–2200 was the first import; 2200–2650 was added for the expert band. */
 const RATING_MIN = 700
-const RATING_MAX = 2200
+const RATING_MAX = 2650
 /** The rating span is cut into buckets this wide and each is filled evenly, so
  *  the pool ramps smoothly instead of bunching at the popular mid-ratings. */
 const BUCKET = 150
-/** Kept per bucket (→ 1500 total), and collected per bucket before the
- *  re-screen — a little over, since a few Lichess keys lose it. */
+/** Each bucket is filled to this many puzzles, counting those already in the
+ *  pool. */
 const PER_BUCKET = 150
-const COLLECT_PER_BUCKET = 240
+/** Candidates collected per missing puzzle before the re-screen — a margin,
+ *  since some Lichess keys lose it. */
+const COLLECT_FACTOR = 1.6
 /** Lichess popularity is -100..100 (net up/down votes). */
 const MIN_POPULARITY = 90
 const MIN_PLAYS = 400
-/** Re-screen depth and the centipawn margin a non-mate key must clear. */
-const SCREEN_DEPTH = 12
+/**
+ * Re-screen depth and the centipawn margin a non-mate key must clear. The first
+ * 1500 were screened at depth 12. Raised for the expert band: a shallow search
+ * can rank the stored move first while missing that a second move wins as
+ * well, and that second move would then be marked wrong — the harder the
+ * puzzle, the likelier. A deeper search only ever drops more candidates.
+ */
+const SCREEN_DEPTH = 16
 const MIN_GAP_CP = 150
 /** A non-mate puzzle where the second-best move already leaves the solver this
  *  far ahead was won without the tactic — nothing to teach. */
@@ -228,8 +248,26 @@ const BUCKETS = []
 for (let low = RATING_MIN; low < RATING_MAX; low += BUCKET) BUCKETS.push(low)
 const bucketOf = (rating) =>
   BUCKETS[Math.min(Math.floor((rating - RATING_MIN) / BUCKET), BUCKETS.length - 1)]
+
+// What the pool already holds, per bucket, and so what each bucket still needs.
+// A bucket already at PER_BUCKET collects nothing.
+const lineKey = (puzzle) => `${puzzle.fen}|${puzzle.solution.join(' ')}`
+const present = new Set(EXISTING.map(lineKey))
+const missing = Object.fromEntries(BUCKETS.map((low) => [low, PER_BUCKET]))
+for (const puzzle of EXISTING) {
+  const low = bucketOf(puzzle.rating)
+  if (low in missing) missing[low] = Math.max(0, missing[low] - 1)
+}
+const wanted = Object.fromEntries(
+  BUCKETS.map((low) => [low, Math.ceil(missing[low] * COLLECT_FACTOR)]),
+)
 const collected = Object.fromEntries(BUCKETS.map((low) => [low, []]))
-const full = () => BUCKETS.every((low) => collected[low].length >= COLLECT_PER_BUCKET)
+const full = () => BUCKETS.every((low) => collected[low].length >= wanted[low])
+
+process.stderr.write(
+  `pool holds ${EXISTING.length}; missing per bucket ` +
+    `${BUCKETS.map((low) => `${low}:${missing[low]}`).join(' ')}\n`,
+)
 
 let scanDone = false
 const zstd = createReadStream(CSV, { start: await zstdBodyStart(CSV) }).pipe(createZstdDecompress())
@@ -252,16 +290,16 @@ for await (const line of reader) {
   }
   scanned += 1
   if (scanned % 500000 === 0) {
-    const filled = BUCKETS.filter((low) => collected[low].length >= COLLECT_PER_BUCKET).length
+    const filled = BUCKETS.filter((low) => collected[low].length >= wanted[low]).length
     process.stderr.write(
       `  scanned ${scanned / 1000}k — ${filled}/${BUCKETS.length} buckets full\n`,
     )
   }
   // No column we read contains a comma (FEN and move lists are space-separated).
   const puzzle = toPuzzle(line.split(','))
-  if (!puzzle) continue
-  const bucket = collected[bucketOf(puzzle.rating)]
-  if (bucket.length < COLLECT_PER_BUCKET) bucket.push(puzzle)
+  if (!puzzle || present.has(lineKey(puzzle))) continue
+  const low = bucketOf(puzzle.rating)
+  if (collected[low].length < wanted[low]) collected[low].push(puzzle)
   // Breaking the for-await closes the interface and its input stream.
   if (full()) break
 }
@@ -297,24 +335,27 @@ server.close()
 
 // --- emit ---------------------------------------------------------------
 
-// PER_BUCKET from every rating bucket, so the pool ramps evenly; `kept` keeps
-// scan order within a bucket, which is uncorrelated with the finer rating. Then
-// order the whole pool easiest first and give it stable ids.
+// What each bucket was missing, so the pool ramps evenly; `kept` keeps scan
+// order within a bucket, which is uncorrelated with the finer rating. The new
+// puzzles go after the existing ones, easiest first, numbered on from the
+// highest id in use; nothing already in the pool moves or is renumbered.
 const byBucket = Object.fromEntries(BUCKETS.map((low) => [low, []]))
 for (const puzzle of kept) byBucket[bucketOf(puzzle.rating)].push(puzzle)
-const pool = BUCKETS.flatMap((low) => byBucket[low].slice(0, PER_BUCKET)).sort(
+const added = BUCKETS.flatMap((low) => byBucket[low].slice(0, missing[low])).sort(
   (x, y) => x.rating - y.rating,
 )
-pool.forEach((puzzle, index) => {
-  puzzle.id = `ct-${String(index + 1).padStart(4, '0')}`
+const lastId = Math.max(0, ...EXISTING.map((puzzle) => Number(puzzle.id.slice(3))))
+added.forEach((puzzle, index) => {
+  puzzle.id = `ct-${String(lastId + index + 1).padStart(4, '0')}`
 })
+const pool = [...EXISTING, ...added]
 
 // Every slug assigned above must have its own label in types.ts — puzzles.test.ts
 // ("gives every theme a French label of its own") is what enforces it.
 
 process.stderr.write(
-  `kept ${kept.length}, emitting ${pool.length} ` +
-    `(${BUCKETS.map((low) => Math.min(byBucket[low].length, PER_BUCKET)).join('/')})\n`,
+  `kept ${kept.length}, adding ${added.length} to ${EXISTING.length} ` +
+    `(${BUCKETS.map((low) => `${low}:${Math.min(byBucket[low].length, missing[low])}/${missing[low]}`).join(' ')})\n`,
 )
 
 const source = `/**
@@ -335,4 +376,4 @@ export const PUZZLES: readonly Puzzle[] = ${JSON.stringify(pool)}
 
 // Match the repo's style, so re-running produces no spurious diff.
 const config = (await prettier.resolveConfig(PUZZLE_OUT)) ?? {}
-process.stdout.write(await prettier.format(source, { ...config, parser: 'typescript' }))
+await writeFile(PUZZLE_OUT, await prettier.format(source, { ...config, parser: 'typescript' }))
