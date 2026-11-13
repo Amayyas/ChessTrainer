@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { DAILY_COUNT, dailyPuzzles } from '@/features/puzzle/dailySet'
+import { DAILY_COUNT, DAILY_POOL, dailyPuzzles } from '@/features/puzzle/dailySet'
 import { PUZZLES } from '@/features/puzzle/puzzles'
+import { difficultyOf } from '@/features/puzzle/types'
 
 describe('dailyPuzzles', () => {
   it('returns the daily count', () => {
@@ -27,7 +28,7 @@ describe('dailyPuzzles', () => {
   it('takes one puzzle from each rating slice, every day', () => {
     // The guard against a uniform shuffle handing a beginner five 2000+ puzzles:
     // the i-th puzzle must come from the i-th equal slice of the rated pool.
-    const ranked = [...PUZZLES].sort((a, b) => a.rating - b.rating).map((p) => p.id)
+    const ranked = [...DAILY_POOL].sort((a, b) => a.rating - b.rating).map((p) => p.id)
     for (const day of ['2026-07-11', '2026-07-12', '2026-08-01', '2026-12-25']) {
       const series = dailyPuzzles(day)
       series.forEach((puzzle, slice) => {
@@ -35,6 +36,19 @@ describe('dailyPuzzles', () => {
         expect(rank).toBeGreaterThanOrEqual((slice * ranked.length) / series.length)
         expect(rank).toBeLessThan(((slice + 1) * ranked.length) / series.length)
       })
+    }
+  })
+
+  it('leaves the expert band out of the series', () => {
+    // Expert puzzles are in the pool, so leaving them out is a choice the
+    // series makes, not an accident of what was imported.
+    expect(PUZZLES.some((puzzle) => difficultyOf(puzzle.rating) === 'expert')).toBe(true)
+    for (let day = 1; day <= 60; day += 1) {
+      const key = `2026-11-${String((day % 30) + 1).padStart(2, '0')}`
+      const seen = day > 30 ? DAILY_POOL.slice(0, 900).map((puzzle) => puzzle.id) : []
+      for (const puzzle of dailyPuzzles(key, seen)) {
+        expect(difficultyOf(puzzle.rating)).not.toBe('expert')
+      }
     }
   })
 
