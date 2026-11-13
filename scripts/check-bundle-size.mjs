@@ -32,8 +32,8 @@ const BUDGETS = {
   stockfish: { label: 'Stockfish (on demand)', maxGzipKb: 6 * KB },
   // The puzzle dataset, bundled into the lazy PuzzlePage chunk. It must not be
   // in the initial JS (a stray eager import of dailySet.ts once dragged the
-  // whole array into the entry chunk), and it is capped well above the ~1500
-  // puzzles the importer targets so a runaway pool trips it.
+  // whole array into the entry chunk), and it is capped well above the pool the
+  // importer targets (150 per rating bucket) so a runaway pool trips it.
   puzzles: { label: 'Puzzles (on demand)', maxGzipKb: 120 },
 }
 

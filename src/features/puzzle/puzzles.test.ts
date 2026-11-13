@@ -1,7 +1,8 @@
 import { Chess } from 'chess.js'
 import { describe, expect, it } from 'vitest'
+import { SEEN_CAP } from '@/features/puzzle/progress'
 import { PUZZLES } from '@/features/puzzle/puzzles'
-import { difficultyOf, themeLabel } from '@/features/puzzle/types'
+import { DIFFICULTIES, difficultyOf, themeLabel } from '@/features/puzzle/types'
 
 /**
  * The dataset is imported and re-screened by scripts/import-lichess-puzzles.mjs,
@@ -18,6 +19,21 @@ describe('PUZZLES dataset', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('numbers the pool in the order it grew, so no id was ever reassigned', () => {
+    // Players' progress names puzzles by id. The importer only appends, numbering
+    // on from the last id; a pool renumbered by rating, as the first import did
+    // it, would hand every solved-list entry to a different puzzle.
+    PUZZLES.forEach((puzzle, index) => {
+      expect(puzzle.id).toBe(`ct-${String(index + 1).padStart(4, '0')}`)
+    })
+  })
+
+  it('remembers more solved puzzles than the pool holds', () => {
+    // Below the pool size, a player who has solved every puzzle forgets the
+    // oldest and is served them again as unseen.
+    expect(SEEN_CAP).toBeGreaterThan(PUZZLES.length)
+  })
+
   it.each(PUZZLES.map((puzzle) => [puzzle.id, puzzle] as const))(
     '%s has a legal, replayable solution',
     (_id, puzzle) => {
@@ -29,10 +45,10 @@ describe('PUZZLES dataset', () => {
       expect(puzzle.solution.length % 2).toBe(1)
       // Mates run to mate-in-3 (5 plies); other lines stop at two solver moves.
       expect(puzzle.solution.length).toBeLessThanOrEqual(5)
-      // Loose band around the importer's 700–2200 window — a tripwire, not a
+      // Loose band around the importer's rating window — a tripwire, not a
       // restatement.
       expect(puzzle.rating).toBeGreaterThanOrEqual(600)
-      expect(puzzle.rating).toBeLessThanOrEqual(2400)
+      expect(puzzle.rating).toBeLessThanOrEqual(2800)
 
       for (const uci of puzzle.solution) {
         const applied = chess.move({
@@ -66,10 +82,10 @@ describe('PUZZLES dataset', () => {
     expect(puzzle.solution.length).toBe(announced * 2 - 1)
   })
 
-  it('covers every difficulty band', () => {
-    const bands = new Set(PUZZLES.map((puzzle) => difficultyOf(puzzle.rating)))
-    expect(bands).toContain('debutant')
-    expect(bands).toContain('intermediaire')
-    expect(bands).toContain('avance')
+  it.each(DIFFICULTIES)('gives the %s band enough puzzles for a session', (band) => {
+    // A band the picker offers but the pool barely fills runs dry in one
+    // sitting: free practice never serves the same puzzle twice in a session.
+    const inBand = PUZZLES.filter((puzzle) => difficultyOf(puzzle.rating) === band)
+    expect(inBand.length).toBeGreaterThanOrEqual(100)
   })
 })

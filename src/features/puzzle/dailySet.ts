@@ -1,8 +1,21 @@
 import { PUZZLES } from '@/features/puzzle/puzzles'
-import type { Puzzle } from '@/features/puzzle/types'
+import { difficultyOf, type Puzzle } from '@/features/puzzle/types'
 
 /** Puzzles in a daily series. */
 export const DAILY_COUNT = 5
+
+/**
+ * What the daily series draws from: every band but the expert one.
+ *
+ * The series is the same five for every player, and finishing it is one of the
+ * daily challenges. Over the whole pool its top slice would be expert puzzles
+ * alone, and every slice below would shift up with it — a harder series for
+ * everyone, beginners included, the day the expert band was added. Those
+ * puzzles are for a player who goes looking for them in free practice.
+ */
+export const DAILY_POOL: readonly Puzzle[] = PUZZLES.filter(
+  (puzzle) => difficultyOf(puzzle.rating) !== 'expert',
+)
 
 /** Small deterministic PRNG, so a given day always yields the same series. */
 function mulberry32(seed: number) {
@@ -26,7 +39,7 @@ function seedFromDay(key: string): number {
  * The day's series: a stable selection for that date, one puzzle from each of
  * `count` equal rating slices so the set always ramps from easy to hard.
  *
- * A uniform shuffle over the 1500-puzzle pool could hand a beginner five 2000+
+ * A uniform shuffle over the pool could hand a beginner five 2000+
  * puzzles on some days; slicing by rating first rules that out.
  *
  * `seen` (ids already solved, oldest first) is drawn from last: a slice serves
@@ -37,7 +50,7 @@ function seedFromDay(key: string): number {
 export function dailyPuzzles(
   day: string,
   seen: readonly string[] = [],
-  pool: readonly Puzzle[] = PUZZLES,
+  pool: readonly Puzzle[] = DAILY_POOL,
   count: number = DAILY_COUNT,
 ): Puzzle[] {
   const random = mulberry32(seedFromDay(day))
