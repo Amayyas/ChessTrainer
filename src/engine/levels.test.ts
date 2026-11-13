@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { ENGINE_LEVELS, UCI_ELO_FLOOR, getLevel, thinkingDelay } from '@/engine/levels'
 
+const RATED = ENGINE_LEVELS.filter((level) => level.uciElo !== null)
+const WEAKENED = ENGINE_LEVELS.filter((level) => level.weakening !== null)
+
 describe('ENGINE_LEVELS', () => {
   it('offers six levels', () => {
     expect(ENGINE_LEVELS).toHaveLength(6)
@@ -25,29 +28,40 @@ describe('ENGINE_LEVELS', () => {
     }
   })
 
-  it('moves a real engine parameter at every step', () => {
-    // `uciElo` non-decreasing and `depth` strictly increasing: no step is a
-    // config value that never reaches the engine. From level 3 up, `uciElo`
-    // does the work. Levels 1–2 both sit at the 1320 floor, where the play-test
-    // (scripts/calibrate-levels.mjs) found neither lever separates them — their
-    // elo gap is a placement, not a measured strength difference (levels.ts).
-    for (let i = 1; i < ENGINE_LEVELS.length; i += 1) {
-      const previous = ENGINE_LEVELS[i - 1]!
-      const current = ENGINE_LEVELS[i]!
-      expect(current.uciElo).toBeGreaterThanOrEqual(previous.uciElo)
-      expect(current.depth).toBeGreaterThan(previous.depth)
+  it('sets each level by exactly one of UCI_Elo and the weakening', () => {
+    for (const level of ENGINE_LEVELS) {
+      expect([level.uciElo, level.weakening].filter((knob) => knob !== null)).toHaveLength(1)
     }
   })
 
-  it('pins the first level at the engine floor with the shallowest search', () => {
-    // Stockfish 18 has no strength below UCI_Elo 1320, so the weakest level
-    // sits there. The depth cap does not weaken it further — the play-test
-    // measured depth 2, 4, 6 and 10 all playing the same — but it stays the
-    // shallowest anyway, and the ladder still steps here.
-    const novice = ENGINE_LEVELS[0]!
-    expect(novice.uciElo).toBe(UCI_ELO_FLOOR)
-    expect(novice.depth).toBe(Math.min(...ENGINE_LEVELS.map((level) => level.depth)))
-    expect(novice.elo).toBeLessThan(ENGINE_LEVELS[1]!.elo)
+  it('puts every weakened level below every rated one', () => {
+    // The weakening exists for what UCI_Elo cannot reach; a weakened level
+    // above a rated one would be a second scale spliced into the ladder.
+    expect(WEAKENED.length).toBeGreaterThan(0)
+    expect(ENGINE_LEVELS.slice(0, WEAKENED.length)).toEqual(WEAKENED)
+    expect(Math.max(...WEAKENED.map((level) => level.elo))).toBeLessThan(UCI_ELO_FLOOR)
+  })
+
+  it('moves a real engine parameter at every step', () => {
+    // No step is a config value that never reaches the engine. Below the floor
+    // the draw grows stricter (a lower temperature) from one level to the
+    // next; above it, `uciElo` rises. Depth never falls. The play-test found
+    // depth inert at the floor (levels.ts), so it is not counted as a step.
+    for (let i = 1; i < ENGINE_LEVELS.length; i += 1) {
+      const previous = ENGINE_LEVELS[i - 1]!
+      const current = ENGINE_LEVELS[i]!
+      expect(current.depth).toBeGreaterThanOrEqual(previous.depth)
+      if (previous.weakening && current.weakening) {
+        expect(current.weakening.temperatureCp).toBeLessThan(previous.weakening.temperatureCp)
+        expect(current.weakening.candidates).toBeLessThanOrEqual(previous.weakening.candidates)
+      } else if (previous.uciElo !== null && current.uciElo !== null) {
+        expect(current.uciElo).toBeGreaterThan(previous.uciElo)
+      } else {
+        // The one step left is the crossing, from the draw to `UCI_Elo`.
+        expect(previous.weakening).not.toBeNull()
+        expect(current.uciElo).not.toBeNull()
+      }
+    }
   })
 
   it('describes every level in words as well as a number', () => {
@@ -57,10 +71,19 @@ describe('ENGINE_LEVELS', () => {
   })
 
   it('keeps every Stockfish option inside its supported range', () => {
-    for (const level of ENGINE_LEVELS) {
+    for (const level of RATED) {
       // UCI_Elo floor–3190; sending below the floor is an error, not a weaker bot.
       expect(level.uciElo).toBeGreaterThanOrEqual(UCI_ELO_FLOOR)
       expect(level.uciElo).toBeLessThanOrEqual(3190)
+    }
+    for (const level of WEAKENED) {
+      // MultiPV 1 would leave nothing to draw from; Stockfish caps it at 256,
+      // and every extra line is another search against the battle's deadline.
+      expect(level.weakening!.candidates).toBeGreaterThan(1)
+      expect(level.weakening!.candidates).toBeLessThanOrEqual(10)
+      expect(level.weakening!.temperatureCp).toBeGreaterThan(0)
+    }
+    for (const level of ENGINE_LEVELS) {
       // Depth is capped low on purpose — a long search past the battle's
       // SEARCH_TIMEOUT_MS is abandoned and counts against the engine. 14 is the
       // coach's depth and a safe ceiling; the ladder itself stops at 12.

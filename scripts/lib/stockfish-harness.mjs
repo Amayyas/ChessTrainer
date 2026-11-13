@@ -81,11 +81,15 @@ export async function bootEngine(page, { name = 'sf', options = [] } = {}) {
           state.onLine = (line) => {
             const multipv = line.match(/multipv (\d+)/)
             const score = line.match(/score (cp|mate) (-?\d+)/)
-            if (line.startsWith('info') && score) {
-              scores.set(multipv ? Number(multipv[1]) : 1, {
-                kind: score[1],
-                value: Number(score[2]),
-              })
+            // Bound lines (lowerbound/upperbound) are a search mid-flight, not
+            // a finished score for the line.
+            // A line with no pv keeps the slot's previous move, as the app does.
+            const move = line.match(/ pv (\S+)/)?.[1]
+            if (line.startsWith('info') && score && !/ (lower|upper)bound/.test(line)) {
+              const slot = multipv ? Number(multipv[1]) : 1
+              if (move) scores.set(slot, { kind: score[1], value: Number(score[2]), move })
+              else if (!scores.has(slot))
+                scores.set(slot, { kind: score[1], value: Number(score[2]), move: null })
             }
             const best = line.match(/^bestmove (\S+)/)
             if (best) {
@@ -94,6 +98,7 @@ export async function bootEngine(page, { name = 'sf', options = [] } = {}) {
                 best: best[1],
                 first: scores.get(1) ?? null,
                 second: scores.get(2) ?? null,
+                lines: [...scores.entries()].sort(([a], [b]) => a - b).map(([, line]) => line),
               })
             }
           }

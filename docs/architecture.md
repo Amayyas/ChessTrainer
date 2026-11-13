@@ -69,6 +69,7 @@ classDiagram
         +number depth
         +number scoreCp
         +number scoreMate
+        +number multipv
         +string[] pv
     }
 
@@ -79,6 +80,7 @@ classDiagram
         +number scoreMate
         +number depth
         +string[] pv
+        +Candidate[] candidates
     }
 
     class EngineLevel {
@@ -87,7 +89,8 @@ classDiagram
         +string label
         +number elo
         +string description
-        +number uciElo
+        +number|null uciElo
+        +Weakening|null weakening
         +number depth
         +number minDelayMs
         +number maxDelayMs

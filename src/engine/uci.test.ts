@@ -6,7 +6,18 @@ describe('parseInfo', () => {
     const info = parseInfo(
       'info depth 15 seldepth 20 multipv 1 score cp 34 nodes 100 nps 1000 time 12 pv e2e4 e7e5 g1f3',
     )
-    expect(info).toEqual({ depth: 15, scoreCp: 34, scoreMate: null, pv: ['e2e4', 'e7e5', 'g1f3'] })
+    expect(info).toEqual({
+      depth: 15,
+      multipv: 1,
+      scoreCp: 34,
+      scoreMate: null,
+      pv: ['e2e4', 'e7e5', 'g1f3'],
+    })
+  })
+
+  it('reads which MultiPV line it is, and takes a bare line for the first', () => {
+    expect(parseInfo('info depth 6 multipv 3 score cp -40 pv g1f3')?.multipv).toBe(3)
+    expect(parseInfo('info depth 6 score cp -40 pv g1f3')?.multipv).toBe(1)
   })
 
   it('parses a mate evaluation line', () => {
