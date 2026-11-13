@@ -11,31 +11,53 @@
  * `Skill Level` option — 12 searches at `UCI_Elo 1320` with `Skill Level 0`
  * and 12 with `Skill Level 20` returned the same spread of moves.
  *
- * Levels 1 and 2 both pin `UCI_Elo` at 1320: Stockfish 18 has no strength below
- * it. A play-test settled what that means — `scripts/calibrate-levels.mjs`, ~50
- * games per matchup. Near the floor nothing separates the two. The depth cap is
- * inert: level 1 played level 2 (depth 4 vs 6) dead even across three runs, and
- * played the same at depth 2 and depth 10; a depth-2 engine still scored 51%
- * against a `UCI_Elo 1320` reference. `UCI_Elo` barely moves down here too — a
- * 1400 setting gained about 40 Elo. So levels 1–2 are close by nature, both
- * about 1320; level 2's deeper cap costs nothing and stays for the rare sharp
- * position, and the `elo` gap below is a placement, not a measured difference.
- * Not from the calibration but consistent with it: a quick probe at `UCI_Elo
- * 1320`, depth 4 saw the engine grab a hanging queen 8 times in 10 — it takes
- * free material rather than hanging its own. "Novice" is a real beginner who
- * plays sound moves and calculates little, not one who blunders pieces.
+ * Stockfish 18 has no strength below `UCI_Elo` 1320, and nothing in it goes
+ * lower: an earlier play-test pinned levels 1 and 2 there with depth caps 4 and
+ * 6 and found them dead even, the depth cap inert, and `UCI_Elo` barely moving
+ * near the floor (.claude/rules/engine.md has the figures). One opponent under
+ * two names, and too strong for a beginner.
+ *
+ * So levels 1 and 2 are weakened by the app instead (`weakening`, see
+ * engine/weakening.ts): the engine runs unlimited and reports a few lines —
+ * six at depth 6 for Débutant, eight at depth 4 for Novice — and the battle
+ * draws one with odds `exp(-loss / T)`. Their `elo` is measured, not handed to
+ * anything — `scripts/calibrate-levels.mjs`, 52 games per matchup, two runs
+ * averaged (10 November 2026):
+ *
+ *   Débutant vs `UCI_Elo 1320`   26.0% / 29.8%  → Δ −165  → ~1155
+ *   bridge vs Débutant           23.1% / 31.7%  → Δ −171  → ~985
+ *   Novice vs bridge             20.2% / 25.0%  → Δ −215  → ~770
+ *   Novice vs `UCI_Elo 1320`      6.7% /  5.8%  (a bound, agrees)
+ *   Débutant vs Intermédiaire    18.3% / 10.6%  (a bound: clearly weaker)
+ *
+ * The bridge (six lines, T 650, depth 6) ships nowhere: Novice is too far
+ * below Débutant for one matchup to measure, so the script chains through it.
+ * Novice's figure carries the error of all three links, and its own link sits
+ * at the edge of the band where a score discriminates — read it as "about
+ * 750, give or take more than the usual 150".
+ *
+ * These are figures on the engine's own scale, which its authors anchored to
+ * the CCRL 40/4 engine rating list — not to Lichess, Chess.com or FIDE.
+ * Two things the sweep that chose the values found: with six lines, raising
+ * `T` past ~650 changes little, the draw being close to uniform by then; and
+ * the line count is a coarse lever — from eight lines to nine at the same `T`
+ * took one sample from 35% to 2% against the bridge.
  *
  * Treat every number as ±150 and as a way for a player to place themselves,
  * not as a rating earned against humans. Never restate these figures in copy —
  * import `ENGINE_LEVELS` and read `[0].elo` / `.at(-1).elo` (see
  * `src/features/home/modes.ts`).
  *
- * Depths are capped low on purpose (4–12). `UCI_Elo` does the weakening; extra
- * depth makes a rated bot no stronger, only slower — and a search that runs
+ * Depths are capped low on purpose (4–12). On a rated level `UCI_Elo` does the
+ * weakening, and extra depth makes the bot no stronger, only slower. On a
+ * weakened level depth shapes the lines the draw picks from, so changing it
+ * stales the measured figure like any other `weakening` change — and a search that runs
  * past the battle's 10s `SEARCH_TIMEOUT_MS`, three times over, gives up on the
  * engine and freezes the board. Depth 12 measured a few hundred ms per move on
  * a desktop; a slow phone has ample room under the deadline.
  */
+
+import type { Weakening } from '@/engine/weakening'
 
 export type LevelId = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -46,9 +68,17 @@ export interface EngineLevel {
   elo: number
   /** What this opponent actually does, for the player choosing a level. */
   description: string
-  /** Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below `UCI_ELO_FLOOR`. */
-  uciElo: number
-  /** Search-depth cap handed to `go depth`. Keeps a move fast; `UCI_Elo` does the weakening (see the header). */
+  /**
+   * Fed to `UCI_Elo` under `UCI_LimitStrength`. Never below `UCI_ELO_FLOOR`;
+   * null for a level below it, which `weakening` plays instead.
+   */
+  uciElo: number | null
+  /** How a level below the floor draws its move (engine/weakening.ts); else null. */
+  weakening: Weakening | null
+  /**
+   * Search-depth cap handed to `go depth`. Keeps a move fast. Inert on a rated
+   * level; on a weakened one it shapes the drawn lines (see the header).
+   */
   depth: number
   /** Simulated thinking time, so moves do not appear instantly. */
   minDelayMs: number
@@ -62,9 +92,10 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 1,
     label: 'Novice',
-    elo: 1300,
-    description: 'Joue des coups sensés mais voit rarement au-delà du coup suivant.',
-    uciElo: UCI_ELO_FLOOR,
+    elo: 750,
+    description: 'Joue un peu au hasard : laisse souvent des pièces en prise et rate des mats.',
+    uciElo: null,
+    weakening: { candidates: 8, temperatureCp: 550 },
     depth: 4,
     minDelayMs: 300,
     maxDelayMs: 900,
@@ -72,9 +103,10 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
   {
     id: 2,
     label: 'Débutant',
-    elo: 1350,
-    description: 'Repère les prises et les échecs, mais n’a pas encore de plan.',
-    uciElo: UCI_ELO_FLOOR,
+    elo: 1150,
+    description: 'Prend ce qu’on lui laisse, mais perd encore des pièces et tombe dans les pièges.',
+    uciElo: null,
+    weakening: { candidates: 6, temperatureCp: 350 },
     depth: 6,
     minDelayMs: 400,
     maxDelayMs: 1100,
@@ -83,8 +115,9 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     id: 3,
     label: 'Intermédiaire',
     elo: 1500,
-    description: 'Calcule quelques coups d’avance et punit les erreurs simples.',
+    description: 'Protège ses pièces et voit les tactiques courtes, mais joue sans plan.',
     uciElo: 1500,
+    weakening: null,
     depth: 8,
     minDelayMs: 500,
     maxDelayMs: 1300,
@@ -93,8 +126,9 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     id: 4,
     label: 'Avancé',
     elo: 1800,
-    description: 'Joue proprement et sanctionne les combinaisons courtes.',
+    description: 'Joue proprement et punit les erreurs, mais rate parfois une combinaison longue.',
     uciElo: 1800,
+    weakening: null,
     depth: 10,
     minDelayMs: 600,
     maxDelayMs: 1500,
@@ -103,8 +137,10 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     id: 5,
     label: 'Maître',
     elo: 2100,
-    description: 'Cherche loin et ne laisse presque rien passer.',
+    description:
+      'Calcule loin et se trompe rarement : il faut une très bonne partie pour le battre.',
     uciElo: 2100,
+    weakening: null,
     depth: 11,
     minDelayMs: 700,
     maxDelayMs: 1800,
@@ -113,8 +149,9 @@ export const ENGINE_LEVELS: readonly EngineLevel[] = [
     id: 6,
     label: 'Grand Maître',
     elo: 2500,
-    description: 'Punit la moindre imprécision et ne pardonne aucun coup approximatif.',
+    description: 'Ne se trompe presque jamais : la moindre imprécision de votre part est punie.',
     uciElo: 2500,
+    weakening: null,
     depth: 12,
     minDelayMs: 800,
     maxDelayMs: 2000,

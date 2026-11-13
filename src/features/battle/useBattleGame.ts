@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getLevel, thinkingDelay, type EngineLevel, type LevelId } from '@/engine/levels'
 import { parseUciMove } from '@/engine/uci'
 import { useStockfish } from '@/engine/useStockfish'
+import { pickCandidate } from '@/engine/weakening'
 import { useChessGame, type UseChessGame } from '@/hooks/useChessGame'
 import {
   getTimeControl,
@@ -226,7 +227,14 @@ export function useBattleGame(): UseBattleGame {
       void analyze(game.fen, level.depth).then((analysis) => {
         if (cancelled) return
         setIsThinking(false)
-        const move = analysis?.bestMove ? parseUciMove(analysis.bestMove) : null
+        // A level below the engine floor plays one of its candidate lines,
+        // drawn by what each costs, rather than the engine's choice.
+        const uci =
+          analysis && level.weakening
+            ? (pickCandidate(analysis.candidates, level.weakening.temperatureCp) ??
+              analysis.bestMove)
+            : analysis?.bestMove
+        const move = uci ? parseUciMove(uci) : null
         if (!move) return failed()
         const applied = game.move(
           move.from as Square,

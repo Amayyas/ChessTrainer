@@ -5,6 +5,8 @@
 
 export interface UciInfo {
   depth: number
+  /** Which `MultiPV` line this is, 1 being the best; 1 when the engine omits it. */
+  multipv: number
   /** Centipawn score from the side-to-move's perspective, or null on a mate line. */
   scoreCp: number | null
   /** Mate distance in moves (signed) from the side-to-move's perspective, else null. */
@@ -32,11 +34,16 @@ export function parseInfo(line: string): UciInfo | null {
   const scoreValue = Number(tokens[scoreIndex + 2])
   if (!Number.isFinite(scoreValue)) return null
 
+  const multipvIndex = tokens.indexOf('multipv')
+  const multipv = multipvIndex === -1 ? 1 : Number(tokens[multipvIndex + 1])
+  if (!Number.isInteger(multipv) || multipv < 1) return null
+
   const pvIndex = tokens.indexOf('pv')
   const pv = pvIndex === -1 ? [] : tokens.slice(pvIndex + 1)
 
   return {
     depth,
+    multipv,
     scoreCp: scoreType === 'cp' ? scoreValue : null,
     scoreMate: scoreType === 'mate' ? scoreValue : null,
     pv,

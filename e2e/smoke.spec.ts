@@ -57,9 +57,10 @@ async function clickSquare(page: Page, square: string) {
 test('a move in Affrontement gets a reply from the engine', async ({ page }) => {
   await page.goto('/battle')
 
-  // Novice — the shallowest search on the ladder, so the quickest reply — then
-  // start. The start button only takes its "Commencer" label once the engine
-  // has loaded.
+  // Novice — a weakened level, so the reply goes through the MultiPV lines and
+  // the draw among them (engine/weakening.ts), the path no unit test can run
+  // against a real worker — then start. The start button only takes its
+  // "Commencer" label once the engine has loaded.
   //
   // A radio, not a button: the three settings were rows of buttons carrying
   // aria-pressed and are toggle groups now, so the level is one option of a

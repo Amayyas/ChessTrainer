@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { StockfishEngine } from '@/engine/stockfishEngine'
-import { getLevel } from '@/engine/levels'
+import { ENGINE_LEVELS, getLevel, type EngineLevel } from '@/engine/levels'
 
 /**
  * The engine's failure modes, not its happy path (uci.ts covers the parsing).
@@ -13,7 +13,7 @@ import { getLevel } from '@/engine/levels'
  */
 
 /** What the fake worker does with the commands it is sent. */
-type Behaviour = 'ready' | 'silent' | 'no-bestmove'
+type Behaviour = 'ready' | 'silent' | 'no-bestmove' | 'multipv'
 let behaviour: Behaviour = 'ready'
 let workers: FakeWorker[] = []
 
@@ -37,6 +37,17 @@ class FakeWorker {
     else if (command === 'isready') this.reply('readyok')
     else if (command.startsWith('go')) {
       if (behaviour === 'no-bestmove') return
+      if (behaviour === 'multipv') {
+        // Two iterations of three lines each, as MultiPV 3 reports them.
+        this.reply('info depth 5 multipv 1 score cp 20 pv d2d4')
+        this.reply('info depth 5 multipv 2 score cp 10 pv e2e4')
+        this.reply('info depth 5 multipv 3 score cp 0 pv g1f3')
+        this.reply('info depth 6 multipv 1 score cp 40 pv e2e4 e7e5')
+        this.reply('info depth 6 multipv 2 score cp 25 pv d2d4')
+        this.reply('info depth 6 multipv 3 score mate -2 pv f2f3')
+        this.reply('bestmove e2e4')
+        return
+      }
       this.reply('info depth 12 score cp 30 pv e2e4 e7e5')
       this.reply('bestmove e2e4')
     }
@@ -51,6 +62,23 @@ class FakeWorker {
     queueMicrotask(() => this.onmessage?.({ data: line }))
   }
 }
+
+/** The options a level should set on a fresh worker. */
+function calibrationFor(level: EngineLevel): string[] {
+  return level.uciElo !== null
+    ? [
+        'setoption name UCI_LimitStrength value true',
+        `setoption name UCI_Elo value ${level.uciElo}`,
+        'setoption name MultiPV value 1',
+      ]
+    : [
+        'setoption name UCI_LimitStrength value false',
+        `setoption name MultiPV value ${level.weakening!.candidates}`,
+      ]
+}
+
+const RATED = ENGINE_LEVELS.find((level) => level.uciElo !== null)!
+const WEAKENED = ENGINE_LEVELS.find((level) => level.weakening !== null)!
 
 beforeEach(() => {
   behaviour = 'ready'
@@ -69,20 +97,56 @@ describe('StockfishEngine', () => {
     expect(analysis).toMatchObject({ bestMove: 'e2e4', scoreCp: 30, depth: 12 })
   })
 
-  it('calibrates strength with UCI_LimitStrength and the level UCI_Elo, nothing else', async () => {
+  it('calibrates a rated level with UCI_LimitStrength and its UCI_Elo, on one line', async () => {
     // Stockfish 18 plays at full strength until UCI_LimitStrength is on, and
     // rejects a UCI_Elo it never got a limit flag for. It must send the flag
     // and the level's own number — and must not send `Skill Level`, which
     // Stockfish ignores while UCI_LimitStrength is on (engine/levels.ts).
     const engine = new StockfishEngine('/x/stockfish.js')
-    const level = getLevel(3)
-    await engine.configureLevel(level)
+    await engine.configureLevel(RATED)
 
     const options = workers[0]?.posted.filter((c) => c.startsWith('setoption')) ?? []
     expect(options).toEqual([
       'setoption name UCI_LimitStrength value true',
-      `setoption name UCI_Elo value ${level.uciElo}`,
+      `setoption name UCI_Elo value ${RATED.uciElo}`,
+      'setoption name MultiPV value 1',
     ])
+  })
+
+  it('runs a level below the floor unlimited, asking for its candidate lines', async () => {
+    const engine = new StockfishEngine('/x/stockfish.js')
+    await engine.configureLevel(WEAKENED)
+
+    const options = workers[0]?.posted.filter((c) => c.startsWith('setoption')) ?? []
+    expect(options).toEqual([
+      'setoption name UCI_LimitStrength value false',
+      `setoption name MultiPV value ${WEAKENED.weakening!.candidates}`,
+    ])
+  })
+
+  it('drops the extra lines when a rated level follows a weakened one', async () => {
+    // Same worker, new level: left at MultiPV N, a rated level would search N
+    // lines for nothing, N times slower against the battle's deadline.
+    const engine = new StockfishEngine('/x/stockfish.js')
+    await engine.configureLevel(WEAKENED)
+    await engine.configureLevel(RATED)
+
+    const options = workers[0]?.posted.filter((c) => c.startsWith('setoption')) ?? []
+    expect(options.at(-1)).toBe('setoption name MultiPV value 1')
+  })
+
+  it('reports every line of the deepest iteration, and scores the first', async () => {
+    behaviour = 'multipv'
+    const engine = new StockfishEngine('/x/stockfish.js')
+    const analysis = await engine.analyze('fen', 6)
+
+    expect(analysis.candidates).toEqual([
+      { move: 'e2e4', scoreCp: 40, scoreMate: null },
+      { move: 'd2d4', scoreCp: 25, scoreMate: null },
+      { move: 'f2f3', scoreCp: null, scoreMate: -2 },
+    ])
+    // The evaluation is line 1's — not the mate the third line reported last.
+    expect(analysis).toMatchObject({ scoreCp: 40, scoreMate: null, pv: ['e2e4', 'e7e5'] })
   })
 
   it('re-sends the calibration to a worker booted to replace a wedged one', async () => {
@@ -91,7 +155,7 @@ describe('StockfishEngine', () => {
     // against a full-strength engine after a single timeout.
     behaviour = 'no-bestmove'
     const engine = new StockfishEngine('/x/stockfish.js', { analysisTimeoutMs: 30 })
-    const level = getLevel(2)
+    const level = getLevel(3)
     await engine.configureLevel(level)
     await expect(engine.analyze('fen', 6)).rejects.toThrow(/timed out/)
     expect(workers[0]?.terminated).toBe(true)
@@ -100,10 +164,7 @@ describe('StockfishEngine', () => {
     await engine.analyze('fen', 6)
 
     const replacement = workers[1]?.posted.filter((c) => c.startsWith('setoption')) ?? []
-    expect(replacement).toEqual([
-      'setoption name UCI_LimitStrength value true',
-      `setoption name UCI_Elo value ${level.uciElo}`,
-    ])
+    expect(replacement).toEqual(calibrationFor(level))
   })
 
   it('rejects init() when the worker never reports readiness', async () => {
