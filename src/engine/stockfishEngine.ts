@@ -1,5 +1,6 @@
 import type { EngineLevel } from '@/engine/levels'
 import { parseBestMove, parseInfo } from '@/engine/uci'
+import type { Candidate } from '@/engine/weakening'
 
 export interface Analysis {
   /** Best move in UCI notation (e.g. 'e2e4'), or null when there is none. */
@@ -12,6 +13,11 @@ export interface Analysis {
   depth: number
   /** Principal variation, UCI moves. */
   pv: string[]
+  /**
+   * Every `MultiPV` line's first move and score, best first. One entry unless
+   * the level asked for more (see engine/weakening.ts).
+   */
+  candidates: Candidate[]
 }
 
 /** Same-origin path to the worker script; the CSP's worker-src is checked against it. */
@@ -137,11 +143,13 @@ export class StockfishEngine {
    * Calibrates playing strength to a difficulty level, and remembers it so a
    * recycled worker is calibrated the same way rather than left unlimited.
    *
-   * Stockfish 18's own `UCI_Elo` model does the weakening. `Skill Level` is not
-   * sent: under `UCI_LimitStrength` Stockfish derives its internal skill from
-   * `UCI_Elo` alone and ignores the option (see engine/levels.ts). Below the
-   * engine's Elo floor the only remaining lever is the `go depth` cap, which
-   * lives on the level. Idempotent: re-running it on a level change resets it.
+   * A rated level hands its `uciElo` to Stockfish 18's own model. `Skill Level`
+   * is not sent: under `UCI_LimitStrength` Stockfish derives its internal skill
+   * from `UCI_Elo` alone and ignores the option (see engine/levels.ts). A level
+   * below the engine's floor runs unlimited and asks for several lines instead,
+   * one of which the battle draws (engine/weakening.ts). `MultiPV` is sent
+   * either way, so a level change on the same worker never inherits the last
+   * level's lines. Idempotent: re-running it on a level change resets it.
    */
   async configureLevel(level: EngineLevel): Promise<void> {
     this.level = level
@@ -154,8 +162,14 @@ export class StockfishEngine {
   private applyLevel(): void {
     if (!this.level || this.levelApplied) return
     this.levelApplied = true
-    this.send('setoption name UCI_LimitStrength value true')
-    this.send(`setoption name UCI_Elo value ${this.level.uciElo}`)
+    const { uciElo, weakening } = this.level
+    if (uciElo !== null) {
+      this.send('setoption name UCI_LimitStrength value true')
+      this.send(`setoption name UCI_Elo value ${uciElo}`)
+    } else {
+      this.send('setoption name UCI_LimitStrength value false')
+    }
+    this.send(`setoption name MultiPV value ${weakening?.candidates ?? 1}`)
   }
 
   /** Boots the engine and resolves once it reports readiness (uciok + readyok). */
@@ -203,10 +217,23 @@ export class StockfishEngine {
         let scoreMate: number | null = null
         let pv: string[] = []
         let reachedDepth = 0
+        // By MultiPV index: each completed iteration reports every line, so at
+        // `bestmove` all of them come from the deepest one.
+        const candidates = new Map<number, Candidate>()
 
         const onLine = (line: string) => {
           const info = parseInfo(line)
           if (info) {
+            const move = info.pv[0]
+            if (move) {
+              candidates.set(info.multipv, {
+                move,
+                scoreCp: info.scoreCp,
+                scoreMate: info.scoreMate,
+              })
+            }
+            // The other lines are alternatives; the evaluation is the best one's.
+            if (info.multipv !== 1) return
             reachedDepth = info.depth
             if (info.scoreCp !== null) {
               scoreCp = info.scoreCp
@@ -229,6 +256,9 @@ export class StockfishEngine {
               scoreMate,
               depth: reachedDepth,
               pv,
+              candidates: [...candidates.entries()]
+                .sort(([a], [b]) => a - b)
+                .map(([, candidate]) => candidate),
             })
           }
         }

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { Chess } from 'chess.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getLevel, type LevelId } from '@/engine/levels'
+import { ENGINE_LEVELS, getLevel, type LevelId } from '@/engine/levels'
 import type { Analysis } from '@/engine/stockfishEngine'
 import {
   MAX_ENGINE_FAILURES,
@@ -24,6 +24,8 @@ import { getTimeControl } from '@/hooks/useChessClock'
 
 /** Position (FEN) → the move the scripted line plays there, in UCI. */
 const engineMoves = new Map<string, string>()
+/** Position (FEN) → the MultiPV lines reported there, when a test sets them. */
+const engineCandidates = new Map<string, Analysis['candidates']>()
 
 /** Searches to answer with nothing before the script takes over. */
 let refusals = 0
@@ -47,11 +49,12 @@ const analyze = vi.fn(async (fen: string, _depth?: number): Promise<Analysis | n
   if (illegalAnswers > 0) {
     illegalAnswers -= 1
     // A rook on a1 with its own pieces around it: parseable, and not legal.
-    return { bestMove: 'a1a8', scoreCp: 0, scoreMate: null, depth: 5, pv: [] }
+    return { bestMove: 'a1a8', scoreCp: 0, scoreMate: null, depth: 5, pv: [], candidates: [] }
   }
   const bestMove = engineMoves.get(fen)
   if (!bestMove) return null
-  return { bestMove, scoreCp: 0, scoreMate: null, depth: 5, pv: [] }
+  const candidates = engineCandidates.get(fen) ?? []
+  return { bestMove, scoreCp: 0, scoreMate: null, depth: 5, pv: [], candidates }
 })
 const configureLevel = vi.fn(async () => {})
 
@@ -200,6 +203,7 @@ describe('useBattleGame starting a game', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false
@@ -230,6 +234,28 @@ describe('useBattleGame starting a game', () => {
 
     expect(result.current.level).toEqual(getLevel(level))
     expect(configureLevel).toHaveBeenLastCalledWith(getLevel(level))
+  })
+
+  it('plays a drawn candidate below the floor, and the best move above it', async () => {
+    // After 1. e4 the engine's best is c5, but the only line it reported is
+    // e5. A weakened level draws from the lines; a rated one ignores them.
+    scriptLine(['e4', 'c5'])
+    const afterE4 = new Chess()
+    afterE4.move('e4')
+    engineCandidates.set(afterE4.fen(), [{ move: 'e7e5', scoreCp: 0, scoreMate: null }])
+    const weakened = ENGINE_LEVELS.find((level) => level.weakening)!.id
+    const rated = ENGINE_LEVELS.find((level) => level.uciElo !== null)!.id
+
+    const { result } = renderHook(() => useBattleGame())
+    startGame(result, { levelId: weakened })
+    playerPlays(result, 'e4')
+    await letEngineThink(weakened)
+    expect(result.current.game.sanHistory).toEqual(['e4', 'e5'])
+
+    startGame(result, { levelId: rated })
+    playerPlays(result, 'e4')
+    await letEngineThink(rated)
+    expect(result.current.game.sanHistory).toEqual(['e4', 'c5'])
   })
 
   it('clears the board and the verdict of the game before it', () => {
@@ -291,6 +317,7 @@ describe('useBattleGame and the engine reply', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false
@@ -386,6 +413,7 @@ describe('useBattleGame verdicts', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false
@@ -477,6 +505,7 @@ describe('useBattleGame when the engine will not answer', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false
@@ -595,6 +624,7 @@ describe('useBattleGame corners the earlier tests left out', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false
@@ -761,6 +791,7 @@ describe('useBattleGame going back for another game', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     engineMoves.clear()
+    engineCandidates.clear()
     refusals = 0
     illegalAnswers = 0
     hangs = false

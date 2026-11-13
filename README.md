@@ -26,17 +26,21 @@ an arrow. [How a move is graded](docs/move-grading.md). Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
 Finished games can be replayed move by move.
 
-**Battle** — six levels of opposition, roughly 1100 to 2500 Elo. The engine is
+**Battle** — six levels of opposition, from a beginner who misses tactics to
+grandmaster strength; their Elo figures live in
+[`src/engine/levels.ts`](src/engine/levels.ts). The engine is
 the Stockfish 18 `lite-single` build (NNUE, single-threaded), which exposes
 Stockfish's own `UCI_LimitStrength` + `UCI_Elo` strength model, calibrated by
 its authors over 1320–3190. The top four levels set `UCI_Elo` directly, so their
 rating is the number handed to the engine.
 
 `UCI_Elo` bottoms out at 1320, and Stockfish 18 has no weaker setting — it no
-longer hangs pieces the way the old engine's Skill Level 0 did. The two lowest
-levels both sit at that floor and differ only by a shallow search-depth cap,
-which is the one lever left. Their ratings are a placement, not a measurement,
-and stay provisional until play-tested. Treat every number as ±150 — a way to
+longer hangs pieces the way the old engine's Skill Level 0 did. So the two
+lowest levels weaken it themselves: the engine reports its top few moves, and
+the app draws one with odds that fall off with what each move costs against the
+best, so a beginner level can miss a tactic or settle for a lesser move. Their ratings are measured by play against the 1320
+reference and against each other ([`scripts/calibrate-levels.mjs`](scripts/calibrate-levels.mjs)),
+on the engine's own scale. Treat every number as ±150 — a way to
 place yourself, not a rating earned against humans. An earlier ladder read a 96%
 self-play score as precise and hid a 1500-point chasm between its top two levels
 behind it; adjacent levels are now checked by the gap between them.
