@@ -47,6 +47,11 @@ for (const file of ['a', 'b', 'c', 'd', 'e']) {
   if (header !== 'eco\tname\tpgn') fail(`${file}.tsv: unexpected header "${header}"`)
   for (const line of lines) {
     const [eco, name, pgn] = line.split('\t')
+    // The ECO code is the one field written to the generated file as it was
+    // downloaded — names come from openings-fr.mjs, positions go through
+    // chess.js and out as numbers. So it is held to its shape here, and a
+    // table that does not match is refused rather than copied into the app.
+    if (!/^[A-E]\d\d$/.test(eco ?? '')) fail(`${file}.tsv: malformed ECO code in "${line}"`)
     rows.push({ eco, name, pgn })
   }
 }
