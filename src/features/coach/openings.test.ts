@@ -31,7 +31,7 @@ describe('readOpening', () => {
     // 6.h3 is the book's "Najdorf Variation, Adams Attack", which the French
     // table does not list: the Najdorf it belongs to is the name to show.
     const adams = readOpening(play(`${NAJDORF} h3`))
-    expect(adams?.opening.name).toBe('Défense sicilienne, variante Najdorf')
+    expect(adams?.opening.name).toBe(readOpening(play(NAJDORF))!.opening.name)
     expect(adams?.exitPly).toBeNull()
   })
 
@@ -47,7 +47,7 @@ describe('readOpening', () => {
     const reading = readOpening(moves)
     expect(reading?.exitPly).toBe(6)
     expect(moves[6]!.san).toBe('Kf1')
-    expect(reading?.opening.name).toBe('Partie italienne, Giuoco Piano')
+    expect(reading?.opening).toEqual(readOpening(play('e4 e5 Nf3 Nc6 Bc4 Bc5'))!.opening)
   })
 
   it('names every first move White can play', () => {
