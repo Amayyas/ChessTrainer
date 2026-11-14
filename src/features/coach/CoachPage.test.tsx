@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { Chess } from 'chess.js'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import CoachPage from '@/features/coach/CoachPage'
+import { readOpening } from '@/features/coach/openings'
 
 /** The page reads router state (a game handed over from the battle mode). */
 function renderCoach() {
@@ -84,5 +86,52 @@ describe('CoachPage free analysis', () => {
 
     expect(screen.getByText('FEN invalide.')).toBeInTheDocument()
     expect(screen.getByText('Trait aux blancs')).toBeInTheDocument()
+  })
+})
+
+describe('CoachPage opening', () => {
+  it('names the opening of a game handed over, once the book has loaded', async () => {
+    const pgn = '1. e4 c5 2. Nf3 d6'
+    // What the page should show is what the book reads, not a label written
+    // here: renaming an opening must not break a test of the page's wiring.
+    const replay = new Chess()
+    replay.loadPgn(pgn)
+    const history = replay.history({ verbose: true })
+    const atEnd = readOpening(history)!.opening.name
+    const afterFirst = readOpening(history.slice(0, 1))!.opening.name
+    // Two different names, or stepping back would prove nothing.
+    expect(afterFirst).not.toBe(atEnd)
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/coach', state: { pgn } }]}>
+        <CoachPage />
+      </MemoryRouter>,
+    )
+    // A game handed over opens in review at its first position, where there
+    // is no opening yet; the name follows the position on the board.
+    await import('@/features/coach/openings')
+    expect(screen.queryByRole('region', { name: 'Ouverture' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fin' }))
+    const block = await screen.findByRole('region', { name: 'Ouverture' })
+    expect(block).toHaveTextContent(atEnd)
+    expect(block).toHaveTextContent('Toujours dans la théorie.')
+
+    // Back to 1.e4: the name is the one of the position on the board.
+    for (let step = 0; step < 3; step += 1) {
+      fireEvent.click(screen.getByRole('button', { name: 'Coup précédent' }))
+    }
+    expect(screen.getByRole('region', { name: 'Ouverture' })).toHaveTextContent(afterFirst)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Début' }))
+    expect(screen.queryByRole('region', { name: 'Ouverture' })).not.toBeInTheDocument()
+  })
+
+  it('says nothing about an opening before a move is played', async () => {
+    renderCoach()
+    // Give the book time to load, so the absence is not just the wait.
+    await import('@/features/coach/openings')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.queryByRole('region', { name: 'Ouverture' })).not.toBeInTheDocument()
   })
 })

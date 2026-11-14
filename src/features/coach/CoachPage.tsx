@@ -5,6 +5,7 @@ import Input from '@/components/UI/Input'
 import StatusLine from '@/components/UI/StatusLine'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
+import OpeningNote from '@/features/coach/OpeningNote'
 import QualityLegend from '@/features/coach/QualityLegend'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 import { cn } from '@/utils/cn'
@@ -160,6 +161,10 @@ export default function CoachPage() {
                   )}
                 </div>
               </section>
+            )}
+
+            {coach.opening && (
+              <OpeningNote reading={coach.opening} sanMoves={coach.viewMoves.map((m) => m.san)} />
             )}
 
             <section aria-labelledby="t-moves">

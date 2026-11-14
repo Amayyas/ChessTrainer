@@ -24,7 +24,8 @@ move on seven tiers, from the engine's own move down to a blunder, measured by
 the centipawns it lost against the best line, and the best continuation drawn as
 an arrow. [How a move is graded](docs/move-grading.md). Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
-Finished games can be replayed move by move.
+The opening is named as it is played, in French, with the move that left
+theory. Finished games can be replayed move by move.
 
 **Battle** — six levels of opposition, from a beginner who misses tactics to
 grandmaster strength; their Elo figures live in
@@ -473,6 +474,9 @@ it, under the same licence; where they come from and their licence are in
 The puzzles are imported from the
 [Lichess Open Database](https://database.lichess.org) (CC0) and re-screened with
 Stockfish — see [`scripts/import-lichess-puzzles.mjs`](scripts/import-lichess-puzzles.mjs).
+The opening book is Lichess's
+[chess-openings](https://github.com/lichess-org/chess-openings) table (CC0),
+named in French — see [`scripts/build-openings.mjs`](scripts/build-openings.mjs).
 
 ## Licence
 
