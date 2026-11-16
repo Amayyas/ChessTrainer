@@ -1,13 +1,17 @@
+import { useNavigate } from 'react-router-dom'
 import { BoardControls, ChessBoard, EvalBar, MoveHistory, MoveInput } from '@/components/Board'
 import HintList from '@/components/HintList'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import Input from '@/components/UI/Input'
 import StatusLine from '@/components/UI/StatusLine'
+import Notation from '@/components/UI/Notation'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
+import { moveNumberIn } from '@/features/battle/resume'
 import GameSummary from '@/features/coach/GameSummary'
 import OpeningNote from '@/features/coach/OpeningNote'
 import QualityLegend from '@/features/coach/QualityLegend'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
+import { ROUTES } from '@/routes'
 import { cn } from '@/utils/cn'
 
 /** The head of each block in the panel: capitals, as a paper heads a column. */
@@ -26,7 +30,9 @@ const PANEL_HEAD = 'text-kicker font-semibold uppercase'
  */
 export default function CoachPage() {
   const coach = useCoachPageState()
+  const navigate = useNavigate()
   const { game, analysis } = coach
+  const resume = coach.resumeFromMistake
 
   const inReplay = coach.inReplay
   const statusLabel = coach.statusLabel
@@ -183,6 +189,7 @@ export default function CoachPage() {
               </div>
               <MoveHistory
                 moves={game.sanHistory}
+                startFen={game.history[0]?.before}
                 qualities={analysis.qualities}
                 activeIndex={inReplay ? coach.replayPly - 1 : undefined}
               />
@@ -240,6 +247,20 @@ export default function CoachPage() {
                 <p className="mt-2 text-caption italic text-ink-soft">
                   Coup {coach.replayPly} / {coach.lastPly}
                 </p>
+                {resume && (
+                  <div className="mt-3">
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(ROUTES.battle, { state: { resume } })}
+                    >
+                      Rejouer avant ce coup
+                    </Button>
+                    <p className="mt-1.5 text-caption italic text-ink-soft">
+                      Reprenez la position d’avant {moveNumberIn(resume.fen)}
+                      <Notation san={resume.san} /> contre l’IA, et cherchez mieux.
+                    </p>
+                  </div>
+                )}
               </section>
             ) : (
               <>

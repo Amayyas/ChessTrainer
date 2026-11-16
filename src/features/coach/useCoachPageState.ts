@@ -1,6 +1,8 @@
 import { Chess } from 'chess.js'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import type { LevelId } from '@/engine/levels'
+import type { Resume } from '@/features/battle/resume'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
 import { useOpening } from '@/features/coach/useOpening'
@@ -55,6 +57,7 @@ export function useCoachPageState() {
     pgn?: string
     playerColor?: Color
     levelLabel?: string
+    levelId?: LevelId
     outcome?: BattleOutcome
     playedAt?: string
   } | null
@@ -140,6 +143,26 @@ export function useCoachPageState() {
     [game.history, inReplay, replayPly],
   )
   const opening = useOpening(viewMoves)
+
+  /**
+   * In review, the move on the board when the coach graded it a mistake or a
+   * blunder: the position before it, to take up against the engine and look
+   * for better. The level comes along when the game came from the battle mode
+   * and is still that game.
+   */
+  const resumeFromMistake = useMemo((): Resume | null => {
+    if (!inReplay || replayPly === 0) return null
+    const quality = analysis.qualities[replayPly - 1]
+    if (quality !== 'mistake' && quality !== 'blunder') return null
+    const move = game.history[replayPly - 1]!
+    const levelId = handedOverPgn === game.pgn ? handedOver?.levelId : undefined
+    return {
+      fen: move.before,
+      color: move.color,
+      san: move.san,
+      ...(levelId === undefined ? {} : { levelId }),
+    }
+  }, [inReplay, replayPly, analysis.qualities, game.history, game.pgn, handedOverPgn, handedOver])
 
   const viewLastMove =
     inReplay && replayPly > 0
@@ -285,6 +308,7 @@ export function useCoachPageState() {
     viewLastMove,
     viewMoves,
     opening,
+    resumeFromMistake,
     insight,
     arrows,
     statusLabel,
