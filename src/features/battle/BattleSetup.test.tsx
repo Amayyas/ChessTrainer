@@ -82,4 +82,45 @@ describe('BattleSetup', () => {
     render(<BattleSetup onStart={vi.fn()} disabled />)
     expect(screen.getByRole('button', { name: /Chargement/ })).toBeDisabled()
   })
+
+  describe('with a position taken up from the coach', () => {
+    const resume = {
+      fen: 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3',
+      color: 'b' as const,
+      san: 'Nf6',
+      levelId: ENGINE_LEVELS[1]!.id,
+    }
+
+    it('says which move it takes up before, and takes the colour out of the choice', () => {
+      render(<BattleSetup onStart={vi.fn()} resume={resume} />)
+      const note = screen.getByRole('region', { name: 'Reprise' })
+      expect(note).toHaveTextContent(/juste avant 3…/)
+      expect(note).toHaveTextContent('avec les noirs')
+      expect(screen.queryByRole('radiogroup', { name: 'Votre couleur' })).not.toBeInTheDocument()
+    })
+
+    it('starts from that position, as the side that went wrong, at the level it came with', async () => {
+      const onStart = vi.fn()
+      render(<BattleSetup onStart={onStart} resume={resume} />)
+
+      expect(
+        within(level()).getByRole('radio', { name: new RegExp(ENGINE_LEVELS[1]!.label) }),
+      ).toHaveAttribute('aria-checked', 'true')
+      await userEvent.click(screen.getByRole('button', { name: 'Reprendre la partie' }))
+
+      expect(onStart).toHaveBeenCalledWith({
+        levelId: resume.levelId,
+        colorChoice: 'black',
+        timeControlId: 'unlimited',
+        startFen: resume.fen,
+      })
+    })
+
+    it('can be dropped for the opening position', async () => {
+      const onDropResume = vi.fn()
+      render(<BattleSetup onStart={vi.fn()} resume={resume} onDropResume={onDropResume} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Partir de la position initiale' }))
+      expect(onDropResume).toHaveBeenCalledOnce()
+    })
+  })
 })

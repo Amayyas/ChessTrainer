@@ -311,6 +311,30 @@ describe('useBattleGame starting a game', () => {
     })
     expect(result.current.clock.whiteMs).toBeLessThan(blitz.initialMs)
   })
+
+  it('takes a game up from a position, with the clock on the side to move', async () => {
+    // Before 3…Nf6??: Black to move, and Black is the player taking it up.
+    const startFen = 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3'
+    const { result } = renderHook(() => useBattleGame())
+
+    startGame(result, { colorChoice: 'black', timeControlId: 'blitz', startFen })
+    expect(result.current.game.fen).toBe(startFen)
+    expect(result.current.game.sanHistory).toEqual([])
+    expect(result.current.clock.active).toBe('b')
+
+    // The player is on move: their move is played, and the clock passes over.
+    act(() => {
+      result.current.playerMove('g7', 'g6')
+    })
+    expect(result.current.game.sanHistory).toEqual(['g6'])
+    expect(result.current.clock.active).toBe('w')
+
+    // A fresh start goes back to the opening position.
+    act(() => result.current.backToSetup())
+    startGame(result, { timeControlId: 'blitz' })
+    expect(result.current.game.fen).toBe(new Chess().fen())
+    expect(result.current.clock.active).toBe('w')
+  })
 })
 
 describe('useBattleGame and the engine reply', () => {

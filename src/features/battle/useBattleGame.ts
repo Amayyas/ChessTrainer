@@ -20,6 +20,11 @@ export interface BattleConfig {
   levelId: LevelId
   colorChoice: ColorChoice
   timeControlId: TimeControlId
+  /**
+   * The position to play from, when it is not the opening one — a game taken
+   * up from the coach just before a mistake. Its side to move may be Black.
+   */
+  startFen?: string
 }
 
 export interface BattleResult {
@@ -157,17 +162,18 @@ export function useBattleGame(): UseBattleGame {
       setEngineFailures(0)
       thinkingFor.current = null
       clockReset()
-      game.reset()
+      game.reset(next.startFen)
       setDeal((count) => count + 1)
       setPhase('playing')
     },
     [game, clockReset],
   )
 
-  // White always moves first, so the clock starts on white.
+  // The clock starts on the side to move: White from the opening position,
+  // either side from a position taken up mid-game.
   useEffect(() => {
-    if (phase === 'playing' && game.sanHistory.length === 0) clockStart('w')
-  }, [phase, deal, game.sanHistory.length, clockStart])
+    if (phase === 'playing' && game.sanHistory.length === 0) clockStart(game.turn)
+  }, [phase, deal, game.sanHistory.length, game.turn, clockStart])
 
   const isEngineStalled = engineFailures >= MAX_ENGINE_FAILURES
 
