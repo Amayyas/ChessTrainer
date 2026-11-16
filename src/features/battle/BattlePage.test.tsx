@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ENGINE_LEVELS } from '@/engine/levels'
 import BattlePage from '@/features/battle/BattlePage'
 import type { UseBattleGame } from '@/features/battle/useBattleGame'
+import { ROUTES } from '@/routes'
+import { useProgressionStore } from '@/store/useProgressionStore'
 
 // The board and the move list are not what is under test, and the board pulls
 // in chessground; the page is checked around them.
@@ -104,5 +107,76 @@ describe('BattlePage', () => {
     )
     expect(screen.getByRole('status')).toBe(status)
     expect(status).toHaveTextContent("L'IA réfléchit…")
+  })
+})
+
+describe('BattlePage with a game taken up from the coach', () => {
+  const resume = {
+    fen: 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3',
+    color: 'b',
+    san: 'Nf6',
+  }
+  const won = { outcome: 'win' as const, label: 'Échec et mat — vous gagnez !' }
+  const recordBattle = vi.fn()
+
+  /** Where "Analyser dans le Coach" lands, showing the state it was handed. */
+  function CoachProbe() {
+    return <pre data-testid="handed-over">{JSON.stringify(useLocation().state)}</pre>
+  }
+
+  function page(state?: unknown) {
+    return (
+      <MemoryRouter initialEntries={[{ pathname: ROUTES.battle, state }]}>
+        <Routes>
+          <Route path={ROUTES.battle} element={<BattlePage />} />
+          <Route path={ROUTES.coach} element={<CoachProbe />} />
+        </Routes>
+      </MemoryRouter>
+    )
+  }
+
+  /** Starts from the setup screen, then ends the game with a win. */
+  async function playToAWin(state?: unknown) {
+    const start = vi.fn()
+    battle = playing({ phase: 'setup', start })
+    const view = render(page(state))
+    await userEvent.click(
+      screen.getByRole('button', { name: /Reprendre la partie|Commencer la partie/ }),
+    )
+    battle = playing({ phase: 'over', result: won, game: { ...playing().game, pgn: '1. e4 *' } })
+    view.rerender(page(state))
+    return start
+  }
+
+  beforeEach(() => {
+    recordBattle.mockClear()
+    useProgressionStore.setState({ recordBattle })
+  })
+
+  it('counts a game played from the opening position', async () => {
+    await playToAWin()
+    expect(recordBattle).toHaveBeenCalledOnce()
+  })
+
+  it('does not ask for a colour it will not let the player choose', () => {
+    battle = playing({ phase: 'setup' })
+    render(page({ resume }))
+    expect(screen.queryByText(/votre couleur/)).not.toBeInTheDocument()
+    expect(screen.getByText(/reprenez la partie/)).toBeInTheDocument()
+  })
+
+  it('counts nothing for a game taken up from a position', async () => {
+    const start = await playToAWin({ resume })
+    expect(start).toHaveBeenCalledWith(expect.objectContaining({ startFen: resume.fen }))
+    expect(recordBattle).not.toHaveBeenCalled()
+  })
+
+  it('hands a resumed game to the coach as practice, not as a battle played', async () => {
+    await playToAWin({ resume })
+    await userEvent.click(screen.getByRole('button', { name: 'Analyser dans le Coach' }))
+    const handed = JSON.parse(screen.getByTestId('handed-over').textContent!)
+    expect(handed).not.toHaveProperty('outcome')
+    expect(handed).not.toHaveProperty('levelLabel')
+    expect(handed).toHaveProperty('levelId')
   })
 })

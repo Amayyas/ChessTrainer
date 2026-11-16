@@ -11,19 +11,46 @@ export interface MoveHistoryProps {
   qualities?: (MoveQuality | null)[]
   /** Move index to highlight; defaults to the last move. Used during replay. */
   activeIndex?: number
+  /**
+   * The position the moves start from, when it is not the opening one. Its
+   * move number and side to move set the first row: a game taken up before
+   * Black's twelfth move reads "12. … ♛xb2", not "1. ♛xb2".
+   */
+  startFen?: string
   className?: string
 }
 
 interface MovePair {
   number: number
-  white: string
-  black?: string
+  /** Indexes into `moves`; null for the White half of a row Black opens. */
+  white: number | null
+  black: number | null
 }
 
-function toPairs(moves: string[]): MovePair[] {
+/** The move number and side to move a FEN starts from; the opening position without one. */
+function startOf(fen: string | undefined): { number: number; blackFirst: boolean } {
+  const fields = fen?.split(' ') ?? []
+  const number = Number(fields[5])
+  return {
+    number: Number.isInteger(number) && number > 0 ? number : 1,
+    blackFirst: fields[1] === 'b',
+  }
+}
+
+function toPairs(count: number, startFen: string | undefined): MovePair[] {
+  const start = startOf(startFen)
   const pairs: MovePair[] = []
-  for (let i = 0; i < moves.length; i += 2) {
-    pairs.push({ number: i / 2 + 1, white: moves[i]!, black: moves[i + 1] })
+  let index = 0
+  if (start.blackFirst && count > 0) {
+    pairs.push({ number: start.number, white: null, black: 0 })
+    index = 1
+  }
+  for (; index < count; index += 2) {
+    pairs.push({
+      number: start.number + pairs.length,
+      white: index,
+      black: index + 1 < count ? index + 1 : null,
+    })
   }
   return pairs
 }
@@ -67,10 +94,11 @@ export default function MoveHistory({
   moves,
   qualities,
   activeIndex,
+  startFen,
   className,
 }: MoveHistoryProps) {
   const scrollRef = useRef<HTMLOListElement>(null)
-  const pairs = toPairs(moves)
+  const pairs = toPairs(moves.length, startFen)
   const highlightIndex = activeIndex ?? moves.length - 1
 
   // Keep the latest move in view as the game grows.
@@ -93,27 +121,32 @@ export default function MoveHistory({
       data-testid="move-history"
       className={cn('max-h-72 overflow-y-auto pr-1 text-body leading-[1.3] text-ink', className)}
     >
-      {pairs.map((pair) => {
-        const whiteIndex = (pair.number - 1) * 2
-        const blackIndex = whiteIndex + 1
-        return (
-          <li key={pair.number} className="grid grid-cols-[2.25rem_1fr_1fr] items-baseline">
-            <span className="font-semibold tabular-nums lining-nums">{pair.number}.</span>
+      {pairs.map((pair) => (
+        <li key={pair.number} className="grid grid-cols-[2.25rem_1fr_1fr] items-baseline">
+          <span className="font-semibold tabular-nums lining-nums">{pair.number}.</span>
+          {pair.white === null ? (
+            // The score's ellipsis for a row Black opens: White's move was
+            // played before the position this list starts from. Silent to a
+            // screen reader, which hears the number and then Black's move.
+            <span aria-hidden="true" className="px-2 pb-1 pt-1.5 text-ink-soft">
+              …
+            </span>
+          ) : (
             <MoveCell
-              san={pair.white}
-              quality={qualities?.[whiteIndex]}
-              isCurrent={whiteIndex === highlightIndex}
+              san={moves[pair.white]!}
+              quality={qualities?.[pair.white]}
+              isCurrent={pair.white === highlightIndex}
             />
-            {pair.black && (
-              <MoveCell
-                san={pair.black}
-                quality={qualities?.[blackIndex]}
-                isCurrent={blackIndex === highlightIndex}
-              />
-            )}
-          </li>
-        )
-      })}
+          )}
+          {pair.black !== null && (
+            <MoveCell
+              san={moves[pair.black]!}
+              quality={qualities?.[pair.black]}
+              isCurrent={pair.black === highlightIndex}
+            />
+          )}
+        </li>
+      ))}
     </ol>
   )
 }

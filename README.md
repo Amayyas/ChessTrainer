@@ -25,7 +25,9 @@ the centipawns it lost against the best line, and the best continuation drawn as
 an arrow. [How a move is graded](docs/move-grading.md). Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
 The opening is named as it is played, in French, with the move that left
-theory. Finished games can be replayed move by move.
+theory. Finished games can be replayed move by move, and from any move graded a
+mistake or a blunder, the position before it can be taken up against the
+engine to look for better — as practice, which earns no progression.
 
 **Battle** — six levels of opposition, from a beginner who misses tactics to
 grandmaster strength; their Elo figures live in

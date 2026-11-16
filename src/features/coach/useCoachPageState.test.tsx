@@ -6,6 +6,7 @@ import type { GameSummary } from '@/features/coach/useCoachAnalysis'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 import { XP_REWARDS } from '@/features/progression/levels'
 import { useProgressionStore } from '@/store/useProgressionStore'
+import type { MoveQuality } from '@/utils/evaluation'
 
 /**
  * The orchestration lifted out of CoachPage: mode and free-analysis FEN,
@@ -25,6 +26,9 @@ let summary: GameSummary = {
   bestMove: null,
 }
 
+/** The coach's grade for each move, as a test sets it. */
+let qualities: (MoveQuality | null)[] = []
+
 vi.mock('@/features/coach/useCoachAnalysis', () => ({
   useCoachAnalysis: () => ({
     isReady: true,
@@ -32,7 +36,7 @@ vi.mock('@/features/coach/useCoachAnalysis', () => ({
     currentEval: null,
     bestMove: null,
     bestMoveUci: null,
-    qualities: [],
+    qualities,
     summary,
     analysisAt: () => ({ eval: null, bestMove: null }),
   }),
@@ -54,6 +58,7 @@ function withRouter(state?: unknown) {
 }
 
 beforeEach(() => {
+  qualities = []
   useProgressionStore.getState().reset()
   summary = { ...summary, isComplete: false, accuracyWhite: null, accuracyBlack: null }
 })
@@ -198,5 +203,66 @@ describe('useCoachPageState', () => {
     expect(result.current.game.status.isOver).toBe(true)
     // summary.isComplete stays false — nothing recorded.
     expect(useProgressionStore.getState().xp).toBe(0)
+  })
+
+  describe('taking a mistake up again', () => {
+    const handedOver = {
+      pgn: pgnOf('e4', 'e5', 'Qh5', 'Nc6', 'Bc4', 'Nf6'),
+      playerColor: 'b',
+      levelLabel: 'Débutant',
+      levelId: 2,
+      outcome: 'loss',
+    }
+
+    it('offers the position before a move the coach graded a blunder', () => {
+      // 3…Nf6?? walks into mate in one.
+      qualities = [null, 'best', null, 'good', null, 'blunder']
+      const { result } = renderHook(() => useCoachPageState(), {
+        wrapper: withRouter(handedOver),
+      })
+      act(() => result.current.goToEnd())
+
+      const before = result.current.game.history[5]!.before
+      expect(result.current.resumeFromMistake).toEqual({
+        fen: before,
+        color: 'b',
+        san: 'Nf6',
+        levelId: 2,
+      })
+    })
+
+    it('offers nothing on a sound move, or outside the review', () => {
+      qualities = [null, 'best', null, 'good', null, 'blunder']
+      const { result } = renderHook(() => useCoachPageState(), {
+        wrapper: withRouter(handedOver),
+      })
+      // At 2…Nc6, graded good.
+      act(() => result.current.goToStart())
+      for (let step = 0; step < 4; step += 1) act(() => result.current.stepForward())
+      expect(result.current.resumeFromMistake).toBeNull()
+
+      act(() => result.current.goToEnd())
+      expect(result.current.resumeFromMistake).not.toBeNull()
+      act(() => result.current.exitReplay())
+      expect(result.current.resumeFromMistake).toBeNull()
+    })
+
+    it('leaves the level out once the board is no longer the battle handed over', () => {
+      qualities = ['mistake']
+      const { result } = renderHook(() => useCoachPageState(), {
+        wrapper: withRouter(handedOver),
+      })
+      // A new game on the same page: the battle's level no longer describes it.
+      act(() => result.current.newGame())
+      act(() => {
+        result.current.game.move('f2', 'f3')
+      })
+      act(() => result.current.enterReplay())
+      expect(result.current.resumeFromMistake).toEqual({
+        fen: new Chess().fen(),
+        color: 'w',
+        san: 'f3',
+      })
+    })
   })
 })

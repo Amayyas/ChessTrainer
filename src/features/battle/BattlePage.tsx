@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { BoardControls, ChessBoard, MoveHistory, MoveInput } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import StatusLine from '@/components/UI/StatusLine'
 import BattleSetup from '@/features/battle/BattleSetup'
 import ClockDisplay from '@/features/battle/ClockDisplay'
-import { useBattleGame } from '@/features/battle/useBattleGame'
+import { readResume } from '@/features/battle/resume'
+import { useBattleGame, type BattleConfig } from '@/features/battle/useBattleGame'
 import { ROUTES } from '@/routes'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { describeStatus } from '@/utils/chess'
@@ -17,7 +18,25 @@ import { describeStatus } from '@/utils/chess'
 export default function BattlePage() {
   const battle = useBattleGame()
   const navigate = useNavigate()
+  const location = useLocation()
   const { game, clock, level, playerColor, phase, result } = battle
+
+  // A position taken up from the coach. It stays offered after the game, so
+  // "Nouvelle partie" means another try at the same moment, until the player
+  // drops it for the opening position.
+  const [resume, setResume] = useState(() => readResume(location.state))
+  const dropResume = () => {
+    setResume(null)
+    // Out of the history entry too, or a reload would bring it back.
+    navigate(ROUTES.battle, { replace: true, state: null })
+  }
+  // Whether the game on the board started from a resume: such a game is
+  // practice, and starting from a won position must not earn a win.
+  const [isResumed, setIsResumed] = useState(false)
+  const start = (config: BattleConfig) => {
+    setIsResumed(config.startFen !== undefined)
+    battle.start(config)
+  }
 
   // Stamped the moment the game ends, so reviewing it later does not move it.
   const endedAt = useRef<string | null>(null)
@@ -36,12 +55,13 @@ export default function BattlePage() {
     }
     if (recorded.current || !result) return
     recorded.current = true
+    if (isResumed) return
     recordBattle({
       outcome: result.outcome,
       byCheckmate: game.status.reason === 'checkmate',
       levelLabel: level.label,
     })
-  }, [phase, result, game.status.reason, level.label, recordBattle])
+  }, [phase, result, game.status.reason, level.label, recordBattle, isResumed])
 
   const stalled = !battle.isThinking && battle.isEngineStalled && phase === 'playing'
   const playerLabel = playerColor === 'w' ? 'Vous (blancs)' : 'Vous (noirs)'
@@ -54,9 +74,20 @@ export default function BattlePage() {
       <div>
         <PageHeader
           title="Affrontement"
-          subtitle="Choisissez un niveau, votre couleur et une cadence, puis défiez l'IA."
+          subtitle={
+            resume
+              ? "Choisissez un niveau et une cadence, puis reprenez la partie face à l'IA."
+              : "Choisissez un niveau, votre couleur et une cadence, puis défiez l'IA."
+          }
         />
-        <BattleSetup onStart={battle.start} disabled={!battle.isEngineReady} />
+        <BattleSetup
+          // Remounted when the resume changes, so its level is the one it brings.
+          key={resume ? resume.fen : 'opening'}
+          onStart={start}
+          disabled={!battle.isEngineReady}
+          resume={resume}
+          onDropResume={dropResume}
+        />
       </div>
     )
   }
@@ -65,7 +96,7 @@ export default function BattlePage() {
     <div>
       <PageHeader
         title="Affrontement"
-        subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)`}
+        subtitle={`Niveau ${level.id} — ${level.label} (~${level.elo} Elo)${isResumed ? ' · partie reprise' : ''}`}
         actions={
           // One status line whatever it says, so a screen reader hears each
           // change, the stall included.
@@ -135,8 +166,11 @@ export default function BattlePage() {
                         playerColor,
                         // The level and the result travel too: 60% against
                         // Maître and 60% against Novice are not the same 60%.
-                        levelLabel: level.label,
-                        outcome: result?.outcome,
+                        // Not for a resumed game: it is practice, and the
+                        // coach would record it as a battle played.
+                        ...(isResumed ? {} : { levelLabel: level.label, outcome: result?.outcome }),
+                        // The level alone always does, for taking it up again.
+                        levelId: level.id,
                       },
                     })
                   }
@@ -170,7 +204,7 @@ export default function BattlePage() {
               <h2 id="t-moves" className="mb-1 text-kicker font-semibold uppercase">
                 Coups joués
               </h2>
-              <MoveHistory moves={game.sanHistory} />
+              <MoveHistory moves={game.sanHistory} startFen={game.history[0]?.before} />
             </section>
 
             {/* Only while a game is still on: once it has a verdict, the card

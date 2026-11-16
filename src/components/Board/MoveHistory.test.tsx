@@ -26,6 +26,25 @@ describe('MoveHistory', () => {
     expect(second).toHaveTextContent(`2.${FIGURINES.N}${FRENCH_LETTERS.N}f3`)
   })
 
+  it('numbers from the position the moves start from, Black first', () => {
+    // Taken up before Black's twelfth move: the first row is Black's alone.
+    const startFen = 'r1bqkb1r/pppp1ppp/2n2n2/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R b KQkq - 5 12'
+    render(<MoveHistory moves={['Bc5', 'Bc4', 'O-O']} startFen={startFen} activeIndex={0} />)
+
+    const [first, second] = screen.getAllByRole('listitem')
+    expect(first).toHaveTextContent(`12.…${FIGURINES.B}${FRENCH_LETTERS.B}c5`)
+    expect(second).toHaveTextContent(`13.${FIGURINES.B}${FRENCH_LETTERS.B}c4O-O`)
+    // The highlight still follows the move index, not the row.
+    expect(first!.querySelector('[aria-current="step"]')).toHaveTextContent('c5')
+  })
+
+  it('numbers from the position the moves start from, White first', () => {
+    const startFen = '4k3/8/8/8/8/8/4P3/4K3 w - - 0 30'
+    render(<MoveHistory moves={['e4', 'Kd7']} startFen={startFen} />)
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.getByText('30.')).toBeInTheDocument()
+  })
+
   it('writes the moves in figurines, never in English letters', () => {
     render(<MoveHistory moves={['e4', 'e5', 'Nf3', 'Nc6', 'Bb5']} />)
 
