@@ -25,6 +25,11 @@ export interface BattleConfig {
    * up from the coach just before a mistake. Its side to move may be Black.
    */
   startFen?: string
+  /**
+   * A blindfold game: the board is not drawn, and the player follows the
+   * position in their head. The engine plays the same; only the page differs.
+   */
+  blindfold?: boolean
 }
 
 export interface BattleResult {
