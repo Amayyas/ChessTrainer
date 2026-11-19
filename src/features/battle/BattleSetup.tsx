@@ -4,7 +4,8 @@ import { TIME_CONTROLS, type TimeControlId } from '@/hooks/useChessClock'
 import { Box, Button } from '@/components/UI'
 import Notation from '@/components/UI/Notation'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
-import { moveNumberIn, type Resume } from '@/features/battle/resume'
+import type { Resume } from '@/features/battle/resume'
+import { moveNumberIn } from '@/utils/notation'
 import type { BattleConfig, ColorChoice } from '@/features/battle/useBattleGame'
 
 interface BattleSetupProps {

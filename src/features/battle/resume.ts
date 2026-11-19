@@ -45,9 +45,3 @@ export function readResume(state: unknown): Resume | null {
   const level = ENGINE_LEVELS.find((candidate) => candidate.id === levelId)
   return level ? { fen, color, san, levelId: level.id } : { fen, color, san }
 }
-
-/** A move as the score numbers it, from the position it is played in: "12." or "12…". */
-export function moveNumberIn(fen: string): string {
-  const [, turn, , , , fullmove] = fen.split(' ')
-  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}`
-}

@@ -7,6 +7,7 @@ import {
   FIGURINES,
   FRENCH_LETTERS,
   inFigurineFace,
+  moveNumberIn,
   notationParts,
   type PieceLetter,
 } from '@/utils/notation'
@@ -73,5 +74,14 @@ describe('notation', () => {
     }
     expect(inFigurineFace('★')).toBe(true)
     expect(inFigurineFace('?!')).toBe(false)
+  })
+})
+
+describe('moveNumberIn', () => {
+  it('numbers the move to be played in a position as the score does', () => {
+    expect(moveNumberIn('r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3')).toBe(
+      '3…',
+    )
+    expect(moveNumberIn('4k3/8/8/8/8/8/4P3/4K3 w - - 0 30')).toBe('30.')
   })
 })
