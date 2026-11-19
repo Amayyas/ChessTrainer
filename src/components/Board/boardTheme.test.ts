@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { boardStyle, squaresSvg } from '@/components/Board/boardTheme'
-import { board, durations } from '@/lib/design-tokens'
+import { board, diagram, durations } from '@/lib/design-tokens'
 
 /** The fill of every square drawn over the light ground, in reading order. */
 function darkSquares(svg: string): Array<{ x: number; y: number; fill: string }> {
@@ -39,5 +39,26 @@ describe('the board’s squares', () => {
     expect(style['--board-check']).toBe(board.check)
     expect(style['--board-arrow-in']).toBe(`${durations.arrow}ms`)
     expect((boardStyle('hatched', true) as Record<string, string>)['--board-arrow-in']).toBe('0ms')
+  })
+
+  it('dims the paper for the evening edition and keeps the ink', () => {
+    // A light diagram on a dark page, not an inverted one: the pieces are drawn
+    // for a light ground, and the hatch stays the ink a diagram is printed in.
+    const hatched = squaresSvg('hatched', 'night')
+    expect(hatched).toContain(`<rect width="800" height="800" fill="${diagram.night.light}"/>`)
+    expect(hatched).toContain(`fill="${diagram.night.ink}"`)
+    expect(diagram.night.ink).toBe(diagram.day.ink)
+    expect(diagram.night.light).not.toBe(diagram.day.light)
+
+    const plain = squaresSvg('plain', 'night')
+    expect(new Set(darkSquares(plain).map(({ fill }) => fill))).toEqual(
+      new Set([diagram.night.plain]),
+    )
+  })
+
+  it('hands over both editions’ squares, for the stylesheet to choose between', () => {
+    const style = boardStyle('plain', false) as Record<string, string>
+    expect(decodeURIComponent(style['--board-squares-day']!)).toContain(diagram.day.plain)
+    expect(decodeURIComponent(style['--board-squares-night']!)).toContain(diagram.night.plain)
   })
 })

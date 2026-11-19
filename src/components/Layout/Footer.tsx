@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import DoubleRule from '@/components/UI/DoubleRule'
+import EditionPicker from '@/features/theme/EditionPicker'
 import { brand } from '@/lib/design-tokens'
 import { ROUTES } from '@/routes'
 
@@ -40,6 +41,7 @@ export default function Footer() {
             </li>
           </ul>
         </nav>
+        <EditionPicker />
       </div>
     </footer>
   )

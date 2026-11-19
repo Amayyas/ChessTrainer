@@ -4,12 +4,17 @@ import { describe, expect, it } from 'vitest'
 import {
   board,
   brand,
+  diagram,
+  editionVariables,
   fallbackFaces,
   fallbackFontFaces,
   fonts,
   newsprint,
   newsreaderMetrics,
+  nightprint,
+  themeColors,
   typeScale,
+  type Palette,
 } from '@/lib/design-tokens'
 import { MODES } from '@/features/home/modes'
 import tailwindConfig from '../../tailwind.config'
@@ -53,8 +58,14 @@ describe('design tokens', () => {
     // ebony, a dark bar over a page of paper; it is read back from index.html
     // so it cannot drift from the palette again.
     const html = readFileSync(resolve('index.html'), 'utf8')
-    const themeColor = /<meta name="theme-color" content="([^"]+)"/.exec(html)?.[1]
+    const themeColor = /<meta name="theme-color" content="([^"]+)" \/>/.exec(html)?.[1]
     expect(themeColor?.toUpperCase()).toBe(newsprint.paper.DEFAULT.toUpperCase())
+    // And the evening paper, where the system asks for the dark edition.
+    const night =
+      /<meta name="theme-color" content="([^"]+)" media="\(prefers-color-scheme: dark\)"/.exec(
+        html,
+      )?.[1]
+    expect(night?.toUpperCase()).toBe(nightprint.paper.DEFAULT.toUpperCase())
   })
 
   it('draws the favicon in the paper and the ink', () => {
@@ -115,13 +126,17 @@ describe('design tokens', () => {
     expect(contrast(newsprint.ink.faint, newsprint.paper.deep)).toBeLessThan(4.5)
   })
 
-  it('sets every newsprint text pair at WCAG AA', () => {
+  it.each([
+    ['day', newsprint],
+    ['evening', nightprint],
+  ] as Array<[string, Palette]>)('sets every %s text pair at WCAG AA', (_edition, palette) => {
     // The pairs the interface sets text in, each held to the 4.5:1 floor for
     // body text. Captions are small, so none of them earns the 3:1 allowance
     // for large text. A lighter ink or a brighter red fails here first.
     // Contrast is symmetric, so each pair also covers its inverse: the rubric
-    // on paper is paper on the rubric too.
-    const { paper, ink, rubric } = newsprint
+    // on paper is paper on the rubric too. The evening edition is held to the
+    // same pairs: every class is set in either.
+    const { paper, ink, rubric } = palette
     const pairs: Record<string, [text: string, ground: string]> = {
       'ink on paper': [ink.DEFAULT, paper.DEFAULT],
       'ink on bright paper': [ink.DEFAULT, paper.bright],
@@ -141,6 +156,38 @@ describe('design tokens', () => {
     for (const [pair, [text, ground]] of Object.entries(pairs)) {
       expect(contrast(text, ground), pair).toBeGreaterThanOrEqual(4.5)
     }
+  })
+
+  it('reads every colour class from a custom property both editions set', () => {
+    // A class that kept a hex value would stay in the day edition at night.
+    const names = (value: unknown): string[] =>
+      typeof value === 'string'
+        ? [value]
+        : Object.values(value as Record<string, unknown>).flatMap(names)
+    const day = editionVariables(newsprint, diagram.day)
+    const night = editionVariables(nightprint, diagram.night)
+    for (const colour of names(themeColors)) {
+      const property = /var\((--color-[a-z-]+)\)/.exec(colour)?.[1]
+      expect(property, colour).toBeDefined()
+      expect(day).toHaveProperty([property!])
+      expect(night).toHaveProperty([property!])
+    }
+    expect(tailwindConfig.theme.extend.colors).toEqual(themeColors)
+  })
+
+  it('writes an edition as the channels of its palette', () => {
+    const day = editionVariables(newsprint, diagram.day)
+    expect(day['--color-paper']).toBe('244 240 230')
+    expect(editionVariables(nightprint, diagram.night)['--color-rubric']).not.toBe(
+      day['--color-rubric'],
+    )
+  })
+
+  it('keeps the sides’ colours apart from the page’s at night', () => {
+    // White's share of the gauge and the diagram's paper stay light at night;
+    // were they the page's paper, they would turn dark with it.
+    expect(contrast(diagram.night.light, nightprint.paper.DEFAULT)).toBeGreaterThan(3)
+    expect(contrast(diagram.night.light, diagram.night.ink)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('names the family the self-hosted stylesheets declare', () => {

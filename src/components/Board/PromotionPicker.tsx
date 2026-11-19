@@ -60,7 +60,9 @@ export default function PromotionPicker({
         aria-label="Promotion : choisissez une pièce"
         style={{ left: `${column * 12.5}%`, [fromTop ? 'top' : 'bottom']: 0 }}
         className={cn(
-          'absolute flex w-[12.5%] border-2 border-ink bg-paper-bright',
+          // The diagram's paper, not the page's: the pieces are drawn for a
+          // light ground, and at night the page is dark.
+          'absolute flex w-[12.5%] border-2 border-ink bg-diagram-light',
           fromTop ? 'flex-col' : 'flex-col-reverse',
         )}
       >
@@ -71,7 +73,7 @@ export default function PromotionPicker({
             type="button"
             onClick={() => onChoose(choice.symbol)}
             className={cn(
-              'board-piece aspect-square w-full hover:bg-paper-deep',
+              'board-piece aspect-square w-full hover:bg-diagram-ink/10',
               choice.role,
               color,
             )}

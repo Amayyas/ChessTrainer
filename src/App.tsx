@@ -9,6 +9,7 @@ import { useProgressionSync } from '@/features/progression/useProgressionSync'
 import { ROUTES } from '@/routes'
 import AuthLinkLanding from '@/features/auth/AuthLinkLanding'
 import DocumentHead from '@/features/seo/DocumentHead'
+import { useEdition } from '@/features/theme/useEdition'
 import { useAuthStore } from '@/store/useAuthStore'
 
 // HomeRoute (and the LandingPage it renders) stays eager so the first paint on
@@ -39,6 +40,9 @@ export default function App() {
 
   // Mirrors the progression to Supabase for a signed-in account (deliverable 5).
   useProgressionSync()
+
+  // Prints the page in the edition the player chose, or the system's.
+  useEdition()
 
   return (
     <>

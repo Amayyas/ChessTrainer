@@ -18,9 +18,36 @@ them.
   else: a wrong move, the coach's arrow, the current section, keyboard focus.
   It is never decoration and never a second accent.
 
+- `diagram-light`, `diagram-ink` — the two sides, not the page: the diagram's
+  squares, White's and Black's shares of the evaluation bar, the promotion
+  picker's ground. Use them wherever a colour means a side; the page's paper
+  and ink swap at night, and these do not.
+
 Every text pair is held to WCAG AA by
 [`design-tokens.test.ts`](../src/lib/design-tokens.test.ts). A new pair goes
 into that test before it goes into a component.
+
+### The evening edition
+
+The same column, printed for reading at night: `nightprint` beside
+`newsprint` in the tokens, a warm black page, cream ink, a lighter rubric, and
+the same AA pairs held for both. Classes never name an edition — `bg-paper` is
+the page's paper in either — because the palette reaches the page as custom
+properties (`editionVariables`), which a Tailwind plugin swaps:
+
+- by default, on the system's `prefers-color-scheme`;
+- with `data-theme="night"` or `"day"` on `<html>`, for the edition the player
+  picks in the footer (Auto, Jour, Soir), kept on the device by
+  `src/features/theme/edition.ts`.
+
+The diagram dims its paper at night and keeps its ink, so the pieces, drawn
+for a light ground, still read; the board is handed both editions' squares and
+`.board-squares` in `src/index.css` picks one.
+
+**Known limit:** a forced edition is applied by the app's script, so a player
+who picked the opposite of their system sees the system's edition for the
+moment before it runs. An inline script in the document's head would close
+that gap, and the Content-Security-Policy allows no inline script.
 
 ## Type
 

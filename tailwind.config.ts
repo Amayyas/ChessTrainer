@@ -1,6 +1,15 @@
 import type { Config } from 'tailwindcss'
 import plugin from 'tailwindcss/plugin'
-import { fallbackFontFaces, fonts, newsprint, typeScale } from './src/lib/design-tokens'
+import {
+  diagram,
+  editionVariables,
+  fallbackFontFaces,
+  fonts,
+  newsprint,
+  nightprint,
+  themeColors,
+  typeScale,
+} from './src/lib/design-tokens'
 
 /**
  * The theme is read from src/lib/design-tokens.ts rather than written here, so
@@ -17,6 +26,23 @@ const fontFallbacks = plugin(({ addBase }) => {
   addBase(fallbackFontFaces())
 })
 
+/**
+ * The two editions as custom properties. The day edition is the default; the
+ * evening one follows the system's dark setting unless the player chose the
+ * day edition, and applies whenever they chose it — `data-theme` on <html>,
+ * set by src/features/theme. `color-scheme` tells the browser too, for its
+ * scrollbars and form controls.
+ */
+const editions = plugin(({ addBase }) => {
+  const day = { ...editionVariables(newsprint, diagram.day), colorScheme: 'light' }
+  const night = { ...editionVariables(nightprint, diagram.night), colorScheme: 'dark' }
+  addBase({
+    ':root': day,
+    '@media (prefers-color-scheme: dark)': { ':root:not([data-theme="day"])': night },
+    ':root[data-theme="night"]': night,
+  })
+})
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   // `hover:` only where there is a pointer that hovers. On a touch screen a
@@ -31,8 +57,9 @@ export default {
     fontSize: typeScale,
     extend: {
       colors: {
-        // `bg-paper`, `text-ink-soft`, `text-rubric`: the newsprint palette.
-        ...newsprint,
+        // `bg-paper`, `text-ink-soft`, `text-rubric`: the newsprint palette,
+        // read from custom properties so the evening edition can swap it.
+        ...themeColors,
       },
       // One family for all text. `sans` is what Tailwind's preflight sets on the
       // document and on form controls, so it points at the serif too: inputs and
@@ -49,5 +76,5 @@ export default {
       },
     },
   },
-  plugins: [fontFallbacks],
+  plugins: [fontFallbacks, editions],
 } satisfies Config

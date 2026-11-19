@@ -19,6 +19,10 @@ targets French-speaking learners — while the codebase is English throughout.
 
 ## What it does
 
+Every page comes in a day and an evening edition — paper and ink, or the same
+column on a warm black page — following the system's setting or the
+player's choice in the footer.
+
 **AI Coach** — play both sides and get a running evaluation, a grade for every
 move on seven tiers, from the engine's own move down to a blunder, measured by
 the centipawns it lost against the best line, and the best continuation drawn as
