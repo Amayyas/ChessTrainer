@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { BoardControls, ChessBoard, MoveInput } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import BoxScore from '@/components/UI/BoxScore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
+import PuzzleBoardColumn from '@/features/puzzle/PuzzleBoardColumn'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
 import { usePracticeSession } from '@/features/puzzle/usePracticeSession'
@@ -36,49 +36,11 @@ function PuzzleBoard({
 
   return (
     <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
-      <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
-        {/* The frame answers the move: ink for a right one, the rubric for a
-            wrong one. Said in words too, for a screen reader, which the frame
-            alone never told. */}
-        <div
-          className={cn(
-            'outline outline-[3px] outline-offset-[3px]',
-            runner.feedback === 'correct' && 'outline-ink',
-            runner.feedback === 'wrong' && 'outline-rubric',
-            !runner.feedback && 'outline-transparent',
-          )}
-        >
-          <ChessBoard
-            fen={runner.fen}
-            turn={runner.solverColor}
-            orientation={runner.solverColor === 'w' ? 'white' : 'black'}
-            interactive={!runner.isSolved}
-            onMove={runner.attempt}
-            getLegalTargets={runner.getLegalTargets}
-            isPromotion={runner.isPromotion}
-            lastMove={runner.lastMove}
-            moves={runner.played}
-          />
-        </div>
-        <BoardControls>
-          <MoveInput
-            fen={runner.fen}
-            turn={runner.solverColor}
-            enabled={!runner.isSolved}
-            onMove={runner.attempt}
-            getLegalTargets={runner.getLegalTargets}
-            isPromotion={runner.isPromotion}
-            idleMessage="Ce puzzle est résolu."
-          />
-        </BoardControls>
-        <p role="status" className="sr-only">
-          {runner.feedback === 'correct'
-            ? 'Bon coup.'
-            : runner.feedback === 'wrong'
-              ? 'Ce n’est pas le coup attendu.'
-              : ''}
-        </p>
-      </div>
+      <PuzzleBoardColumn
+        runner={runner}
+        interactive={!runner.isSolved}
+        idleMessage="Ce puzzle est résolu."
+      />
 
       <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
