@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
-import { BoardControls, ChessBoard, MoveInput } from '@/components/Board'
 import { Box, Button, PageHeader, Tag } from '@/components/UI'
 import BoxScore from '@/components/UI/BoxScore'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
+import PuzzleBoardColumn from '@/features/puzzle/PuzzleBoardColumn'
+import RushView from '@/features/puzzle/RushView'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
 import { usePracticeSession } from '@/features/puzzle/usePracticeSession'
@@ -36,49 +37,11 @@ function PuzzleBoard({
 
   return (
     <div className="grid gap-y-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
-      <div className="mx-auto w-full max-w-[600px] self-start lg:pr-12">
-        {/* The frame answers the move: ink for a right one, the rubric for a
-            wrong one. Said in words too, for a screen reader, which the frame
-            alone never told. */}
-        <div
-          className={cn(
-            'outline outline-[3px] outline-offset-[3px]',
-            runner.feedback === 'correct' && 'outline-ink',
-            runner.feedback === 'wrong' && 'outline-rubric',
-            !runner.feedback && 'outline-transparent',
-          )}
-        >
-          <ChessBoard
-            fen={runner.fen}
-            turn={runner.solverColor}
-            orientation={runner.solverColor === 'w' ? 'white' : 'black'}
-            interactive={!runner.isSolved}
-            onMove={runner.attempt}
-            getLegalTargets={runner.getLegalTargets}
-            isPromotion={runner.isPromotion}
-            lastMove={runner.lastMove}
-            moves={runner.played}
-          />
-        </div>
-        <BoardControls>
-          <MoveInput
-            fen={runner.fen}
-            turn={runner.solverColor}
-            enabled={!runner.isSolved}
-            onMove={runner.attempt}
-            getLegalTargets={runner.getLegalTargets}
-            isPromotion={runner.isPromotion}
-            idleMessage="Ce puzzle est résolu."
-          />
-        </BoardControls>
-        <p role="status" className="sr-only">
-          {runner.feedback === 'correct'
-            ? 'Bon coup.'
-            : runner.feedback === 'wrong'
-              ? 'Ce n’est pas le coup attendu.'
-              : ''}
-        </p>
-      </div>
+      <PuzzleBoardColumn
+        runner={runner}
+        interactive={!runner.isSolved}
+        idleMessage="Ce puzzle est résolu."
+      />
 
       <div className="flex flex-col gap-[22px] lg:border-l lg:border-ink/30 lg:pl-11">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -251,26 +214,33 @@ function PracticeView() {
   )
 }
 
+type PuzzleTab = 'daily' | 'practice' | 'rush'
+
 /**
- * Puzzle mode: a daily series that feeds the streak, and a free-practice tab
- * with no daily cap. Both share the board, hints and scoring.
+ * Puzzle mode: a daily series that feeds the streak, a free-practice tab with
+ * no daily cap — both sharing the board, hints and scoring — and Puzzle Rush,
+ * against the clock, which shares the board alone.
  */
 export default function PuzzlePage() {
-  const [tab, setTab] = useState<'daily' | 'practice'>('daily')
-  // Mount practice the first time its tab is opened, then keep both views alive
-  // so switching tabs never throws away a series or a practice run in progress.
+  const [tab, setTab] = useState<PuzzleTab>('daily')
+  // Mount practice and the Rush the first time their tab is opened, then keep
+  // every view alive so switching tabs never throws away a series, a practice
+  // run or a Rush in progress — a Rush's clock keeps running meanwhile.
   const [practiceOpened, setPracticeOpened] = useState(false)
+  const [rushOpened, setRushOpened] = useState(false)
   if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
+  if (tab === 'rush' && !rushOpened) setRushOpened(true)
 
   return (
     <Tabs
       value={tab}
-      onValueChange={(next) => setTab(next as 'daily' | 'practice')}
+      onValueChange={(next) => setTab(next as PuzzleTab)}
       className="flex flex-col gap-4"
     >
       <TabsList aria-label="Mode de jeu">
         <TabsTrigger value="daily">Série du jour</TabsTrigger>
         <TabsTrigger value="practice">Entraînement libre</TabsTrigger>
+        <TabsTrigger value="rush">Rush</TabsTrigger>
       </TabsList>
 
       {/* forceMount and hidden together, and both are needed. Radix unmounts an
@@ -289,6 +259,9 @@ export default function PuzzlePage() {
           emits that attribute whether or not the panel is there. */}
       <TabsContent value="practice" forceMount hidden={tab !== 'practice'}>
         {practiceOpened && <PracticeView />}
+      </TabsContent>
+      <TabsContent value="rush" forceMount hidden={tab !== 'rush'}>
+        {rushOpened && <RushView />}
       </TabsContent>
     </Tabs>
   )

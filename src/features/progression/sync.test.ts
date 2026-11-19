@@ -169,6 +169,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       // non-strings dropped from both lists
       seenPuzzleIds: ['ct-0007', 'ct-0009'],
       dailySeries: { day: '2026-08-12', ids: ['ct-0007', 'ct-0011'] },
+      rushRuns: [],
     })
 
     const partial = rowToSnapshot(row({ puzzle_progress: { streak: 2, dailySeries: 'nope' } }))
@@ -179,7 +180,29 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       totalSolved: 0,
       seenPuzzleIds: [],
       dailySeries: null,
+      rushRuns: [],
     })
+  })
+
+  it('reads the Puzzle Rush ranking back, keeping only runs that hold together', () => {
+    const snapshot = rowToSnapshot(
+      row({
+        puzzle_progress: {
+          rushRuns: [
+            { score: 12, at: '2026-11-01T10:00:00.000Z' },
+            { score: -3, at: '2026-11-02T10:00:00.000Z' },
+            { score: 20, at: 'yesterday' },
+            'nope',
+            { score: 18, at: '2026-11-03T10:00:00.000Z' },
+          ],
+        },
+      }),
+    )
+    // Malformed runs dropped, the rest best first.
+    expect(snapshot.puzzleProgress.rushRuns).toEqual([
+      { score: 18, at: '2026-11-03T10:00:00.000Z' },
+      { score: 12, at: '2026-11-01T10:00:00.000Z' },
+    ])
   })
 
   it('sends both documents up to the server', () => {
@@ -195,6 +218,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
         totalSolved: 11,
         seenPuzzleIds: [],
         dailySeries: null,
+        rushRuns: [],
       },
       accuracyHistory: [],
       daily: emptyCounters('2026-08-17'),

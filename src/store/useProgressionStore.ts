@@ -14,7 +14,12 @@ import {
   type DailyCounters,
 } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
-import { EMPTY_PROGRESS, mergeSeenPuzzleIds, type PuzzleProgress } from '@/features/puzzle/progress'
+import {
+  EMPTY_PROGRESS,
+  mergeRushRuns,
+  mergeSeenPuzzleIds,
+  type PuzzleProgress,
+} from '@/features/puzzle/progress'
 
 /**
  * The runtime list is the source of truth and the type follows it, as the hunt
@@ -408,6 +413,9 @@ export const useProgressionStore = create<ProgressionState>()(
                 get().puzzleProgress.seenPuzzleIds,
                 puzzleProgress.seenPuzzleIds,
               ),
+              // The Rush ranking is a log of runs too: a guest's runs, or one
+              // ended while the pull was in flight, must survive it.
+              rushRuns: mergeRushRuns(get().puzzleProgress.rushRuns, puzzleProgress.rushRuns),
             },
             // Merged, not replaced. The fields above are totals, where the
             // server copy must win or a second device would double count.
@@ -448,7 +456,7 @@ export const useProgressionStore = create<ProgressionState>()(
     },
     {
       name: 'chesstrainer.progression',
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         // Records written before progression had an owner carry no way of
         // telling one player's work from another's. Zustand merges them over
@@ -485,6 +493,20 @@ export const useProgressionStore = create<ProgressionState>()(
               ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
               seenPuzzleIds: [],
               dailySeries: null,
+            },
+          }
+        }
+        // Version 3 had no Puzzle Rush ranking. Seed it empty; everything else
+        // in the puzzle progress is kept as it was.
+        if (version < 4) {
+          const record = persisted as Record<string, unknown>
+          const puzzle = record.puzzleProgress
+          return {
+            ...record,
+            puzzleProgress: {
+              ...EMPTY_PROGRESS,
+              ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
+              rushRuns: [],
             },
           }
         }

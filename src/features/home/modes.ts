@@ -42,7 +42,8 @@ export const MODES: ModeCard[] = [
     to: ROUTES.puzzle,
     glyph: '♝',
     title: 'Puzzles',
-    description: 'Résolvez des positions tactiques classées par thème.',
+    description:
+      'Résolvez des positions tactiques classées par thème, ou enchaînez-les contre la montre.',
     badge: 'Tactique',
   },
   {

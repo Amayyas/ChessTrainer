@@ -46,7 +46,10 @@ self-play score as precise and hid a 1500-point chasm between its top two levels
 behind it; adjacent levels are now checked by the gap between them.
 
 **Puzzles** — tactical positions to solve, tracked so you resume where you left
-off.
+off. Puzzle Rush strings them together against the clock, each puzzle harder
+than the last, until time or the allowed wrong moves run out — both set in
+[`src/features/puzzle/rushSet.ts`](src/features/puzzle/rushSet.ts) — with a
+personal ranking of the best runs that follows the account.
 
 **Piece Hunt** — an arcade mode: one champion piece, sixty seconds, three lives,
 and a board of enemies that move back. Scores go to a worldwide leaderboard.
