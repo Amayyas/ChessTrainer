@@ -44,6 +44,7 @@ describe('BattleSetup', () => {
       levelId: lastLevel.id,
       colorChoice: 'black',
       timeControlId: 'unlimited',
+      blindfold: false,
     })
     expect(typeof onStart.mock.calls[0]?.[0].levelId).toBe('number')
   })
@@ -61,6 +62,19 @@ describe('BattleSetup', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Commencer la partie' }))
     expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ colorChoice: 'white' }))
+  })
+
+  it('starts a blindfold game when the board is hidden, and says what that means', async () => {
+    const onStart = vi.fn()
+    render(<BattleSetup onStart={onStart} />)
+    const board = screen.getByRole('radiogroup', { name: 'Plateau' })
+
+    expect(screen.queryByText(/Le plateau est masqué/)).not.toBeInTheDocument()
+    await userEvent.click(within(board).getByRole('radio', { name: 'À l’aveugle' }))
+    expect(screen.getByText(/Le plateau est masqué/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Commencer la partie' }))
+    expect(onStart).toHaveBeenCalledWith(expect.objectContaining({ blindfold: true }))
   })
 
   it('walks a group with the arrow keys instead of the tab key', async () => {
@@ -113,6 +127,7 @@ describe('BattleSetup', () => {
         colorChoice: 'black',
         timeControlId: 'unlimited',
         startFen: resume.fen,
+        blindfold: false,
       })
     })
 

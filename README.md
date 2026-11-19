@@ -48,6 +48,10 @@ place yourself, not a rating earned against humans. An earlier ladder read a 96%
 self-play score as precise and hid a 1500-point chasm between its top two levels
 behind it; adjacent levels are now checked by the gap between them.
 
+A game can be played **blindfold**: the board is hidden, the last move is shown
+and announced, and moves are typed in French notation. The board comes back at
+the end of the game, or for a glance on demand.
+
 **Puzzles** — tactical positions to solve, tracked so you resume where you left
 off.
 

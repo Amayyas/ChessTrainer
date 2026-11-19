@@ -11,8 +11,9 @@ import { useProgressionStore } from '@/store/useProgressionStore'
 // The board and the move list are not what is under test, and the board pulls
 // in chessground; the page is checked around them.
 vi.mock('@/components/Board', () => ({
+  BlindBoard: () => <p>plateau masqué</p>,
   BoardControls: () => null,
-  ChessBoard: () => null,
+  ChessBoard: () => <p>plateau dessiné</p>,
   MoveHistory: () => null,
   MoveInput: () => null,
 }))
@@ -178,5 +179,61 @@ describe('BattlePage with a game taken up from the coach', () => {
     expect(handed).not.toHaveProperty('outcome')
     expect(handed).not.toHaveProperty('levelLabel')
     expect(handed).toHaveProperty('levelId')
+  })
+})
+
+describe('BattlePage blindfold', () => {
+  function page() {
+    return (
+      <MemoryRouter>
+        <BattlePage />
+      </MemoryRouter>
+    )
+  }
+
+  /** Starts a game from the setup screen with the board hidden. */
+  async function startBlind() {
+    battle = playing({ phase: 'setup' })
+    const view = render(page())
+    await userEvent.click(screen.getByRole('radio', { name: 'À l’aveugle' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Commencer la partie' }))
+    battle = playing()
+    view.rerender(page())
+    return view
+  }
+
+  it('hides the board while the game is on, and says so in the header', async () => {
+    await startBlind()
+    expect(screen.getByText('plateau masqué')).toBeInTheDocument()
+    expect(screen.queryByText('plateau dessiné')).not.toBeInTheDocument()
+    expect(screen.getByText(/· à l’aveugle/)).toBeInTheDocument()
+  })
+
+  it('lets the player glance at the board and put it away again', async () => {
+    await startBlind()
+    const peek = screen.getByRole('button', { name: 'Jeter un œil au plateau' })
+    await userEvent.click(peek)
+    expect(screen.getByText('plateau dessiné')).toBeInTheDocument()
+    expect(peek).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Masquer le plateau' }))
+    expect(screen.getByText('plateau masqué')).toBeInTheDocument()
+  })
+
+  it('shows the board once the game is over', async () => {
+    const view = await startBlind()
+    battle = playing({
+      phase: 'over',
+      result: { outcome: 'loss', label: 'Vous avez abandonné.' },
+    })
+    view.rerender(page())
+    expect(screen.getByText('plateau dessiné')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Jeter un œil/ })).not.toBeInTheDocument()
+  })
+
+  it('draws the board as usual when it was not hidden', () => {
+    battle = playing()
+    render(page())
+    expect(screen.getByText('plateau dessiné')).toBeInTheDocument()
   })
 })

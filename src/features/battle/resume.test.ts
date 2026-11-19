@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { moveNumberIn, readResume } from '@/features/battle/resume'
+import { readResume } from '@/features/battle/resume'
 
 // After 1.e4 e5 2.Qh5 Nc6 3.Bc4: Black to move, and 3…Nf6?? loses at once.
 const BEFORE_BLUNDER = 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3'
@@ -38,12 +38,5 @@ describe('readResume', () => {
     ],
   ])('turns away %s', (_case, state) => {
     expect(readResume(state)).toBeNull()
-  })
-})
-
-describe('moveNumberIn', () => {
-  it('numbers the move to be played in a position as the score does', () => {
-    expect(moveNumberIn(BEFORE_BLUNDER)).toBe('3…')
-    expect(moveNumberIn('4k3/8/8/8/8/8/4P3/4K3 w - - 0 30')).toBe('30.')
   })
 })

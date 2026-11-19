@@ -78,3 +78,9 @@ export function notationParts(san: string): NotationPart[] {
   if (text) parts.push({ text })
   return parts
 }
+
+/** A move as the score numbers it, from the position it is played in: "12." or "12…". */
+export function moveNumberIn(fen: string): string {
+  const [, turn, , , , fullmove] = fen.split(' ')
+  return `${fullmove ?? '1'}${turn === 'b' ? '…' : '.'}`
+}

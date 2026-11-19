@@ -31,6 +31,13 @@ promotion, check and mate. The pages hand the board the list of moves played
 
 A diagram, such as the landing's, has a description and no live region.
 
+**A blindfold battle draws no board.** In its place
+[`BlindBoard`](../src/components/Board/BlindBoard.tsx) shows only the last move,
+and says each new one in the same polite live region, through the same
+`useSpokenMoves` hook the drawn board uses — so a screen reader hears a
+blindfold game exactly as it hears a seen one, and the position is never read
+out, which would defeat the exercise.
+
 **In the Piece Hunt, danger is urgent.** The hunt board has an assertive live
 region instead: the enemies that can take the champion, said again on each
 square the champion moves to, and the champion being taken. Its description

@@ -4,7 +4,8 @@ import { TIME_CONTROLS, type TimeControlId } from '@/hooks/useChessClock'
 import { Box, Button } from '@/components/UI'
 import Notation from '@/components/UI/Notation'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
-import { moveNumberIn, type Resume } from '@/features/battle/resume'
+import type { Resume } from '@/features/battle/resume'
+import { moveNumberIn } from '@/utils/notation'
 import type { BattleConfig, ColorChoice } from '@/features/battle/useBattleGame'
 
 interface BattleSetupProps {
@@ -89,6 +90,7 @@ export default function BattleSetup({
   const [levelId, setLevelId] = useState<LevelId>(resume?.levelId ?? 3)
   const [colorChoice, setColorChoice] = useState<ColorChoice>('white')
   const [timeControlId, setTimeControlId] = useState<TimeControlId>('unlimited')
+  const [board, setBoard] = useState<'visible' | 'blind'>('visible')
 
   const start = () =>
     onStart(
@@ -98,8 +100,9 @@ export default function BattleSetup({
             colorChoice: resume.color === 'w' ? 'white' : 'black',
             timeControlId,
             startFen: resume.fen,
+            blindfold: board === 'blind',
           }
-        : { levelId, colorChoice, timeControlId },
+        : { levelId, colorChoice, timeControlId, blindfold: board === 'blind' },
     )
 
   return (
@@ -183,6 +186,19 @@ export default function BattleSetup({
           </ToggleGroupItem>
         ))}
       </Setting>
+
+      <div>
+        <Setting title="Plateau" value={board} onChange={setBoard} className="grid-cols-2">
+          <ToggleGroupItem value="visible">Visible</ToggleGroupItem>
+          <ToggleGroupItem value="blind">À l’aveugle</ToggleGroupItem>
+        </Setting>
+        {board === 'blind' && (
+          <p className="mt-2 text-caption italic text-ink-soft">
+            Le plateau est masqué : vous suivez la partie de tête, voyez le dernier coup joué, et
+            jouez en tapant vos coups. Il réapparaît à la fin de la partie.
+          </p>
+        )}
+      </div>
 
       <Button size="lg" fullWidth disabled={disabled} onClick={start}>
         {disabled ? "Chargement de l'IA…" : resume ? 'Reprendre la partie' : 'Commencer la partie'}
