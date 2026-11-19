@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import PuzzleBoardColumn from '@/features/puzzle/PuzzleBoardColumn'
+import RushView from '@/features/puzzle/RushView'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
 import { usePracticeSession } from '@/features/puzzle/usePracticeSession'
@@ -213,26 +214,33 @@ function PracticeView() {
   )
 }
 
+type PuzzleTab = 'daily' | 'practice' | 'rush'
+
 /**
- * Puzzle mode: a daily series that feeds the streak, and a free-practice tab
- * with no daily cap. Both share the board, hints and scoring.
+ * Puzzle mode: a daily series that feeds the streak, a free-practice tab with
+ * no daily cap — both sharing the board, hints and scoring — and Puzzle Rush,
+ * against the clock, which shares the board alone.
  */
 export default function PuzzlePage() {
-  const [tab, setTab] = useState<'daily' | 'practice'>('daily')
-  // Mount practice the first time its tab is opened, then keep both views alive
-  // so switching tabs never throws away a series or a practice run in progress.
+  const [tab, setTab] = useState<PuzzleTab>('daily')
+  // Mount practice and the Rush the first time their tab is opened, then keep
+  // every view alive so switching tabs never throws away a series, a practice
+  // run or a Rush in progress — a Rush's clock keeps running meanwhile.
   const [practiceOpened, setPracticeOpened] = useState(false)
+  const [rushOpened, setRushOpened] = useState(false)
   if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
+  if (tab === 'rush' && !rushOpened) setRushOpened(true)
 
   return (
     <Tabs
       value={tab}
-      onValueChange={(next) => setTab(next as 'daily' | 'practice')}
+      onValueChange={(next) => setTab(next as PuzzleTab)}
       className="flex flex-col gap-4"
     >
       <TabsList aria-label="Mode de jeu">
         <TabsTrigger value="daily">Série du jour</TabsTrigger>
         <TabsTrigger value="practice">Entraînement libre</TabsTrigger>
+        <TabsTrigger value="rush">Rush</TabsTrigger>
       </TabsList>
 
       {/* forceMount and hidden together, and both are needed. Radix unmounts an
@@ -251,6 +259,9 @@ export default function PuzzlePage() {
           emits that attribute whether or not the panel is there. */}
       <TabsContent value="practice" forceMount hidden={tab !== 'practice'}>
         {practiceOpened && <PracticeView />}
+      </TabsContent>
+      <TabsContent value="rush" forceMount hidden={tab !== 'rush'}>
+        {rushOpened && <RushView />}
       </TabsContent>
     </Tabs>
   )
