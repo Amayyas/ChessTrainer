@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   EMPTY_PROGRESS,
+  RUSH_RANKING_SIZE,
   SEEN_CAP,
   dayKey,
   markSeen,
+  mergeRushRuns,
   mergeSeenPuzzleIds,
   previousDay,
+  recordRushRun,
   recordSolved,
 } from '@/features/puzzle/progress'
 
@@ -90,5 +93,40 @@ describe('EMPTY_PROGRESS', () => {
   it('is frozen so it cannot be mutated in place', () => {
     expect(Object.isFrozen(EMPTY_PROGRESS)).toBe(true)
     expect(Object.isFrozen(EMPTY_PROGRESS.seenPuzzleIds)).toBe(true)
+  })
+})
+
+describe('the Puzzle Rush ranking', () => {
+  const run = (score: number, day: number) => ({
+    score,
+    at: `2026-11-${String(day).padStart(2, '0')}T12:00:00.000Z`,
+  })
+
+  it('ranks a run among the others, best first', () => {
+    expect(recordRushRun([run(10, 1), run(4, 2)], run(7, 3))).toEqual([
+      run(10, 1),
+      run(7, 3),
+      run(4, 2),
+    ])
+  })
+
+  it('keeps the older run ahead on a tie: a record is beaten, not matched', () => {
+    expect(recordRushRun([run(10, 1)], run(10, 5))).toEqual([run(10, 1), run(10, 5)])
+  })
+
+  it('keeps only the best few, so a weak run leaves the ranking as it was', () => {
+    const full = Array.from({ length: RUSH_RANKING_SIZE }, (_, i) => run(20 - i, i + 1))
+    expect(recordRushRun(full, run(1, 28))).toEqual(full)
+    expect(recordRushRun(full, run(30, 28))[0]).toEqual(run(30, 28))
+    expect(recordRushRun(full, run(30, 28))).toHaveLength(RUSH_RANKING_SIZE)
+  })
+
+  it('merges two devices without counting a run twice', () => {
+    const shared = run(12, 3)
+    expect(mergeRushRuns([shared, run(8, 4)], [shared, run(15, 1)])).toEqual([
+      run(15, 1),
+      shared,
+      run(8, 4),
+    ])
   })
 })

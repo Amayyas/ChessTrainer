@@ -42,6 +42,45 @@ export interface PuzzleProgress {
    * five rather than recomputing against a solved-list that has since grown.
    */
   dailySeries: { day: string; ids: string[] } | null
+  /**
+   * The player's best Puzzle Rush runs, best first: their personal ranking. A
+   * run that does not make it in is not kept, so the list stays small.
+   */
+  rushRuns: RushRun[]
+}
+
+/** One Puzzle Rush run: how many puzzles were solved, and when it ended. */
+export interface RushRun {
+  score: number
+  /** ISO timestamp of the end of the run. */
+  at: string
+}
+
+/** How many runs the personal ranking keeps. */
+export const RUSH_RANKING_SIZE = 5
+
+/**
+ * Best first; on a tie, the older run first: a record stands until it is
+ * beaten, not merely matched.
+ */
+function byRank(a: RushRun, b: RushRun): number {
+  return b.score - a.score || Date.parse(a.at) - Date.parse(b.at)
+}
+
+/** The ranking with `run` entered, if it is good enough to make it. */
+export function recordRushRun(runs: readonly RushRun[], run: RushRun): RushRun[] {
+  return [...runs, run].sort(byRank).slice(0, RUSH_RANKING_SIZE)
+}
+
+/**
+ * Two rankings of the same player, reconciled on sign-in: every run either
+ * side knows, once, best first. Taking one outright would drop a guest's runs,
+ * or a run ended while the server copy was in flight.
+ */
+export function mergeRushRuns(local: readonly RushRun[], server: readonly RushRun[]): RushRun[] {
+  const seen = new Map<string, RushRun>()
+  for (const run of [...server, ...local]) seen.set(`${run.at}|${run.score}`, run)
+  return [...seen.values()].sort(byRank).slice(0, RUSH_RANKING_SIZE)
 }
 
 /**
@@ -59,11 +98,13 @@ export const EMPTY_PROGRESS: PuzzleProgress = {
   totalSolved: 0,
   seenPuzzleIds: [],
   dailySeries: null,
+  rushRuns: [],
 }
 // Shared by reference as the initial state, from blankProgress(), and by the
 // migrations, so a stray in-place mutation would corrupt all of them.
 Object.freeze(EMPTY_PROGRESS)
 Object.freeze(EMPTY_PROGRESS.seenPuzzleIds)
+Object.freeze(EMPTY_PROGRESS.rushRuns)
 
 /** Appends a solved id, moving a repeat to the end, and trims to `SEEN_CAP`. */
 export function markSeen(seen: readonly string[], id: string): string[] {

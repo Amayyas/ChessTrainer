@@ -339,8 +339,59 @@ describe('persisted storage migration', () => {
       totalSolved: 20,
       seenPuzzleIds: [],
       dailySeries: null,
+      rushRuns: [],
     })
     expect(store().xp).toBe(400)
+  })
+})
+
+describe('the Puzzle Rush ranking', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    useProgressionStore.getState().reset()
+  })
+
+  it('is seeded empty on a version-3 record, keeping the rest of the puzzle progress', async () => {
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 120,
+          stats: EMPTY_STATS,
+          daily: { day: '2026-11-01' },
+          activities: [],
+          unlockedBadges: [],
+          pendingBadges: [],
+          huntScores: {},
+          puzzleProgress: {
+            lastSolvedDay: '2026-11-01',
+            streak: 2,
+            bestStreak: 3,
+            totalSolved: 9,
+            seenPuzzleIds: ['ct-0001'],
+            dailySeries: null,
+          },
+          ownerId: null,
+        },
+        version: 3,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().puzzleProgress.rushRuns).toEqual([])
+    expect(store().puzzleProgress.seenPuzzleIds).toEqual(['ct-0001'])
+    expect(store().puzzleProgress.streak).toBe(2)
+  })
+
+  it('keeps the runs of both sides on sign-in', () => {
+    const local = { score: 14, at: '2026-11-18T10:00:00.000Z' }
+    const server = { score: 9, at: '2026-11-10T10:00:00.000Z' }
+    store().setPuzzleProgress((progress) => ({ ...progress, rushRuns: [local] }))
+
+    store().hydrate({ ...blank(), puzzleProgress: { ...EMPTY_PROGRESS, rushRuns: [server] } })
+
+    expect(store().puzzleProgress.rushRuns).toEqual([local, server])
   })
 })
 

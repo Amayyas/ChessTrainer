@@ -6,7 +6,13 @@ import {
   sortNewestFirst,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
-import { EMPTY_PROGRESS, SEEN_CAP, type PuzzleProgress } from '@/features/puzzle/progress'
+import {
+  EMPTY_PROGRESS,
+  mergeRushRuns,
+  SEEN_CAP,
+  type PuzzleProgress,
+  type RushRun,
+} from '@/features/puzzle/progress'
 import type { Json } from '@/lib/database.types'
 import type { ProgressionInsert, ProgressionRow } from '@/lib/supabase'
 import { ACTIVITY_KINDS, type Activity, type ActivityKind } from '@/store/useProgressionStore'
@@ -104,9 +110,21 @@ function normaliseDailySeries(value: unknown): PuzzleProgress['dailySeries'] {
   return { day: raw.day, ids: asIds(raw.ids) }
 }
 
+/** The Puzzle Rush ranking, keeping only well-formed runs, best first. */
+function normaliseRushRuns(value: unknown): RushRun[] {
+  if (!Array.isArray(value)) return []
+  const runs = value.filter(
+    (run): run is RushRun =>
+      typeof run === 'object' && run !== null && isCount(run.score) && isTimestamp(run.at),
+  )
+  // Through the merge, for its ordering and its cap: the JSON is untrusted, and
+  // an unsorted or overlong list would be shown as it came.
+  return mergeRushRuns(runs, [])
+}
+
 function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   if (typeof value !== 'object' || value === null) {
-    return { ...EMPTY_PROGRESS, seenPuzzleIds: [], dailySeries: null }
+    return { ...EMPTY_PROGRESS, seenPuzzleIds: [], dailySeries: null, rushRuns: [] }
   }
   const raw = value as Record<string, unknown>
   return {
@@ -116,6 +134,7 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
     totalSolved: isCount(raw.totalSolved) ? raw.totalSolved : 0,
     seenPuzzleIds: asIds(raw.seenPuzzleIds).slice(-SEEN_CAP),
     dailySeries: normaliseDailySeries(raw.dailySeries),
+    rushRuns: normaliseRushRuns(raw.rushRuns),
   }
 }
 
