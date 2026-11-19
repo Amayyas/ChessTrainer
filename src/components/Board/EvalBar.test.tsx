@@ -55,4 +55,14 @@ describe('EvalBar', () => {
     render(<EvalBar evaluation={null} />)
     expect(screen.getByText('–')).toBeInTheDocument()
   })
+
+  it('paints the two sides in the diagram’s colours, which do not swap at night', () => {
+    // The page's paper turns dark in the evening edition; drawn in it, White's
+    // share would turn dark too, and Black's light.
+    render(<EvalBar evaluation={{ cp: 0, mate: null }} />)
+    const bar = screen.getByRole('img')
+    expect(bar.querySelector('.bg-diagram-light')).not.toBeNull()
+    expect(bar.querySelector('.bg-diagram-ink')).not.toBeNull()
+    expect(bar.querySelector('.bg-paper-bright, .bg-ink')).toBeNull()
+  })
 })

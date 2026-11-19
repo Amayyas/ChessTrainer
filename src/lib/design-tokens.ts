@@ -40,6 +40,100 @@ export const newsprint = {
   rubric: '#A8311F',
 } as const
 
+/** A palette's shape: the day edition's, which every edition must match. */
+export type Palette = {
+  paper: { DEFAULT: string; bright: string; deep: string }
+  ink: { DEFAULT: string; soft: string; faint: string }
+  rubric: string
+}
+
+/**
+ * The evening edition: the same column, printed for reading at night. The page
+ * goes to a warm black and the ink to the cream of unbleached newsprint, never
+ * to white, which glares; the rubric lightens until it reads on the dark page
+ * as the corrector's red does on the light one. Held to WCAG AA by the same
+ * pairs as the day palette.
+ */
+export const nightprint = {
+  paper: {
+    DEFAULT: '#1B1915',
+    bright: '#25221C',
+    deep: '#312D26',
+  },
+  ink: {
+    DEFAULT: '#ECE6D8',
+    soft: '#B9B1A1',
+    faint: '#A39B8B',
+  },
+  rubric: '#E8846E',
+} as const satisfies Palette
+
+/**
+ * The colours that stand for the two sides, not for the page: the light and
+ * dark of a diagram's squares, and the light and dark ends of the evaluation
+ * gauge. They do not swap at night. A diagram printed in the evening edition is
+ * still a light diagram with dark pieces' ink, only dimmed so it does not glare
+ * out of a dark page; swapped, White's share of the gauge would turn dark.
+ */
+export const diagram = {
+  day: {
+    light: newsprint.paper.bright,
+    ink: newsprint.ink.DEFAULT,
+    /** The dark squares of the plain variant. */
+    plain: '#CFC6B3',
+  },
+  night: {
+    light: '#CDC5B3',
+    ink: newsprint.ink.DEFAULT,
+    plain: '#9C937F',
+  },
+} as const
+
+/** `#RRGGBB` as the space-separated channels a CSS `rgb()` takes with an alpha. */
+function cssChannels(hex: string): string {
+  return [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16)).join(' ')
+}
+
+/**
+ * One edition's colours as CSS custom properties: what the page reads them from,
+ * so the evening edition is a change of variables rather than of classes.
+ */
+export function editionVariables(
+  palette: Palette,
+  sides: (typeof diagram)['day' | 'night'],
+): Record<string, string> {
+  return {
+    '--color-paper': cssChannels(palette.paper.DEFAULT),
+    '--color-paper-bright': cssChannels(palette.paper.bright),
+    '--color-paper-deep': cssChannels(palette.paper.deep),
+    '--color-ink': cssChannels(palette.ink.DEFAULT),
+    '--color-ink-soft': cssChannels(palette.ink.soft),
+    '--color-ink-faint': cssChannels(palette.ink.faint),
+    '--color-rubric': cssChannels(palette.rubric),
+    '--color-diagram-light': cssChannels(sides.light),
+    '--color-diagram-ink': cssChannels(sides.ink),
+  }
+}
+
+/** A Tailwind colour read from one of those properties, opacity modifiers included. */
+const variable = (name: string) => `rgb(var(--color-${name}) / <alpha-value>)`
+
+/**
+ * The colours Tailwind offers: the palette's names, each pointing at its
+ * custom property. `bg-paper`, `text-ink-soft`, `border-ink/30` and the rest
+ * keep their names and follow the edition on the page.
+ */
+export const themeColors = {
+  paper: {
+    DEFAULT: variable('paper'),
+    bright: variable('paper-bright'),
+    deep: variable('paper-deep'),
+  },
+  ink: { DEFAULT: variable('ink'), soft: variable('ink-soft'), faint: variable('ink-faint') },
+  rubric: variable('rubric'),
+  diagram: { light: variable('diagram-light'), ink: variable('diagram-ink') },
+} as const
+
 /**
  * The type scale, each size with its leading.
  *
@@ -97,11 +191,11 @@ function alpha(hex: string, opacity: number): string {
  * long sessions, when a hatch tires the eye.
  */
 export const board = {
-  light: newsprint.paper.bright,
+  light: diagram.day.light,
   /** The hatch over a dark square: an ink stripe every 7 units of a 100-unit square, 2.3 wide. */
-  hatch: { colour: newsprint.ink.DEFAULT, period: 7, stripe: 2.3 },
+  hatch: { colour: diagram.day.ink, period: 7, stripe: 2.3 },
   /** The dark squares of the plain variant. */
-  plain: '#CFC6B3',
+  plain: diagram.day.plain,
   /** The squares of the move just played. */
   lastMove: alpha(newsprint.rubric, 0.22),
   /** The king in check, which also takes a rubric rule. */

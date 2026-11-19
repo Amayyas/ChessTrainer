@@ -180,6 +180,16 @@ describe('ChessBoard', () => {
     expect(screen.queryByRole('group', { name: /Promotion/ })).not.toBeInTheDocument()
   })
 
+  it('offers the pieces on the diagram’s paper, which stays light at night', () => {
+    // The pieces are drawn for a light ground; on the page's paper they would
+    // sit on a dark one in the evening edition, the black ones unreadable.
+    render(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" />)
+    moveOnBoard('e7', 'e8')
+    const choice = screen.getByRole('group', { name: 'Promotion : choisissez une pièce' })
+    expect(choice).toHaveClass('bg-diagram-light')
+    expect(choice).not.toHaveClass('bg-paper-bright')
+  })
+
   it('takes the pawn back when the choice is dismissed, and leaves the board playable', () => {
     render(<Harness fen="8/4P3/8/8/8/8/k7/4K3 w - - 0 1" />)
     moveOnBoard('e7', 'e8')
@@ -226,10 +236,10 @@ describe('ChessBoard', () => {
   it('draws the squares the player chose, and a diagram always hatched', () => {
     const squaresOf = (container: HTMLElement) =>
       (container.querySelector('.cg-wrap')!.parentElement as HTMLElement).style.getPropertyValue(
-        '--board-squares',
+        '--board-squares-day',
       )
     const drawn = (variant: 'hatched' | 'plain') =>
-      (boardStyle(variant, false) as Record<string, string>)['--board-squares']
+      (boardStyle(variant, false) as Record<string, string>)['--board-squares-day']
 
     useBoardStore.setState({ squares: 'plain' })
     const played = render(<Harness />)

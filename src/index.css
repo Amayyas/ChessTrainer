@@ -60,6 +60,23 @@
     font-kerning: normal;
   }
 
+  /* A diagram's squares, in the edition the page is in. The frame is given
+     both editions' squares as images (boardTheme.ts), since an image cannot
+     read a custom property; the choice is made here, by the same rules that
+     swap the palette (tailwind.config.ts). Global rather than in board.css:
+     the landing paints the frame before the board's code arrives. */
+  .board-squares {
+    --board-squares: var(--board-squares-day);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='day']) .board-squares {
+      --board-squares: var(--board-squares-night);
+    }
+  }
+  :root[data-theme='night'] .board-squares {
+    --board-squares: var(--board-squares-night);
+  }
+
   /* The figurine face comes in one weight and one style. Set in a bold move
      or an italic caption, a figurine would be faked bold or slanted by the
      browser, a pictogram smeared or leaning; it is drawn as cut instead. */

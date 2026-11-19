@@ -53,10 +53,12 @@ export default function EvalBar({ evaluation, orientation = 'white', className }
       )}
     >
       <span className="text-caption font-semibold tabular-nums lining-nums sm:pt-3">{label}</span>
-      <div className="relative h-2.5 flex-1 border border-ink bg-paper-bright sm:h-auto sm:w-2.5">
+      {/* White's share in the diagram's light, Black's in its ink: colours of
+          the two sides, which the evening edition must not swap. */}
+      <div className="relative h-2.5 flex-1 border border-ink bg-diagram-light sm:h-auto sm:w-2.5">
         <div
           className={cn(
-            'absolute bg-ink',
+            'absolute bg-diagram-ink',
             'max-sm:inset-y-0 max-sm:right-0 max-sm:w-[var(--black)]',
             'sm:inset-x-0 sm:h-[var(--black)]',
             flipped ? 'sm:bottom-0' : 'sm:top-0',

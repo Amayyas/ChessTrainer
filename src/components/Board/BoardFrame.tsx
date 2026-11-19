@@ -18,8 +18,9 @@ interface BoardFrameProps {
  * italic, outside the frame. It holds no board of its own, so a page can show
  * it, the same size, while the board's code is still on its way.
  *
- * The frame paints the squares itself, from the `--board-squares` its style
- * sets, and the board drawn inside it is transparent. So a frame shown before
+ * The frame paints the squares itself, from the squares its style sets for
+ * each edition — `board-squares` in index.css picks the one the page is in —
+ * and the board drawn inside it is transparent. So a frame shown before
  * the board arrives already holds the squares: the landing's diagram is the
  * largest thing on the page, and its first paint is not kept waiting for a
  * script.
@@ -44,7 +45,7 @@ export default function BoardFrame({
       </ol>
       <div
         style={style}
-        className="relative aspect-square border-2 border-ink bg-paper-bright bg-[image:var(--board-squares)] bg-[length:100%_100%] outline outline-1 outline-offset-[3px] outline-ink"
+        className="board-squares relative aspect-square border-2 border-ink bg-diagram-light bg-[image:var(--board-squares)] bg-[length:100%_100%] outline outline-1 outline-offset-[3px] outline-ink"
       >
         {children}
       </div>

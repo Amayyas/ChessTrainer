@@ -158,9 +158,12 @@ describe('HuntBoard', () => {
     useBoardStore.setState({ squares: 'plain' })
     const { container } = renderBoard()
     const frame = container.querySelector('.cg-wrap')!.parentElement as HTMLElement
-    expect(frame.style.getPropertyValue('--board-squares')).toBe(
-      (boardStyle('plain', false) as Record<string, string>)['--board-squares'],
-    )
+    const style = boardStyle('plain', false) as Record<string, string>
+    for (const edition of ['day', 'night']) {
+      expect(frame.style.getPropertyValue(`--board-squares-${edition}`)).toBe(
+        style[`--board-squares-${edition}`],
+      )
+    }
   })
 
   it('describes the round to assistive technology', () => {
