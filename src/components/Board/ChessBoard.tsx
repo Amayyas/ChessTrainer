@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { Config } from '@lichess-org/chessground/config'
 import type { DrawBrushes } from '@lichess-org/chessground/draw'
 import type { Key } from '@lichess-org/chessground/types'
+import { useSpokenMoves } from '@/components/Board/useSpokenMoves'
 import BoardFrame from '@/components/Board/BoardFrame'
 import PromotionPicker from '@/components/Board/PromotionPicker'
 import { boardStyle } from '@/components/Board/boardTheme'
@@ -10,12 +11,7 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { board, durations } from '@/lib/design-tokens'
 import { useBoardStore } from '@/store/useBoardStore'
 import type { PieceSymbol, Square } from '@/utils/chess'
-import {
-  describeNewMoves,
-  describePosition,
-  sameMoves,
-  type SpokenMove,
-} from '@/utils/describeBoard'
+import { describePosition, type SpokenMove } from '@/utils/describeBoard'
 import { piecesOf } from '@/utils/fen'
 
 export interface ChessBoardProps {
@@ -44,28 +40,6 @@ export interface ChessBoardProps {
    * one to a screen reader. Left out, the board says no moves.
    */
   moves?: ReadonlyArray<SpokenMove>
-}
-
-/**
- * The text of the live region: the moves added since the last render, said
- * once each. A screen reader speaks a region only when its text changes, so
- * the same move twice — played, taken back, played again — alternates a
- * trailing no-break space, which it does not read, to change the text.
- */
-function useSpokenMoves(moves: ReadonlyArray<SpokenMove> | undefined): string {
-  const [spoken, setSpoken] = useState({ text: '', count: 0 })
-  const previous = useRef(moves ?? [])
-  useEffect(() => {
-    const before = previous.current
-    previous.current = moves ?? []
-    // A page may hand over the same moves in a new array at each render.
-    if (!moves || sameMoves(before, moves)) return
-    const said = describeNewMoves(before, moves)
-    setSpoken((last) =>
-      said ? { text: said, count: last.count + 1 } : last.text ? { ...last, text: '' } : last,
-    )
-  }, [moves])
-  return spoken.text && `${spoken.text}${spoken.count % 2 ? '\u00a0' : ''}`
 }
 
 /**
