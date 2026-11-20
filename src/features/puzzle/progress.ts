@@ -1,3 +1,5 @@
+import type { MistakePuzzle } from '@/features/puzzle/mistakes'
+
 /**
  * The daily-puzzle streak and its calendar helpers.
  *
@@ -53,6 +55,8 @@ export interface PuzzleProgress {
    * the same document rather than a column of its own.
    */
   endgamesMastered: string[]
+  /** The player's own mistakes, as puzzles on a review schedule (mistakes.ts). */
+  mistakes: MistakePuzzle[]
 }
 
 /** One Puzzle Rush run: how many puzzles were solved, and when it ended. */
@@ -106,6 +110,7 @@ export const EMPTY_PROGRESS: PuzzleProgress = {
   dailySeries: null,
   rushRuns: [],
   endgamesMastered: [],
+  mistakes: [],
 }
 // Shared by reference as the initial state, from blankProgress(), and by the
 // migrations, so a stray in-place mutation would corrupt all of them.
@@ -113,6 +118,7 @@ Object.freeze(EMPTY_PROGRESS)
 Object.freeze(EMPTY_PROGRESS.seenPuzzleIds)
 Object.freeze(EMPTY_PROGRESS.rushRuns)
 Object.freeze(EMPTY_PROGRESS.endgamesMastered)
+Object.freeze(EMPTY_PROGRESS.mistakes)
 
 /** The mastered list with `id` in it, once. */
 export function markMastered(mastered: readonly string[], id: string): string[] {
