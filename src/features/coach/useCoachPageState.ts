@@ -3,6 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { BattleOutcome } from '@/features/battle/useBattleGame'
 import { useCoachAnalysis } from '@/features/coach/useCoachAnalysis'
+import { collectMistakes } from '@/features/puzzle/collectMistakes'
+import { addMistakes } from '@/features/puzzle/mistakes'
+import { dayKey } from '@/features/puzzle/progress'
 import { useChessGame } from '@/hooks/useChessGame'
 import { useProgressionStore } from '@/store/useProgressionStore'
 import { createGame, describeStatus, type Color, type Square } from '@/utils/chess'
@@ -142,6 +145,7 @@ export function useCoachPageState() {
 
   // A finished, analysed game counts towards progression, once per game.
   const recordCoachAnalysis = useProgressionStore((state) => state.recordCoachAnalysis)
+  const setPuzzleProgress = useProgressionStore((state) => state.setPuzzleProgress)
   const recordedGame = useRef<string | null>(null)
   useEffect(() => {
     if (game.sanHistory.length === 0) {
@@ -177,7 +181,34 @@ export function useCoachPageState() {
         ? { level: review.level, outcome: review.outcome, playedAt: review.playedAt }
         : undefined,
     })
-  }, [game.status.isOver, game.sanHistory.length, game.pgn, analysis.summary, recordCoachAnalysis])
+
+    // Its mistakes become puzzles: the side played in a battle under review,
+    // both sides of a game played here, where both are the player's.
+    const fresh = collectMistakes(
+      game.history,
+      analysis.qualities,
+      analysis.analysisAt,
+      new Set<Color>(review ? [review.color] : ['w', 'b']),
+      new Date(),
+      dayKey(),
+    )
+    if (fresh.length > 0) {
+      setPuzzleProgress((progress) => ({
+        ...progress,
+        mistakes: addMistakes(progress.mistakes, fresh),
+      }))
+    }
+  }, [
+    game.status.isOver,
+    game.sanHistory.length,
+    game.pgn,
+    game.history,
+    analysis.summary,
+    analysis.qualities,
+    analysis.analysisAt,
+    recordCoachAnalysis,
+    setPuzzleProgress,
+  ])
 
   const statusLabel = describeStatus(game.status, game.turn)
   const statusTone: 'ink' | 'alert' | 'muted' = game.status.isOver

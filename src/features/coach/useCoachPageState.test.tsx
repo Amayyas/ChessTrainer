@@ -6,6 +6,7 @@ import type { GameSummary } from '@/features/coach/useCoachAnalysis'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 import { XP_REWARDS } from '@/features/progression/levels'
 import { useProgressionStore } from '@/store/useProgressionStore'
+import type { MoveQuality } from '@/utils/evaluation'
 
 /**
  * The orchestration lifted out of CoachPage: mode and free-analysis FEN,
@@ -25,6 +26,13 @@ let summary: GameSummary = {
   bestMove: null,
 }
 
+/** The coach's grades, and what it knows of each position, as a test sets them. */
+let qualities: (MoveQuality | null)[] = []
+let insightAt: (fen: string) => { eval: unknown; bestMove: unknown } = () => ({
+  eval: null,
+  bestMove: null,
+})
+
 vi.mock('@/features/coach/useCoachAnalysis', () => ({
   useCoachAnalysis: () => ({
     isReady: true,
@@ -32,9 +40,9 @@ vi.mock('@/features/coach/useCoachAnalysis', () => ({
     currentEval: null,
     bestMove: null,
     bestMoveUci: null,
-    qualities: [],
+    qualities,
     summary,
-    analysisAt: () => ({ eval: null, bestMove: null }),
+    analysisAt: (fen: string) => insightAt(fen),
   }),
 }))
 
@@ -54,6 +62,8 @@ function withRouter(state?: unknown) {
 }
 
 beforeEach(() => {
+  qualities = []
+  insightAt = () => ({ eval: null, bestMove: null })
   useProgressionStore.getState().reset()
   summary = { ...summary, isComplete: false, accuracyWhite: null, accuracyBlack: null }
 })
@@ -198,5 +208,42 @@ describe('useCoachPageState', () => {
     expect(result.current.game.status.isOver).toBe(true)
     // summary.isComplete stays false — nothing recorded.
     expect(useProgressionStore.getState().xp).toBe(0)
+  })
+
+  it('turns the reviewed side’s mistakes into puzzles, once', async () => {
+    // Fool's mate, White reviewed: 1.f3 and 2.g4 are White's, graded badly.
+    // Black's 1…e5 is graded badly too, but Black was the engine: not collected.
+    qualities = ['mistake', 'blunder', 'blunder', 'best']
+    // A legal engine move for either side, so only the side filter can leave
+    // Black's out.
+    insightAt = (fen) => ({
+      eval: { cp: 20, mate: null },
+      bestMove: fen.split(' ')[1] === 'b' ? { from: 'd7', to: 'd5' } : { from: 'e2', to: 'e4' },
+    })
+    const { result, rerender } = renderHook(() => useCoachPageState(), {
+      wrapper: withRouter({
+        pgn: foolsMatePgn,
+        playerColor: 'w',
+        levelLabel: 'Débutant',
+        outcome: 'loss',
+        playedAt: '2026-09-02T00:00:00.000Z',
+      }),
+    })
+    act(() => result.current.exitReplay())
+    act(() => {
+      summary = { ...summary, isComplete: true, accuracyWhite: 20, accuracyBlack: 95 }
+    })
+    rerender()
+
+    const mistakes = () => useProgressionStore.getState().puzzleProgress.mistakes
+    await waitFor(() => expect(mistakes()).toHaveLength(2))
+    expect(mistakes().map((m) => m.played)).toEqual(['f3', 'g4'])
+    expect(mistakes().every((m) => m.best === 'e2e4')).toBe(true)
+
+    act(() => {
+      summary = { ...summary, accuracyWhite: 21 }
+    })
+    rerender()
+    expect(mistakes()).toHaveLength(2)
   })
 })
