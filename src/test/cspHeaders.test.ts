@@ -1,3 +1,4 @@
+import { LICHESS_ORIGIN } from '@/features/coach/lichess'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -89,6 +90,9 @@ describe('global response headers', () => {
     expect(connectSrc).toMatch(/wss:\/\/\*\.supabase\.co/)
     // Sentry's EU ingest — the region the project is pinned to.
     expect(connectSrc).toMatch(/https:\/\/\*\.ingest\.de\.sentry\.io/)
+    // Lichess, for the coach's game import: the one host, not its subdomains.
+    expect(connectSrc.split(' ')).toContain(LICHESS_ORIGIN)
+    expect(connectSrc).not.toMatch(/\*\.lichess\.org/)
     // default-src is already 'self'; connect-src must not fall back to a
     // wildcard that would let an injected script exfiltrate anywhere.
     expect(connectSrc).not.toMatch(/(?:^| )\*(?: |$)/)

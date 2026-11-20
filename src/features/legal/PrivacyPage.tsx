@@ -102,6 +102,19 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="Import depuis Lichess">
+        <p>
+          Si vous importez une partie depuis Lichess, votre navigateur interroge directement{' '}
+          <strong>lichess.org</strong> avec le pseudo que vous saisissez, pour lire les parties
+          publiques de ce joueur. Lichess reçoit ce pseudo et, comme tout site que vous consultez,
+          votre adresse IP.
+        </p>
+        <p>
+          Rien n’est envoyé si vous n’utilisez pas l’import, et aucune donnée de votre compte
+          ChessTrainer n’est transmise. La partie importée reste dans votre navigateur.
+        </p>
+      </Section>
+
       <Section title="Pourquoi, et pendant combien de temps">
         <p>
           Ces données sont nécessaires au service que vous demandez en créant un compte : elles ne

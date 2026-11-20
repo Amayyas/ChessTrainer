@@ -5,6 +5,7 @@ import Input from '@/components/UI/Input'
 import StatusLine from '@/components/UI/StatusLine'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
+import LichessImport from '@/features/coach/LichessImport'
 import QualityLegend from '@/features/coach/QualityLegend'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 import { cn } from '@/utils/cn'
@@ -137,6 +138,7 @@ export default function CoachPage() {
                         {coach.fenError}
                       </p>
                     )}
+                    <LichessImport />
                   </div>
                 )}
               </div>

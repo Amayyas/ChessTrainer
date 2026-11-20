@@ -1,6 +1,7 @@
 import { devices, type Locator, type Page } from '@playwright/test'
 import { INLINE_LINK } from '@/components/UI/link'
 import { RUBRIC_ALERT } from '@/components/UI/rubricBlock'
+import { LICHESS_ORIGIN } from '@/features/coach/lichess'
 import { newsprint } from '@/lib/design-tokens'
 import { expect, test } from './csp'
 
@@ -133,6 +134,42 @@ test('the coach boots the engine and shows the board', async ({ page }) => {
   // Every piece of the starting position; chessground also keeps a hidden ghost
   // piece for dragging, which is not one.
   await expect(page.locator('.cg-wrap piece:not(.ghost)')).toHaveCount(32)
+})
+
+test('a Lichess game imports into the coach, under the policy', async ({ page }) => {
+  // Lichess itself is stood in for; the policy is the served one. The browser
+  // enforces connect-src before the request reaches the route below, so a
+  // policy that did not name lichess.org would block it and fail this test.
+  let asked: URL | null = null
+  await page.route(`${LICHESS_ORIGIN}/api/games/user/**`, async (route) => {
+    asked = new URL(route.request().url())
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/x-ndjson',
+      headers: { 'access-control-allow-origin': '*' },
+      body:
+        JSON.stringify({
+          id: 'e2e00001',
+          variant: 'standard',
+          speed: 'blitz',
+          createdAt: Date.UTC(2026, 10, 18),
+          winner: 'black',
+          players: { white: { user: { name: 'alice' } }, black: { user: { name: 'bob' } } },
+          pgn: '[White "alice"]\n[Black "bob"]\n\n1. f3 e5 2. g4 Qh4# 0-1\n',
+        }) + '\n',
+    })
+  })
+
+  await page.goto('/coach')
+  await page.getByRole('radio', { name: 'Analyse libre' }).click()
+  await page.getByLabel('Pseudo Lichess').fill('alice')
+  await page.getByRole('button', { name: 'Chercher' }).click()
+  await page.getByRole('button', { name: /alice – bob/ }).click()
+
+  expect(asked!.pathname).toBe('/api/games/user/alice')
+  // In review at its first move, as a game handed over opens; at its end, mate.
+  await page.getByRole('button', { name: 'Fin' }).click()
+  await expect(page.getByTestId('move-history')).toContainText('h4#')
 })
 
 test('a promotion taken back leaves the board playable', async ({ page }) => {
