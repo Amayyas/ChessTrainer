@@ -4,6 +4,7 @@ import {
   RUSH_RANKING_SIZE,
   SEEN_CAP,
   dayKey,
+  markMastered,
   markSeen,
   mergeRushRuns,
   mergeSeenPuzzleIds,
@@ -128,5 +129,13 @@ describe('the Puzzle Rush ranking', () => {
       shared,
       run(8, 4),
     ])
+  })
+})
+
+describe('markMastered', () => {
+  it('adds an endgame once, however often it is won', () => {
+    expect(markMastered([], 'lucena')).toEqual(['lucena'])
+    expect(markMastered(['lucena'], 'lucena')).toEqual(['lucena'])
+    expect(markMastered(['lucena'], 'philidor')).toEqual(['lucena', 'philidor'])
   })
 })

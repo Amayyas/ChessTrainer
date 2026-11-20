@@ -124,7 +124,13 @@ function normaliseRushRuns(value: unknown): RushRun[] {
 
 function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   if (typeof value !== 'object' || value === null) {
-    return { ...EMPTY_PROGRESS, seenPuzzleIds: [], dailySeries: null, rushRuns: [] }
+    return {
+      ...EMPTY_PROGRESS,
+      seenPuzzleIds: [],
+      dailySeries: null,
+      rushRuns: [],
+      endgamesMastered: [],
+    }
   }
   const raw = value as Record<string, unknown>
   return {
@@ -135,6 +141,9 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
     seenPuzzleIds: asIds(raw.seenPuzzleIds).slice(-SEEN_CAP),
     dailySeries: normaliseDailySeries(raw.dailySeries),
     rushRuns: normaliseRushRuns(raw.rushRuns),
+    // Ids only, each once: the JSON is untrusted, and an id that names no
+    // endgame is harmless — the list is read against ENDGAMES, never shown raw.
+    endgamesMastered: [...new Set(asIds(raw.endgamesMastered))],
   }
 }
 

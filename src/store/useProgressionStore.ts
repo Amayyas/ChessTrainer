@@ -416,6 +416,13 @@ export const useProgressionStore = create<ProgressionState>()(
               // The Rush ranking is a log of runs too: a guest's runs, or one
               // ended while the pull was in flight, must survive it.
               rushRuns: mergeRushRuns(get().puzzleProgress.rushRuns, puzzleProgress.rushRuns),
+              // An endgame mastered on either side stays mastered.
+              endgamesMastered: [
+                ...new Set([
+                  ...puzzleProgress.endgamesMastered,
+                  ...get().puzzleProgress.endgamesMastered,
+                ]),
+              ],
             },
             // Merged, not replaced. The fields above are totals, where the
             // server copy must win or a second device would double count.
@@ -456,7 +463,7 @@ export const useProgressionStore = create<ProgressionState>()(
     },
     {
       name: 'chesstrainer.progression',
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         // Records written before progression had an owner carry no way of
         // telling one player's work from another's. Zustand merges them over
@@ -507,6 +514,19 @@ export const useProgressionStore = create<ProgressionState>()(
               ...EMPTY_PROGRESS,
               ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
               rushRuns: [],
+            },
+          }
+        }
+        // Version 4 had no record of the endgames mastered. Seed it empty.
+        if (version < 5) {
+          const record = persisted as Record<string, unknown>
+          const puzzle = record.puzzleProgress
+          return {
+            ...record,
+            puzzleProgress: {
+              ...EMPTY_PROGRESS,
+              ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
+              endgamesMastered: [],
             },
           }
         }

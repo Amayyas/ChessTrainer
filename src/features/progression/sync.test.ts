@@ -170,6 +170,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       seenPuzzleIds: ['ct-0007', 'ct-0009'],
       dailySeries: { day: '2026-08-12', ids: ['ct-0007', 'ct-0011'] },
       rushRuns: [],
+      endgamesMastered: [],
     })
 
     const partial = rowToSnapshot(row({ puzzle_progress: { streak: 2, dailySeries: 'nope' } }))
@@ -181,6 +182,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       seenPuzzleIds: [],
       dailySeries: null,
       rushRuns: [],
+      endgamesMastered: [],
     })
   })
 
@@ -205,6 +207,13 @@ describe('hunt board and puzzle streak now travel with the account', () => {
     ])
   })
 
+  it('reads the endgames mastered back as ids, each once', () => {
+    const snapshot = rowToSnapshot(
+      row({ puzzle_progress: { endgamesMastered: ['lucena', 3, 'lucena', null, 'philidor'] } }),
+    )
+    expect(snapshot.puzzleProgress.endgamesMastered).toEqual(['lucena', 'philidor'])
+  })
+
   it('sends both documents up to the server', () => {
     const rowOut = snapshotToRow('u1', {
       xp: 10,
@@ -219,6 +228,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
         seenPuzzleIds: [],
         dailySeries: null,
         rushRuns: [],
+        endgamesMastered: [],
       },
       accuracyHistory: [],
       daily: emptyCounters('2026-08-17'),

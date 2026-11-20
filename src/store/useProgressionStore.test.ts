@@ -340,6 +340,7 @@ describe('persisted storage migration', () => {
       seenPuzzleIds: [],
       dailySeries: null,
       rushRuns: [],
+      endgamesMastered: [],
     })
     expect(store().xp).toBe(400)
   })
@@ -395,6 +396,54 @@ describe('the Puzzle Rush ranking', () => {
   })
 })
 
+describe('the endgames mastered', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    useProgressionStore.getState().reset()
+  })
+
+  it('is seeded empty on a version-4 record, keeping the Rush ranking', async () => {
+    const run = { score: 7, at: '2026-11-19T10:00:00.000Z' }
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 50,
+          stats: EMPTY_STATS,
+          daily: { day: '2026-11-19' },
+          activities: [],
+          unlockedBadges: [],
+          pendingBadges: [],
+          huntScores: {},
+          puzzleProgress: { ...EMPTY_PROGRESS, endgamesMastered: undefined, rushRuns: [run] },
+          ownerId: null,
+        },
+        version: 4,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().puzzleProgress.endgamesMastered).toEqual([])
+    expect(store().puzzleProgress.rushRuns).toEqual([run])
+  })
+
+  it('keeps an endgame mastered on either side on sign-in, once', () => {
+    store().setPuzzleProgress((progress) => ({
+      ...progress,
+      endgamesMastered: ['lucena', 'mat-dame'],
+    }))
+    store().hydrate({
+      ...blank(),
+      puzzleProgress: { ...EMPTY_PROGRESS, endgamesMastered: ['mat-dame', 'philidor'] },
+    })
+    expect([...store().puzzleProgress.endgamesMastered].sort()).toEqual([
+      'lucena',
+      'mat-dame',
+      'philidor',
+    ])
+  })
+})
 describe('legacy keys are cleared whichever version is migrated', () => {
   const seedLegacyKeys = () => {
     window.localStorage.setItem('chesstrainer.hunt.scores', JSON.stringify({ q: [] }))
