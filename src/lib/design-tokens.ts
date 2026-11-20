@@ -314,4 +314,6 @@ export const brand = {
   promise: 'Gratuit, sans compte obligatoire',
   /** The AGPL obliges the offer of source, so this link is not decorative. */
   sourceUrl: 'https://github.com/Amayyas/ChessTrainer',
+  /** Where the site is read, printed at the foot of a shared diagram. */
+  domain: 'chesstrainer.fr',
 } as const

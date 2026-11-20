@@ -6,6 +6,7 @@ import StatusLine from '@/components/UI/StatusLine'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import GameSummary from '@/features/coach/GameSummary'
 import QualityLegend from '@/features/coach/QualityLegend'
+import ShareDiagram from '@/features/share/ShareDiagram'
 import { useCoachPageState } from '@/features/coach/useCoachPageState'
 import { cn } from '@/utils/cn'
 
@@ -28,6 +29,12 @@ export default function CoachPage() {
   const { game, analysis } = coach
 
   const inReplay = coach.inReplay
+  // The move that led to the position on the board.
+  const shownMove = inReplay
+    ? coach.replayPly > 0
+      ? game.history[coach.replayPly - 1]
+      : undefined
+    : game.history.at(-1)
   const statusLabel = coach.statusLabel
 
   return (
@@ -290,6 +297,16 @@ export default function CoachPage() {
                 </div>
               </>
             )}
+
+            {/* The position on the board, as it is shown: in review, the
+                one being looked at. */}
+            <ShareDiagram
+              request={{
+                fen: coach.viewFen,
+                orientation: coach.orientation === 'white' ? 'w' : 'b',
+                lastMove: shownMove ? { san: shownMove.san, before: shownMove.before } : null,
+              }}
+            />
           </div>
         </div>
       </div>
