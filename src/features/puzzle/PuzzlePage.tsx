@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import PuzzleBoardColumn from '@/features/puzzle/PuzzleBoardColumn'
 import EndgamesView from '@/features/puzzle/EndgamesView'
+import MistakesView from '@/features/puzzle/MistakesView'
 import RushView from '@/features/puzzle/RushView'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
@@ -215,13 +216,14 @@ function PracticeView() {
   )
 }
 
-type PuzzleTab = 'daily' | 'practice' | 'rush' | 'endgames'
+type PuzzleTab = 'daily' | 'practice' | 'rush' | 'endgames' | 'mistakes'
 
 /**
  * Puzzle mode: a daily series that feeds the streak, a free-practice tab with
  * no daily cap — both sharing the board, hints and scoring — and Puzzle Rush,
  * against the clock, which shares the board alone — and the endgames to know,
- * played against the engine.
+ * played against the engine — and the player's own mistakes, set again on a
+ * review schedule.
  */
 export default function PuzzlePage() {
   const [tab, setTab] = useState<PuzzleTab>('daily')
@@ -231,9 +233,11 @@ export default function PuzzlePage() {
   const [practiceOpened, setPracticeOpened] = useState(false)
   const [rushOpened, setRushOpened] = useState(false)
   const [endgamesOpened, setEndgamesOpened] = useState(false)
+  const [mistakesOpened, setMistakesOpened] = useState(false)
   if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
   if (tab === 'rush' && !rushOpened) setRushOpened(true)
   if (tab === 'endgames' && !endgamesOpened) setEndgamesOpened(true)
+  if (tab === 'mistakes' && !mistakesOpened) setMistakesOpened(true)
 
   return (
     <Tabs
@@ -246,6 +250,7 @@ export default function PuzzlePage() {
         <TabsTrigger value="practice">Entraînement libre</TabsTrigger>
         <TabsTrigger value="rush">Rush</TabsTrigger>
         <TabsTrigger value="endgames">Finales</TabsTrigger>
+        <TabsTrigger value="mistakes">Mes erreurs</TabsTrigger>
       </TabsList>
 
       {/* forceMount and hidden together, and both are needed. Radix unmounts an
@@ -270,6 +275,9 @@ export default function PuzzlePage() {
       </TabsContent>
       <TabsContent value="endgames" forceMount hidden={tab !== 'endgames'}>
         {endgamesOpened && <EndgamesView />}
+      </TabsContent>
+      <TabsContent value="mistakes" forceMount hidden={tab !== 'mistakes'}>
+        {mistakesOpened && <MistakesView />}
       </TabsContent>
     </Tabs>
   )

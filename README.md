@@ -52,7 +52,9 @@ than the last, until time or the allowed wrong moves run out — both set in
 personal ranking of the best runs that follows the account. The endgames every
 player should know — the basic mates, king and pawn, Lucena, Philidor — are
 played out against Stockfish at full strength until they are won or held, each
-marked mastered once it is.
+marked mastered once it is. And the player's own mistakes, found by the coach
+in their analysed games, come back as puzzles on a review schedule — the next
+day, then further apart each time the better move is found.
 
 **Piece Hunt** — an arcade mode: one champion piece, sixty seconds, three lives,
 and a board of enemies that move back. Scores go to a worldwide leaderboard.
