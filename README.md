@@ -49,7 +49,10 @@ behind it; adjacent levels are now checked by the gap between them.
 off. Puzzle Rush strings them together against the clock, each puzzle harder
 than the last, until time or the allowed wrong moves run out — both set in
 [`src/features/puzzle/rushSet.ts`](src/features/puzzle/rushSet.ts) — with a
-personal ranking of the best runs that follows the account.
+personal ranking of the best runs that follows the account. The endgames every
+player should know — the basic mates, king and pawn, Lucena, Philidor — are
+played out against Stockfish at full strength until they are won or held, each
+marked mastered once it is.
 
 **Piece Hunt** — an arcade mode: one champion piece, sixty seconds, three lives,
 and a board of enemies that move back. Scores go to a worldwide leaderboard.

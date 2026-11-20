@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/UI/Tabs'
 import { ToggleGroup, ToggleGroupItem } from '@/components/UI/ToggleGroup'
 import { DAILY_COUNT } from '@/features/puzzle/dailySet'
 import PuzzleBoardColumn from '@/features/puzzle/PuzzleBoardColumn'
+import EndgamesView from '@/features/puzzle/EndgamesView'
 import RushView from '@/features/puzzle/RushView'
 import { HINT_COST, scorePuzzle, type PuzzleRunner } from '@/features/puzzle/usePuzzleRunner'
 import { usePuzzleSession } from '@/features/puzzle/usePuzzleSession'
@@ -214,12 +215,13 @@ function PracticeView() {
   )
 }
 
-type PuzzleTab = 'daily' | 'practice' | 'rush'
+type PuzzleTab = 'daily' | 'practice' | 'rush' | 'endgames'
 
 /**
  * Puzzle mode: a daily series that feeds the streak, a free-practice tab with
  * no daily cap — both sharing the board, hints and scoring — and Puzzle Rush,
- * against the clock, which shares the board alone.
+ * against the clock, which shares the board alone — and the endgames to know,
+ * played against the engine.
  */
 export default function PuzzlePage() {
   const [tab, setTab] = useState<PuzzleTab>('daily')
@@ -228,8 +230,10 @@ export default function PuzzlePage() {
   // run or a Rush in progress — a Rush's clock keeps running meanwhile.
   const [practiceOpened, setPracticeOpened] = useState(false)
   const [rushOpened, setRushOpened] = useState(false)
+  const [endgamesOpened, setEndgamesOpened] = useState(false)
   if (tab === 'practice' && !practiceOpened) setPracticeOpened(true)
   if (tab === 'rush' && !rushOpened) setRushOpened(true)
+  if (tab === 'endgames' && !endgamesOpened) setEndgamesOpened(true)
 
   return (
     <Tabs
@@ -241,6 +245,7 @@ export default function PuzzlePage() {
         <TabsTrigger value="daily">Série du jour</TabsTrigger>
         <TabsTrigger value="practice">Entraînement libre</TabsTrigger>
         <TabsTrigger value="rush">Rush</TabsTrigger>
+        <TabsTrigger value="endgames">Finales</TabsTrigger>
       </TabsList>
 
       {/* forceMount and hidden together, and both are needed. Radix unmounts an
@@ -262,6 +267,9 @@ export default function PuzzlePage() {
       </TabsContent>
       <TabsContent value="rush" forceMount hidden={tab !== 'rush'}>
         {rushOpened && <RushView />}
+      </TabsContent>
+      <TabsContent value="endgames" forceMount hidden={tab !== 'endgames'}>
+        {endgamesOpened && <EndgamesView />}
       </TabsContent>
     </Tabs>
   )
