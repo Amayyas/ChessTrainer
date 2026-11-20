@@ -6,6 +6,8 @@ import {
   sortNewestFirst,
   type AccuracyEntry,
 } from '@/features/progression/accuracyHistory'
+import { mergeMistakes, type MistakePuzzle } from '@/features/puzzle/mistakes'
+import type { WhiteEval } from '@/utils/evaluation'
 import {
   EMPTY_PROGRESS,
   mergeRushRuns,
@@ -122,6 +124,42 @@ function normaliseRushRuns(value: unknown): RushRun[] {
   return mergeRushRuns(runs, [])
 }
 
+function isWhiteEval(value: unknown): value is WhiteEval {
+  if (typeof value !== 'object' || value === null) return false
+  const { cp, mate } = value as Record<string, unknown>
+  return (
+    typeof cp === 'number' &&
+    Number.isFinite(cp) &&
+    (mate === null || (typeof mate === 'number' && Number.isInteger(mate)))
+  )
+}
+
+/**
+ * The mistake puzzles, keeping only the ones that hold together: a position
+ * chess.js would load is checked when one is played, but a field of the wrong
+ * type here would break the list before then.
+ */
+function normaliseMistakes(value: unknown): MistakePuzzle[] {
+  if (!Array.isArray(value)) return []
+  const valid = value.filter((entry): entry is MistakePuzzle => {
+    if (typeof entry !== 'object' || entry === null) return false
+    const puzzle = entry as Record<string, unknown>
+    return (
+      typeof puzzle.id === 'string' &&
+      typeof puzzle.fen === 'string' &&
+      typeof puzzle.best === 'string' &&
+      /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(puzzle.best) &&
+      typeof puzzle.played === 'string' &&
+      isWhiteEval(puzzle.bestEval) &&
+      isTimestamp(puzzle.createdAt) &&
+      isDayKey(puzzle.due) &&
+      isCount(puzzle.streak)
+    )
+  })
+  // Through the merge, for its single copy of each position and its cap.
+  return mergeMistakes(valid, [])
+}
+
 function normalisePuzzleProgress(value: unknown): PuzzleProgress {
   if (typeof value !== 'object' || value === null) {
     return {
@@ -130,6 +168,7 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
       dailySeries: null,
       rushRuns: [],
       endgamesMastered: [],
+      mistakes: [],
     }
   }
   const raw = value as Record<string, unknown>
@@ -144,6 +183,7 @@ function normalisePuzzleProgress(value: unknown): PuzzleProgress {
     // Ids only, each once: the JSON is untrusted, and an id that names no
     // endgame is harmless — the list is read against ENDGAMES, never shown raw.
     endgamesMastered: [...new Set(asIds(raw.endgamesMastered))],
+    mistakes: normaliseMistakes(raw.mistakes),
   }
 }
 

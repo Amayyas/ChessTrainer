@@ -14,6 +14,7 @@ import {
   type DailyCounters,
 } from '@/features/progression/challenges'
 import { XP_REWARDS, huntXp, levelFromXp, type LevelProgress } from '@/features/progression/levels'
+import { mergeMistakes } from '@/features/puzzle/mistakes'
 import {
   EMPTY_PROGRESS,
   mergeRushRuns,
@@ -423,6 +424,9 @@ export const useProgressionStore = create<ProgressionState>()(
                   ...get().puzzleProgress.endgamesMastered,
                 ]),
               ],
+              // A mistake collected on either side is kept, at the schedule
+              // reviewed further along.
+              mistakes: mergeMistakes(get().puzzleProgress.mistakes, puzzleProgress.mistakes),
             },
             // Merged, not replaced. The fields above are totals, where the
             // server copy must win or a second device would double count.
@@ -463,7 +467,7 @@ export const useProgressionStore = create<ProgressionState>()(
     },
     {
       name: 'chesstrainer.progression',
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => {
         // Records written before progression had an owner carry no way of
         // telling one player's work from another's. Zustand merges them over
@@ -527,6 +531,19 @@ export const useProgressionStore = create<ProgressionState>()(
               ...EMPTY_PROGRESS,
               ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
               endgamesMastered: [],
+            },
+          }
+        }
+        // Version 5 kept no mistake puzzles. Seed the list empty.
+        if (version < 6) {
+          const record = persisted as Record<string, unknown>
+          const puzzle = record.puzzleProgress
+          return {
+            ...record,
+            puzzleProgress: {
+              ...EMPTY_PROGRESS,
+              ...(typeof puzzle === 'object' && puzzle ? puzzle : {}),
+              mistakes: [],
             },
           }
         }

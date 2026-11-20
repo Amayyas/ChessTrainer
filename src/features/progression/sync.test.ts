@@ -171,6 +171,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       dailySeries: { day: '2026-08-12', ids: ['ct-0007', 'ct-0011'] },
       rushRuns: [],
       endgamesMastered: [],
+      mistakes: [],
     })
 
     const partial = rowToSnapshot(row({ puzzle_progress: { streak: 2, dailySeries: 'nope' } }))
@@ -183,6 +184,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
       dailySeries: null,
       rushRuns: [],
       endgamesMastered: [],
+      mistakes: [],
     })
   })
 
@@ -214,6 +216,32 @@ describe('hunt board and puzzle streak now travel with the account', () => {
     expect(snapshot.puzzleProgress.endgamesMastered).toEqual(['lucena', 'philidor'])
   })
 
+  it('reads the mistake puzzles back, keeping only the ones that hold together', () => {
+    const good = {
+      id: 'p1',
+      fen: 'r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3',
+      best: 'g7g6',
+      bestEval: { cp: 120, mate: null },
+      played: 'Nf6',
+      createdAt: '2026-11-20T10:00:00.000Z',
+      due: '2026-11-21',
+      streak: 0,
+    }
+    const snapshot = rowToSnapshot(
+      row({
+        puzzle_progress: {
+          mistakes: [
+            good,
+            { ...good, id: 'p2', best: 'not a move' },
+            { ...good, id: 'p3', bestEval: 'big' },
+            7,
+          ],
+        },
+      }),
+    )
+    expect(snapshot.puzzleProgress.mistakes).toEqual([good])
+  })
+
   it('sends both documents up to the server', () => {
     const rowOut = snapshotToRow('u1', {
       xp: 10,
@@ -229,6 +257,7 @@ describe('hunt board and puzzle streak now travel with the account', () => {
         dailySeries: null,
         rushRuns: [],
         endgamesMastered: [],
+        mistakes: [],
       },
       accuracyHistory: [],
       daily: emptyCounters('2026-08-17'),

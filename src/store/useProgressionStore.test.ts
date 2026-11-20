@@ -341,6 +341,7 @@ describe('persisted storage migration', () => {
       dailySeries: null,
       rushRuns: [],
       endgamesMastered: [],
+      mistakes: [],
     })
     expect(store().xp).toBe(400)
   })
@@ -444,6 +445,61 @@ describe('the endgames mastered', () => {
     ])
   })
 })
+describe('the mistake puzzles', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    useProgressionStore.getState().reset()
+  })
+
+  it('are seeded empty on a version-5 record, keeping the endgames mastered', async () => {
+    window.localStorage.setItem(
+      'chesstrainer.progression',
+      JSON.stringify({
+        state: {
+          xp: 10,
+          stats: EMPTY_STATS,
+          daily: { day: '2026-11-20' },
+          activities: [],
+          unlockedBadges: [],
+          pendingBadges: [],
+          huntScores: {},
+          puzzleProgress: { ...EMPTY_PROGRESS, mistakes: undefined, endgamesMastered: ['lucena'] },
+          ownerId: null,
+        },
+        version: 5,
+      }),
+    )
+
+    await useProgressionStore.persist.rehydrate()
+
+    expect(store().puzzleProgress.mistakes).toEqual([])
+    expect(store().puzzleProgress.endgamesMastered).toEqual(['lucena'])
+  })
+
+  it('keep the mistakes of both sides on sign-in', () => {
+    const mistake = (id: string) => ({
+      id,
+      fen: `${id} w - - 0 1`,
+      best: 'e2e4',
+      bestEval: { cp: 0, mate: null },
+      played: 'a3',
+      createdAt: '2026-11-20T10:00:00.000Z',
+      due: '2026-11-21',
+      streak: 0,
+    })
+    store().setPuzzleProgress((progress) => ({ ...progress, mistakes: [mistake('here')] }))
+    store().hydrate({
+      ...blank(),
+      puzzleProgress: { ...EMPTY_PROGRESS, mistakes: [mistake('there')] },
+    })
+    expect(
+      store()
+        .puzzleProgress.mistakes.map((m) => m.id)
+        .sort(),
+    ).toEqual(['here', 'there'])
+  })
+})
+
 describe('legacy keys are cleared whichever version is migrated', () => {
   const seedLegacyKeys = () => {
     window.localStorage.setItem('chesstrainer.hunt.scores', JSON.stringify({ q: [] }))
