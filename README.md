@@ -230,8 +230,8 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-Check it worked under **Table Editor**: `profiles`, `scores`, `hunt_rounds`,
-`achievements` and `progression` should be listed, each marked _RLS enabled_.
+Check it worked under **Table Editor**: `profiles`, `scores`, `hunt_rounds`
+and `progression` should be listed, each marked _RLS enabled_.
 Puzzle progress is a column on `progression`, not a table of its own.
 
 ### 3. Set the URLs
