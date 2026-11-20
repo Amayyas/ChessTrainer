@@ -416,21 +416,15 @@ classDiagram
         +timestamptz updated_at
     }
 
-    class achievements {
-        <<table>>
-        +uuid user_id
-        +string badge_id
-        +timestamptz unlocked_at
-    }
-
     auth_users "1" --> "1" profiles : trigger handle_new_user
     profiles "1" --> "0..*" scores : publishes
     profiles "1" --> "0..1" progression : syncs
-    profiles "1" --> "0..*" achievements : unlocks
 ```
 
 The worldwide leaderboard reads `scores`; personal progression lives in
-`progression`, which is private.
+`progression`, which is private. Badges are in `progression.unlocked_badges`:
+the first data model's `achievements` table, which nothing ever used, was
+dropped in `20261120120000_drop_achievements.sql`.
 
 ### Access rules
 
@@ -439,7 +433,6 @@ The worldwide leaderboard reads `scores`; personal progression lives in
 | `profiles`                 | public — the leaderboard shows usernames | owner, **columns `username` and `avatar_piece` only**                 |
 | `scores`                   | public — worldwide leaderboard           | insert under one's own id; **no update, no delete**                   |
 | `progression`              | **private** to its owner                 | owner only                                                            |
-| `achievements`             | public — badges can be shown off         | insert under one's own id                                             |
 | `photo_*`, `hidden_photos` | nobody                                   | nobody — only through `report_photo()` and the profile-photo function |
 
 `profiles.photo_path` is written by no client: the profile-photo Edge Function
@@ -475,9 +468,8 @@ report a plausible round they did not play. It moves forging from trivial to
 deliberate, which is the honest ceiling for a browser game.
 
 **Personal progression is not validated.** The `xp`, `stats` and
-`unlocked_badges` on `progression`, and the `achievements` rows, remain
-client-asserted. RLS keeps each player inside their own rows, so nobody can
-touch **another** account, and the `profiles` column grant keeps XP and level
+`unlocked_badges` on `progression` remain client-asserted. RLS keeps each
+player inside their own rows, so nobody can touch **another** account, and the `profiles` column grant keeps XP and level
 off the table the leaderboard joins. Beyond that, inflating one's own dashboard
 cheats only oneself, and guarding it would cost the same machinery for none of
 the benefit.

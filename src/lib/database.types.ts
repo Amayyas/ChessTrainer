@@ -9,32 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      achievements: {
-        Row: {
-          badge_id: string
-          unlocked_at: string
-          user_id: string
-        }
-        Insert: {
-          badge_id: string
-          unlocked_at?: string
-          user_id: string
-        }
-        Update: {
-          badge_id?: string
-          unlocked_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "achievements_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       hidden_photos: {
         Row: {
           hidden_at: string

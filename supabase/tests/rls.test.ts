@@ -657,38 +657,23 @@ describe('the score a round is allowed to claim', () => {
   })
 })
 
-describe('badges', () => {
-  it('lets a player unlock one for themselves', async () => {
-    await asUser(alice, 'insert into achievements (user_id, badge_id) values ($1, $2)', [
-      alice,
-      'first-mate',
-    ])
-    await db.query('set local role postgres')
-    const { rows } = await db.query(
-      'select count(*)::int as n from achievements where user_id=$1',
-      [alice],
-    )
-    expect(rows[0].n).toBe(1)
-  })
-
-  it('refuses to award one to somebody else', async () => {
-    // An entire RLS-protected table was outside this suite: weakening its
-    // owner-only check would have let one player decorate another's profile
-    // without a single test noticing.
+describe('the dropped achievements table', () => {
+  // It was readable by anyone and writable by any player under their own id,
+  // a free-text badge_id of any length, while nothing in the game used it. It
+  // is gone; these hold it gone.
+  it('gives a player nothing to write into', async () => {
     const error = await refused(() =>
       asUser(alice, 'insert into achievements (user_id, badge_id) values ($1, $2)', [
-        bob,
-        'first-mate',
+        alice,
+        'x'.repeat(10_000),
       ]),
     )
-    expect(error.message).toMatch(/row-level security/i)
+    expect(error.message).toMatch(/does not exist/i)
   })
 
-  it('refuses one from a visitor with no account', async () => {
-    const error = await refused(() =>
-      asAnon('insert into achievements (user_id, badge_id) values ($1, $2)', [alice, 'first-mate']),
-    )
-    expect(error.message).toMatch(/permission denied/i)
+  it('gives a visitor nothing to read', async () => {
+    const error = await refused(() => asAnon('select * from achievements'))
+    expect(error.message).toMatch(/does not exist/i)
   })
 })
 
