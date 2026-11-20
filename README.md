@@ -24,7 +24,9 @@ move on seven tiers, from the engine's own move down to a blunder, measured by
 the centipawns it lost against the best line, and the best continuation drawn as
 an arrow. [How a move is graded](docs/move-grading.md). Hints are
 revealed one step at a time, so you can ask for a nudge instead of the answer.
-Finished games can be replayed move by move.
+Finished games can be replayed move by move. A game played on Lichess can be
+brought in by typing the player's name: the browser reads their recent public
+games from Lichess's API, and the chosen one opens in review.
 
 **Battle** — six levels of opposition, from a beginner who misses tactics to
 grandmaster strength; their Elo figures live in
