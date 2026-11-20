@@ -47,6 +47,12 @@ export interface PuzzleProgress {
    * run that does not make it in is not kept, so the list stays small.
    */
   rushRuns: RushRun[]
+  /**
+   * The endgames the player has won, or held, against the engine: ids from
+   * endgames.ts. A training record like the Rush ranking, so it travels in
+   * the same document rather than a column of its own.
+   */
+  endgamesMastered: string[]
 }
 
 /** One Puzzle Rush run: how many puzzles were solved, and when it ended. */
@@ -99,12 +105,19 @@ export const EMPTY_PROGRESS: PuzzleProgress = {
   seenPuzzleIds: [],
   dailySeries: null,
   rushRuns: [],
+  endgamesMastered: [],
 }
 // Shared by reference as the initial state, from blankProgress(), and by the
 // migrations, so a stray in-place mutation would corrupt all of them.
 Object.freeze(EMPTY_PROGRESS)
 Object.freeze(EMPTY_PROGRESS.seenPuzzleIds)
 Object.freeze(EMPTY_PROGRESS.rushRuns)
+Object.freeze(EMPTY_PROGRESS.endgamesMastered)
+
+/** The mastered list with `id` in it, once. */
+export function markMastered(mastered: readonly string[], id: string): string[] {
+  return mastered.includes(id) ? [...mastered] : [...mastered, id]
+}
 
 /** Appends a solved id, moving a repeat to the end, and trims to `SEEN_CAP`. */
 export function markSeen(seen: readonly string[], id: string): string[] {
